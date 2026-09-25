@@ -9,10 +9,11 @@ import android.os.Handler
 import android.os.Looper
 import android.provider.ContactsContract
 import android.provider.Settings
+import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
+import android.speech.SpeechRecognizer
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
-import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -23,35 +24,19 @@ import java.util.Locale
 class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
     private lateinit var statusText: TextView
-    private lateinit var micButton: Button
     private lateinit var textToSpeech: TextToSpeech
+    private var speechRecognizer: SpeechRecognizer? = null
+    private lateinit var speechIntent: Intent
+
     private val handler = Handler(Looper.getMainLooper())
     private val preferences by lazy { getSharedPreferences("assistant_places", MODE_PRIVATE) }
 
     private var speechReady = false
     private var assistantActive = true
     private var isListening = false
+    private var isSpeaking = false
     private var pendingAction: (() -> Unit)? = null
     private var pendingContactName: String? = null
-
-    private val speechLauncher = registerForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        isListening = false
-        val spoken = result.data
-            ?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
-            ?.firstOrNull()
-            ?.trim()
-
-        if (spoken.isNullOrBlank()) {
-            assistantActive = false
-            statusText.text = "Escucha pausada. Pulsa Hablar para continuar."
-            micButton.text = "🎤 Hablar"
-        } else {
-            statusText.text = "Escuché: $spoken"
-            handleCommand(spoken)
-        }
-    }
 
     private val micPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -82,18 +67,89 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         setContentView(R.layout.activity_main)
 
         statusText = findViewById(R.id.statusText)
-        micButton = findViewById(R.id.micButton)
-        micButton.setOnClickListener {
-            assistantActive = true
-            ensureMicPermissionAndListen()
+        setupSpeechRecognizer()
+        textToSpeech = TextToSpeech(this, this)
+    }
+
+    private fun setupSpeechRecognizer() {
+        if (!SpeechRecognizer.isRecognitionAvailable(this)) {
+            statusText.text = "Este teléfono no tiene disponible el reconocimiento de voz."
+            assistantActive = false
+            return
         }
 
-        textToSpeech = TextToSpeech(this, this)
+        speechIntent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, "es-PA")
+            putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
+            putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
+        }
+
+        speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this).also { recognizer ->
+            recognizer.setRecognitionListener(object : RecognitionListener {
+                override fun onReadyForSpeech(params: Bundle?) {
+                    isListening = true
+                    statusText.text = "Te escucho…"
+                }
+
+                override fun onBeginningOfSpeech() {
+                    statusText.text = "Escuchando…"
+                }
+
+                override fun onRmsChanged(rmsdB: Float) = Unit
+                override fun onBufferReceived(buffer: ByteArray?) = Unit
+                override fun onEndOfSpeech() {
+                    statusText.text = "Procesando…"
+                }
+
+                override fun onError(error: Int) {
+                    isListening = false
+                    if (!assistantActive || isFinishing || isDestroyed) return
+
+                    when (error) {
+                        SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> {
+                            assistantActive = false
+                            statusText.text = "Necesito permiso de micrófono para escucharte."
+                        }
+                        SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> scheduleListening(900)
+                        else -> scheduleListening(500)
+                    }
+                }
+
+                override fun onResults(results: Bundle?) {
+                    isListening = false
+                    val spoken = results
+                        ?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                        ?.firstOrNull()
+                        ?.trim()
+
+                    if (spoken.isNullOrBlank()) {
+                        statusText.text = "No escuché nada. Sigo atento…"
+                        scheduleListening(450)
+                    } else {
+                        statusText.text = "Escuché: $spoken"
+                        handleCommand(spoken)
+                    }
+                }
+
+                override fun onPartialResults(partialResults: Bundle?) {
+                    val partial = partialResults
+                        ?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                        ?.firstOrNull()
+                        ?.trim()
+                    if (!partial.isNullOrBlank()) {
+                        statusText.text = "Escuchando: $partial"
+                    }
+                }
+
+                override fun onEvent(eventType: Int, params: Bundle?) = Unit
+            })
+        }
     }
 
     override fun onInit(status: Int) {
         if (status != TextToSpeech.SUCCESS) {
-            statusText.text = "No pude iniciar la voz. Pulsa Hablar para continuar."
+            statusText.text = "Voz no disponible. Activando escucha automática…"
             ensureMicPermissionAndListen()
             return
         }
@@ -102,27 +158,45 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
             result = textToSpeech.setLanguage(Locale("es"))
         }
+
         speechReady = result != TextToSpeech.LANG_MISSING_DATA &&
             result != TextToSpeech.LANG_NOT_SUPPORTED
+
         textToSpeech.setSpeechRate(1.0f)
         textToSpeech.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
-            override fun onStart(utteranceId: String?) = Unit
+            override fun onStart(utteranceId: String?) {
+                isSpeaking = true
+            }
 
             override fun onDone(utteranceId: String?) {
-                runOnUiThread { finishSpeechCycle() }
+                runOnUiThread {
+                    isSpeaking = false
+                    finishSpeechCycle()
+                }
             }
 
             @Deprecated("Deprecated in Java")
             override fun onError(utteranceId: String?) {
-                runOnUiThread { finishSpeechCycle() }
+                runOnUiThread {
+                    isSpeaking = false
+                    finishSpeechCycle()
+                }
             }
         })
 
         respond("Hola, ¿cómo estás? Dime, ¿en qué te puedo ayudar?")
     }
 
+    override fun onResume() {
+        super.onResume()
+        if (assistantActive && !isListening && !isSpeaking && ::statusText.isInitialized) {
+            scheduleListening(350)
+        }
+    }
+
     private fun ensureMicPermissionAndListen() {
-        if (!assistantActive || isListening) return
+        if (!assistantActive || isListening || isSpeaking) return
+
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
             startVoiceRecognition()
         } else {
@@ -130,29 +204,34 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         }
     }
 
-    private fun scheduleListening() {
+    private fun scheduleListening(delayMs: Long = 450) {
         if (!assistantActive || isFinishing || isDestroyed) return
-        handler.postDelayed({ ensureMicPermissionAndListen() }, 450)
+        handler.removeCallbacksAndMessages(null)
+        handler.postDelayed({ ensureMicPermissionAndListen() }, delayMs)
     }
 
     private fun startVoiceRecognition() {
-        if (!assistantActive || isListening) return
-        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE, "es-PA")
-            putExtra(RecognizerIntent.EXTRA_PROMPT, "Te escucho…")
-        }
+        if (!assistantActive || isListening || isSpeaking) return
+        val recognizer = speechRecognizer ?: return
 
         try {
             isListening = true
             statusText.text = "Te escucho…"
-            micButton.text = "Escuchando…"
-            speechLauncher.launch(intent)
+            recognizer.startListening(speechIntent)
         } catch (e: Exception) {
             isListening = false
-            assistantActive = false
-            micButton.text = "🎤 Hablar"
-            statusText.text = "Este teléfono no tiene disponible el reconocimiento de voz."
+            statusText.text = "Reintentando escucha…"
+            scheduleListening(800)
+        }
+    }
+
+    private fun stopListening() {
+        if (isListening) {
+            try {
+                speechRecognizer?.cancel()
+            } catch (_: Exception) {
+            }
+            isListening = false
         }
     }
 
@@ -166,7 +245,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         when {
             containsAny(command, "deja de escuchar", "detente", "pausa asistente", "para de escuchar") -> {
                 assistantActive = false
-                micButton.text = "🎤 Hablar"
+                stopListening()
                 respond("De acuerdo. La escucha quedó pausada.", listenAgain = false)
             }
             savedPlace != null -> savePlace(savedPlace.first, savedPlace.second)
@@ -354,8 +433,10 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         .replace("ú", "u")
 
     private fun respond(message: String, listenAgain: Boolean = true) {
+        stopListening()
         statusText.text = message
         if (!listenAgain) assistantActive = false
+
         if (speechReady) {
             textToSpeech.speak(message, TextToSpeech.QUEUE_FLUSH, null, "response_${System.currentTimeMillis()}")
         } else if (listenAgain) {
@@ -364,11 +445,15 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     }
 
     private fun respondAndThen(message: String, action: () -> Unit) {
+        stopListening()
         statusText.text = message
+
         if (!speechReady) {
             action()
+            scheduleListening(900)
             return
         }
+
         pendingAction = action
         textToSpeech.speak(message, TextToSpeech.QUEUE_FLUSH, null, "action_${System.currentTimeMillis()}")
     }
@@ -376,7 +461,13 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private fun finishSpeechCycle() {
         val action = pendingAction
         pendingAction = null
-        if (action != null) action() else scheduleListening()
+
+        if (action != null) {
+            action()
+            scheduleListening(900)
+        } else {
+            scheduleListening(350)
+        }
     }
 
     private fun openCalculator() {
@@ -398,6 +489,9 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
     override fun onDestroy() {
         handler.removeCallbacksAndMessages(null)
+        speechRecognizer?.destroy()
+        speechRecognizer = null
+
         if (::textToSpeech.isInitialized) {
             textToSpeech.stop()
             textToSpeech.shutdown()
