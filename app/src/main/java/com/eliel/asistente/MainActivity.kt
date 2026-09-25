@@ -212,8 +212,9 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private fun extractDestination(command: String): String? = valueAfterMarker(
         command,
         listOf(
-            "waze para ir a ", "quiero ir a ", "llevame a ", "navega a ",
-            "vamos a ", "ruta hacia ", "ir a "
+            "waze para ir a ", "waze para ir al ", "quiero ir a ", "quiero ir al ",
+            "llevame a ", "llevame al ", "navega a ", "navega al ",
+            "vamos a ", "vamos al ", "ruta hacia ", "ruta al ", "ir a ", "ir al "
         )
     )
 
@@ -255,6 +256,8 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         return when (clean) {
             "mi trabajo", "trabajo" -> preferences.getString("work", null) ?: clean
             "mi casa", "casa" -> preferences.getString("home", null) ?: clean
+            "aeropuerto", "el aeropuerto", "aeropuerto de tocumen", "tocumen",
+            "aeropuerto internacional de tocumen" -> "Aeropuerto Internacional de Tocumen, Panamá"
             else -> clean
         }
     }
