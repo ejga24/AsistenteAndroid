@@ -50,8 +50,20 @@ class AssistantWakeService : Service(), TextToSpeech.OnInitListener {
 
     override fun onCreate() {
         super.onCreate()
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            stopSelf()
+            return
+        }
+
         createNotificationChannel()
-        startForeground(NOTIFICATION_ID, buildNotification())
+        try {
+            startForeground(NOTIFICATION_ID, buildNotification())
+        } catch (_: SecurityException) {
+            stopSelf()
+            return
+        }
+
         setupRecognizer()
         tts = TextToSpeech(this, this)
     }
@@ -67,7 +79,7 @@ class AssistantWakeService : Service(), TextToSpeech.OnInitListener {
                 scheduleListening(350)
             }
         }
-        return START_STICKY
+        return START_NOT_STICKY
     }
 
     private fun createNotificationChannel() {
