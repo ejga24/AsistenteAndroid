@@ -47,6 +47,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private var pendingAction: (() -> Unit)? = null
     private var pendingContactName: String? = null
     private var waitingForCommand = false
+    private var commandListenDeadline = 0L
     private val wakeWord = "mia"
 
     private val micPermissionLauncher = registerForActivityResult(
@@ -141,6 +142,9 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE, "es-PA")
             putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
             putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 900L)
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 650L)
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 450L)
         }
 
         speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this).also { recognizer ->
@@ -172,8 +176,33 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                             assistantActive = false
                             statusText.text = "Necesito permiso de micrófono para escucharte."
                         }
-                        SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> scheduleListening(900)
-                        else -> scheduleListening(500)
+                        SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> {
+                            if (waitingForCommand && System.currentTimeMillis() < commandListenDeadline) {
+                                scheduleListening(180)
+                            } else {
+                                scheduleListening(700)
+                            }
+                        }
+                        SpeechRecognizer.ERROR_NO_MATCH,
+                        SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> {
+                            if (waitingForCommand && System.currentTimeMillis() < commandListenDeadline) {
+                                statusText.text = "Te escucho…"
+                                setOrbListening()
+                                scheduleListening(120)
+                            } else {
+                                waitingForCommand = false
+                                setOrbIdle()
+                                statusText.text = "Di “Mía” para activarme."
+                                scheduleListening(350)
+                            }
+                        }
+                        else -> {
+                            if (waitingForCommand && System.currentTimeMillis() < commandListenDeadline) {
+                                scheduleListening(180)
+                            } else {
+                                scheduleListening(500)
+                            }
+                        }
                     }
                 }
 
@@ -185,9 +214,16 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                         ?.trim()
 
                     if (spoken.isNullOrBlank()) {
-                        statusText.text = if (waitingForCommand) "No escuché el comando. Di Mía para intentarlo de nuevo." else "Di “Mía” para activarme."
-                        waitingForCommand = false
-                        scheduleListening(450)
+                        if (waitingForCommand && System.currentTimeMillis() < commandListenDeadline) {
+                            statusText.text = "Te escucho…"
+                            setOrbListening()
+                            scheduleListening(120)
+                        } else {
+                            waitingForCommand = false
+                            statusText.text = "Di “Mía” para activarme."
+                            setOrbIdle()
+                            scheduleListening(350)
+                        }
                     } else {
                         processRecognizedSpeech(spoken)
                     }
@@ -315,7 +351,6 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
     private fun scheduleListening(delayMs: Long = 450) {
         if (!assistantActive || isFinishing || isDestroyed) return
-        handler.removeCallbacksAndMessages(null)
         handler.postDelayed({ ensureMicPermissionAndListen() }, delayMs)
     }
 
@@ -349,7 +384,9 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
         if (waitingForCommand) {
             waitingForCommand = false
-            statusText.text = "Escuché: $raw"
+            commandListenDeadline = 0L
+            statusText.text = "Entendido…"
+            setOrbProcessing()
             handleCommand(raw)
             return
         }
@@ -371,17 +408,20 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
         if (afterWake.isNotBlank()) {
             waitingForCommand = false
+            commandListenDeadline = 0L
             statusText.text = "Entendido…"
             setOrbProcessing()
             handler.postDelayed({ handleCommand(afterWake) }, 120)
         } else {
             waitingForCommand = true
+            commandListenDeadline = System.currentTimeMillis() + 7000L
             statusText.text = "Te escucho…"
             setOrbListening()
             handler.postDelayed({
-                stopListening()
-                scheduleListening(80)
-            }, 140)
+                isListening = false
+                try { speechRecognizer?.cancel() } catch (_: Exception) {}
+                handler.postDelayed({ startVoiceRecognition() }, 90)
+            }, 70)
         }
     }
 
