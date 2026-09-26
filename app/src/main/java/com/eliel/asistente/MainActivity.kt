@@ -47,7 +47,6 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private var pendingAction: (() -> Unit)? = null
     private var pendingContactName: String? = null
     private var waitingForCommand = false
-    private var commandListenDeadline = 0L
     private val wakeWord = "mia"
 
     private val micPermissionLauncher = registerForActivityResult(
@@ -176,33 +175,8 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                             assistantActive = false
                             statusText.text = "Necesito permiso de micrófono para escucharte."
                         }
-                        SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> {
-                            if (waitingForCommand && System.currentTimeMillis() < commandListenDeadline) {
-                                scheduleListening(180)
-                            } else {
-                                scheduleListening(700)
-                            }
-                        }
-                        SpeechRecognizer.ERROR_NO_MATCH,
-                        SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> {
-                            if (waitingForCommand && System.currentTimeMillis() < commandListenDeadline) {
-                                statusText.text = "Te escucho…"
-                                setOrbListening()
-                                scheduleListening(120)
-                            } else {
-                                waitingForCommand = false
-                                setOrbIdle()
-                                statusText.text = "Di “Mía” para activarme."
-                                scheduleListening(350)
-                            }
-                        }
-                        else -> {
-                            if (waitingForCommand && System.currentTimeMillis() < commandListenDeadline) {
-                                scheduleListening(180)
-                            } else {
-                                scheduleListening(500)
-                            }
-                        }
+                        SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> scheduleListening(600)
+                        else -> scheduleListening(300)
                     }
                 }
 
@@ -214,16 +188,9 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                         ?.trim()
 
                     if (spoken.isNullOrBlank()) {
-                        if (waitingForCommand && System.currentTimeMillis() < commandListenDeadline) {
-                            statusText.text = "Te escucho…"
-                            setOrbListening()
-                            scheduleListening(120)
-                        } else {
-                            waitingForCommand = false
-                            statusText.text = "Di “Mía” para activarme."
-                            setOrbIdle()
-                            scheduleListening(350)
-                        }
+                        statusText.text = "Escuchando…"
+                        setOrbListening()
+                        scheduleListening(220)
                     } else {
                         processRecognizedSpeech(spoken)
                     }
@@ -283,7 +250,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             }
         })
 
-        statusText.text = "Listo. Di “Mía” para activarme."
+        statusText.text = "Listo. Estoy escuchando."
         ensureMicPermissionAndListen()
     }
 
@@ -381,48 +348,27 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
     private fun processRecognizedSpeech(raw: String) {
         val normalized = normalize(raw)
-
-        if (waitingForCommand) {
-            waitingForCommand = false
-            commandListenDeadline = 0L
-            statusText.text = "Entendido…"
-            setOrbProcessing()
-            handleCommand(raw)
-            return
-        }
-
         val wakeIndex = normalized.indexOf(wakeWord)
-        if (wakeIndex < 0) {
-            statusText.text = "Di “Mía” para activarme."
-            setOrbIdle()
-            scheduleListening(250)
+
+        val command = if (wakeIndex >= 0) {
+            playWakeTone()
+            normalized.substring(wakeIndex + wakeWord.length)
+                .trim()
+                .trimStart(',', '.', ':', ';', '-', ' ')
+        } else {
+            normalized
+        }
+
+        if (command.isBlank()) {
+            statusText.text = "Escuchando…"
+            setOrbListening()
+            scheduleListening(150)
             return
         }
 
-        val afterWake = normalized.substring(wakeIndex + wakeWord.length)
-            .trim()
-            .trimStart(',', '.', ':', ';', '-', ' ')
-
-        playWakeTone()
-        setOrbActivated()
-
-        if (afterWake.isNotBlank()) {
-            waitingForCommand = false
-            commandListenDeadline = 0L
-            statusText.text = "Entendido…"
-            setOrbProcessing()
-            handler.postDelayed({ handleCommand(afterWake) }, 120)
-        } else {
-            waitingForCommand = true
-            commandListenDeadline = System.currentTimeMillis() + 7000L
-            statusText.text = "Te escucho…"
-            setOrbListening()
-            handler.postDelayed({
-                isListening = false
-                try { speechRecognizer?.cancel() } catch (_: Exception) {}
-                handler.postDelayed({ startVoiceRecognition() }, 90)
-            }, 70)
-        }
+        statusText.text = "Entendido…"
+        setOrbProcessing()
+        handleCommand(command)
     }
 
     private fun playWakeTone() {
@@ -456,12 +402,12 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             spotifyQuery != null -> playMediaSearch("com.spotify.music", "Spotify", spotifyQuery)
             youtubeQuery != null -> playMediaSearch("com.google.android.youtube", "YouTube", youtubeQuery)
             command.contains("whatsapp") && contactName != null -> requestContactAndOpen(contactName)
-            containsAny(command, "abre whatsapp", "abrir whatsapp", "whatsapp") -> openPackage("com.whatsapp", "WhatsApp")
+            command.contains("whatsapp") && containsAny(command, "abre", "abrir", "abreme", "abra", "inicia", "lanza") -> openPackage("com.whatsapp", "WhatsApp")
             destination != null -> openWazeDestination(resolveDestination(destination))
-            containsAny(command, "abre waze", "abrir waze", "waze") -> openPackage("com.waze", "Waze")
-            containsAny(command, "abre youtube", "abrir youtube", "youtube") -> openPackage("com.google.android.youtube", "YouTube")
+            command.contains("waze") && containsAny(command, "abre", "abrir", "abreme", "abra", "inicia", "lanza") -> openPackage("com.waze", "Waze")
+            command.contains("youtube") && containsAny(command, "abre", "abrir", "abreme", "abra", "inicia", "lanza") -> openPackage("com.google.android.youtube", "YouTube")
             containsAny(command, "abre disney", "abrir disney", "disney plus", "disney+") -> openPackage("com.disney.disneyplus", "Disney Plus")
-            containsAny(command, "abre spotify", "abrir spotify", "spotify") -> openPackage("com.spotify.music", "Spotify")
+            command.contains("spotify") && containsAny(command, "abre", "abrir", "abreme", "abra", "inicia", "lanza") -> openPackage("com.spotify.music", "Spotify")
             containsAny(command, "abre maps", "abre mapas", "google maps", "mapas") -> openPackage("com.google.android.apps.maps", "Google Maps")
             containsAny(command, "abre gmail", "abrir gmail", "gmail") -> openPackage("com.google.android.gm", "Gmail")
             containsAny(command, "abre chrome", "abrir chrome", "chrome") -> openPackage("com.android.chrome", "Chrome")
@@ -471,9 +417,9 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             containsAny(command, "abre calculadora", "abrir calculadora", "calculadora") -> openCalculator()
             containsAny(command, "como estas", "como te va") -> respond("Muy bien, gracias. Estoy listo para ayudarte.")
             containsAny(command, "que puedes hacer", "ayuda", "comandos") -> respond(
-                "Puedo abrir aplicaciones, controlar acciones en pantalla, usar Waze, Spotify, YouTube y trabajar dentro de ChatGPT."
+                "Puedo abrir aplicaciones, usar Waze, Spotify, YouTube y ejecutar comandos de voz directamente."
             )
-            else -> delegateToChatGpt(raw)
+            else -> respond("No entendí esa orden. Inténtalo de otra forma.")
         }
     }
 
@@ -923,7 +869,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                 statusText.text = "Te escucho…"
                 scheduleListening(80)
             } else {
-                statusText.text = "Di “Mía” para activarme."
+                statusText.text = "Escuchando…"
                 setOrbIdle()
                 scheduleListening(350)
             }
