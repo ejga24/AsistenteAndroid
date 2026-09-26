@@ -169,7 +169,7 @@ class AssistantWakeService : Service(), TextToSpeech.OnInitListener {
         if (waitingForCommand) {
             waitingForCommand = false
             pendingCommand = raw
-            sayYesTellMeAndThenLaunch()
+            handler.postDelayed({ launchPendingCommand() }, 80)
             return
         }
 
@@ -188,10 +188,10 @@ class AssistantWakeService : Service(), TextToSpeech.OnInitListener {
         if (afterWake.isBlank()) {
             waitingForCommand = true
             pendingCommand = null
-            sayYesTellMe()
+            scheduleListening(120)
         } else {
             pendingCommand = afterWake
-            sayYesTellMeAndThenLaunch()
+            handler.postDelayed({ launchPendingCommand() }, 120)
         }
     }
 
@@ -238,8 +238,8 @@ class AssistantWakeService : Service(), TextToSpeech.OnInitListener {
     private fun playWakeTone() {
         try {
             ToneGenerator(AudioManager.STREAM_NOTIFICATION, 80).apply {
-                startTone(ToneGenerator.TONE_PROP_BEEP2, 120)
-                handler.postDelayed({ release() }, 180)
+                startTone(ToneGenerator.TONE_PROP_BEEP2, 90)
+                handler.postDelayed({ release() }, 130)
             }
         } catch (_: Exception) {
         }
