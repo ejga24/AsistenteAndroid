@@ -345,6 +345,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         val spotifyQuery = extractSpotifyQuery(command)
         val contactName = extractContactName(command)
         val destination = extractDestination(command)
+        val chatGptRequest = extractChatGptRequest(command)
 
         when {
             containsAny(command, "deja de escuchar", "detente", "pausa asistente", "para de escuchar") -> {
@@ -353,6 +354,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                 respond("De acuerdo. La escucha quedó pausada.", listenAgain = false)
             }
             savedPlace != null -> savePlace(savedPlace.first, savedPlace.second)
+            chatGptRequest != null -> automateChatGpt(chatGptRequest.first, chatGptRequest.second)
             spotifyQuery != null -> playMediaSearch("com.spotify.music", "Spotify", spotifyQuery)
             youtubeQuery != null -> playMediaSearch("com.google.android.youtube", "YouTube", youtubeQuery)
             command.contains("whatsapp") && contactName != null -> requestContactAndOpen(contactName)
@@ -375,6 +377,77 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             )
             else -> respond("Todavía no entendí esa solicitud. Intenta decirla de otra forma.")
         }
+    }
+
+    private fun extractChatGptRequest(command: String): Pair<String, Boolean>? {
+        if (!command.contains("chatgpt") && !command.contains("chat gpt")) return null
+
+        val wantsNewChat = containsAny(
+            command,
+            "nuevo chat", "nueva conversacion", "abre un chat nuevo",
+            "crea un chat", "crear un chat"
+        )
+
+        val markers = listOf(
+            "preguntale a chatgpt ", "pregunta a chatgpt ",
+            "dile a chatgpt ", "escribe en chatgpt ",
+            "escribeme en chatgpt ", "consulta en chatgpt ",
+            "chatgpt preguntale ", "chatgpt pregunta ",
+            "chatgpt escribe ", "chatgpt dile "
+        )
+
+        var text = valueAfterMarker(command, markers)
+
+        if (text == null && wantsNewChat) {
+            text = command
+                .replace("abre chatgpt", "")
+                .replace("abrir chatgpt", "")
+                .replace("abre chat gpt", "")
+                .replace("abrir chat gpt", "")
+                .replace("nuevo chat", "")
+                .replace("nueva conversacion", "")
+                .replace("crea un chat", "")
+                .replace("crear un chat", "")
+                .replace("y preguntale", "")
+                .replace("y pregunta", "")
+                .replace("y escribe", "")
+                .trim()
+                .takeIf { it.isNotBlank() }
+        }
+
+        return text?.let { it to wantsNewChat }
+    }
+
+    private fun automateChatGpt(text: String, newChat: Boolean) {
+        if (!isAccessibilityServiceEnabled()) {
+            respondAndThen(
+                "Para controlar aplicaciones necesito que actives el acceso de Mía una sola vez. Te llevo a la pantalla para habilitarlo."
+            ) {
+                startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+            }
+            return
+        }
+
+        val launchIntent = packageManager.getLaunchIntentForPackage("com.openai.chatgpt")
+        if (launchIntent == null) {
+            respond("ChatGPT no está instalado.")
+            return
+        }
+
+        MiaAccessibilityService.queueChatGptRequest(this, text, newChat)
+        respondAndThen("Listo. Voy a escribirlo en ChatGPT.") {
+            startActivity(launchIntent)
+        }
+    }
+
+    private fun isAccessibilityServiceEnabled(): Boolean {
+        val enabledServices = Settings.Secure.getString(
+            contentResolver,
+            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
+        ) ?: return false
+
+        val component = "${packageName}/${MiaAccessibilityService::class.java.name}"
+        return enabledServices.split(':').any { it.equals(component, ignoreCase = true) }
     }
 
     private fun containsAny(text: String, vararg options: String): Boolean =
