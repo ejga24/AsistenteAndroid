@@ -32,9 +32,16 @@
         android:layout_marginBottom="18dp" />
 
     <Button
+        android:id="@+id/micPermissionButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Dar permiso de micrófono"
+        android:layout_marginBottom="12dp" />
+
+    <Button
         android:id="@+id/aiSettingsButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Configurar inteligencia" />
+        android:text="Activar control de apps" />
 
 </LinearLayout>
