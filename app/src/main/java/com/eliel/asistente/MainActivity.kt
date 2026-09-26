@@ -18,6 +18,7 @@ import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
+import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -73,6 +74,9 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         setContentView(R.layout.activity_main)
 
         statusText = findViewById(R.id.statusText)
+        findViewById<Button>(R.id.aiSettingsButton).setOnClickListener {
+            startActivity(Intent(this, AgentSettingsActivity::class.java))
+        }
         setupSpeechRecognizer()
         textToSpeech = TextToSpeech(this, this)
 
@@ -373,9 +377,9 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             containsAny(command, "abre calculadora", "abrir calculadora", "calculadora") -> openCalculator()
             containsAny(command, "como estas", "como te va") -> respond("Muy bien, gracias. Estoy listo para ayudarte.")
             containsAny(command, "que puedes hacer", "ayuda", "comandos") -> respond(
-                "Puedo abrir aplicaciones, buscar en YouTube, llevarte a un destino con Waze y guardar tu casa o tu trabajo."
+                "Puedo abrir aplicaciones, controlar acciones en pantalla, usar Waze, Spotify, YouTube y trabajar dentro de ChatGPT."
             )
-            else -> respond("Todavía no entendí esa solicitud. Intenta decirla de otra forma.")
+            else -> runAgentPlanner(raw)
         }
     }
 
@@ -448,6 +452,70 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
         val component = "${packageName}/${MiaAccessibilityService::class.java.name}"
         return enabledServices.split(':').any { it.equals(component, ignoreCase = true) }
+    }
+
+    private fun runAgentPlanner(raw: String) {
+        val planner = MiaAgentPlanner(this)
+        if (!planner.isConfigured()) {
+            respond("Aún no tengo configurada mi inteligencia. Abre Configurar inteligencia y agrega tu clave de API.")
+            return
+        }
+
+        statusText.text = "Pensando…"
+        stopListening()
+
+        Thread {
+            val result = planner.plan(raw)
+            runOnUiThread {
+                result.onSuccess { executeAgentDecision(it) }
+                    .onFailure {
+                        respond("No pude procesar esa orden con mi inteligencia en este momento.")
+                    }
+            }
+        }.start()
+    }
+
+    private fun executeAgentDecision(decision: MiaAgentDecision) {
+        val speech = decision.speech.ifBlank { "Listo." }
+
+        when (decision.tool) {
+            "open_app" -> {
+                val target = decision.app.ifBlank { decision.text }
+                val launch = packageManager.getInstalledApplications(PackageManager.GET_META_DATA)
+                    .firstOrNull {
+                        packageManager.getApplicationLabel(it).toString()
+                            .equals(target, ignoreCase = true)
+                    }
+                    ?.let { packageManager.getLaunchIntentForPackage(it.packageName) }
+
+                if (launch != null) respondAndThen(speech) { startActivity(launch) }
+                else respond("No encontré la aplicación $target.")
+            }
+
+            "waze" -> openWazeDestination(resolveDestination(decision.target.ifBlank { decision.text }))
+            "spotify" -> playMediaSearch("com.spotify.music", "Spotify", decision.text.ifBlank { decision.target })
+            "youtube" -> playMediaSearch("com.google.android.youtube", "YouTube", decision.text.ifBlank { decision.target })
+            "chatgpt" -> automateChatGpt(decision.text, decision.newChat)
+
+            "tap_text", "type_text", "back", "home" -> {
+                if (!isAccessibilityServiceEnabled()) {
+                    respondAndThen("Necesito que actives el acceso de Mía para controlar la pantalla.") {
+                        startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+                    }
+                    return
+                }
+
+                MiaAccessibilityService.queueGenericAction(
+                    this,
+                    decision.tool,
+                    decision.target.ifBlank { decision.text }
+                )
+                respond(speech)
+            }
+
+            "answer", "clarify" -> respond(decision.speech.ifBlank { decision.text })
+            else -> respond("No pude decidir cómo ejecutar esa orden.")
+        }
     }
 
     private fun containsAny(text: String, vararg options: String): Boolean =
