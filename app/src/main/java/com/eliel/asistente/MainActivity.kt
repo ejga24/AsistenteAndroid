@@ -42,7 +42,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private var pendingAction: (() -> Unit)? = null
     private var pendingContactName: String? = null
     private var waitingForCommand = false
-    private val wakeWord = "asistente"
+    private val wakeWord = "mia"
 
     private val micPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -75,6 +75,26 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         statusText = findViewById(R.id.statusText)
         setupSpeechRecognizer()
         textToSpeech = TextToSpeech(this, this)
+
+        val serviceIntent = Intent(this, AssistantWakeService::class.java).apply {
+            action = AssistantWakeService.ACTION_START
+        }
+        ContextCompat.startForegroundService(this, serviceIntent)
+
+        intent.getStringExtra(AssistantWakeService.EXTRA_VOICE_COMMAND)?.let { command ->
+            intent.removeExtra(AssistantWakeService.EXTRA_VOICE_COMMAND)
+            handler.postDelayed({ handleCommand(command) }, 500)
+        }
+    }
+
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        if (intent == null) return
+        setIntent(intent)
+        intent.getStringExtra(AssistantWakeService.EXTRA_VOICE_COMMAND)?.let { command ->
+            intent.removeExtra(AssistantWakeService.EXTRA_VOICE_COMMAND)
+            handler.postDelayed({ handleCommand(command) }, 350)
+        }
     }
 
     private fun setupSpeechRecognizer() {
@@ -130,7 +150,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                         ?.trim()
 
                     if (spoken.isNullOrBlank()) {
-                        statusText.text = if (waitingForCommand) "No escuché el comando. Di asistente para intentarlo de nuevo." else "Di “asistente” para activarme."
+                        statusText.text = if (waitingForCommand) "No escuché el comando. Di Mía para intentarlo de nuevo." else "Di “Mía” para activarme."
                         waitingForCommand = false
                         scheduleListening(450)
                     } else {
@@ -168,7 +188,9 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         speechReady = result != TextToSpeech.LANG_MISSING_DATA &&
             result != TextToSpeech.LANG_NOT_SUPPORTED
 
-        textToSpeech.setSpeechRate(1.0f)
+        selectPreferredVoice()
+        textToSpeech.setSpeechRate(1.02f)
+        textToSpeech.setPitch(1.05f)
         textToSpeech.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
             override fun onStart(utteranceId: String?) {
                 isSpeaking = true
@@ -190,15 +212,29 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             }
         })
 
-        statusText.text = "Listo. Di “asistente” para activarme."
+        statusText.text = "Listo. Di “Mía” para activarme."
         ensureMicPermissionAndListen()
     }
 
     override fun onResume() {
         super.onResume()
+        val serviceIntent = Intent(this, AssistantWakeService::class.java).apply {
+            action = AssistantWakeService.ACTION_PAUSE_LISTENING
+        }
+        startService(serviceIntent)
+
         if (assistantActive && !isListening && !isSpeaking && ::statusText.isInitialized) {
             scheduleListening(350)
         }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        stopListening()
+        val serviceIntent = Intent(this, AssistantWakeService::class.java).apply {
+            action = AssistantWakeService.ACTION_RESUME_LISTENING
+        }
+        startService(serviceIntent)
     }
 
     private fun ensureMicPermissionAndListen() {
@@ -254,7 +290,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
         val wakeIndex = normalized.indexOf(wakeWord)
         if (wakeIndex < 0) {
-            statusText.text = "Di “asistente” para activarme."
+            statusText.text = "Di “Mía” para activarme."
             scheduleListening(250)
             return
         }
@@ -266,12 +302,14 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         playWakeTone()
 
         if (afterWake.isNotBlank()) {
-            statusText.text = "Comando: $afterWake"
-            handler.postDelayed({ handleCommand(afterWake) }, 180)
+            waitingForCommand = false
+            statusText.text = "Sí, dime."
+            pendingAction = { handleCommand(afterWake) }
+            speakWakeResponse()
         } else {
             waitingForCommand = true
-            statusText.text = "Te escucho…"
-            handler.postDelayed({ scheduleListening(0) }, 180)
+            statusText.text = "Sí, dime."
+            speakWakeResponse()
         }
     }
 
@@ -283,6 +321,20 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             }
         } catch (_: Exception) {
             // El tono es una confirmación útil, pero no debe bloquear la escucha.
+        }
+    }
+
+    private fun speakWakeResponse() {
+        stopListening()
+        if (speechReady) {
+            textToSpeech.speak(
+                "Sí, dime.",
+                TextToSpeech.QUEUE_FLUSH,
+                null,
+                "wake_${System.currentTimeMillis()}"
+            )
+        } else {
+            scheduleListening(250)
         }
     }
 
@@ -553,6 +605,27 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         .replace("ó", "o")
         .replace("ú", "u")
 
+    private fun selectPreferredVoice() {
+        val voices = textToSpeech.voices ?: return
+        val spanishVoices = voices.filter { it.locale.language == "es" }
+        if (spanishVoices.isEmpty()) return
+
+        val preferred = spanishVoices.maxByOrNull { voice ->
+            var score = voice.quality
+            val name = voice.name.lowercase(Locale.getDefault())
+            if (voice.locale.country == "PA") score += 500
+            if (voice.locale.country == "US") score += 250
+            if (voice.locale.country == "MX") score += 200
+            if (voice.isNetworkConnectionRequired) score += 150
+            if (listOf("female", "fem", "mujer", "esf", "neural", "natural", "wavenet")
+                    .any { name.contains(it) }) score += 400
+            score
+        }
+        if (preferred != null) {
+            textToSpeech.voice = preferred
+        }
+    }
+
     private fun respond(message: String, listenAgain: Boolean = true) {
         stopListening()
         statusText.text = message
@@ -588,8 +661,13 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             waitingForCommand = false
             scheduleListening(900)
         } else {
-            if (!waitingForCommand) statusText.text = "Di “asistente” para activarme."
-            scheduleListening(350)
+            if (waitingForCommand) {
+                statusText.text = "Te escucho…"
+                scheduleListening(180)
+            } else {
+                statusText.text = "Di “Mía” para activarme."
+                scheduleListening(350)
+            }
         }
     }
 
