@@ -10,6 +10,9 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.animation.ObjectAnimator
+import android.animation.PropertyValuesHolder
+import android.graphics.drawable.GradientDrawable
 import android.provider.ContactsContract
 import android.provider.MediaStore
 import android.provider.Settings
@@ -29,6 +32,7 @@ import java.util.Locale
 class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
     private lateinit var statusText: TextView
+    private lateinit var orbView: android.view.View
     private lateinit var textToSpeech: TextToSpeech
     private var speechRecognizer: SpeechRecognizer? = null
     private lateinit var speechIntent: Intent
@@ -75,6 +79,8 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         setContentView(R.layout.activity_main)
 
         statusText = findViewById(R.id.statusText)
+        orbView = findViewById(R.id.orbView)
+        setOrbIdle()
         findViewById<Button>(R.id.aiSettingsButton).setOnClickListener {
             startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
         }
@@ -142,16 +148,19 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                 override fun onReadyForSpeech(params: Bundle?) {
                     isListening = true
                     statusText.text = "Te escucho…"
+                    setOrbListening()
                 }
 
                 override fun onBeginningOfSpeech() {
                     statusText.text = "Escuchando…"
+                    setOrbListening()
                 }
 
                 override fun onRmsChanged(rmsdB: Float) = Unit
                 override fun onBufferReceived(buffer: ByteArray?) = Unit
                 override fun onEndOfSpeech() {
                     statusText.text = "Procesando…"
+                    setOrbProcessing()
                 }
 
                 override fun onError(error: Int) {
@@ -348,6 +357,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         val wakeIndex = normalized.indexOf(wakeWord)
         if (wakeIndex < 0) {
             statusText.text = "Di “Mía” para activarme."
+            setOrbIdle()
             scheduleListening(250)
             return
         }
@@ -357,14 +367,17 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             .trimStart(',', '.', ':', ';', '-', ' ')
 
         playWakeTone()
+        setOrbActivated()
 
         if (afterWake.isNotBlank()) {
             waitingForCommand = false
             statusText.text = "Entendido…"
+            setOrbProcessing()
             handler.postDelayed({ handleCommand(afterWake) }, 120)
         } else {
             waitingForCommand = true
             statusText.text = "Te escucho…"
+            setOrbListening()
             handler.postDelayed({
                 stopListening()
                 scheduleListening(80)
@@ -833,6 +846,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private fun respond(message: String, listenAgain: Boolean = true) {
         stopListening()
         statusText.text = message
+        setOrbProcessing()
         if (!listenAgain) assistantActive = false
 
         if (speechReady) {
@@ -870,8 +884,76 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                 scheduleListening(80)
             } else {
                 statusText.text = "Di “Mía” para activarme."
+                setOrbIdle()
                 scheduleListening(350)
             }
+        }
+    }
+
+    private fun makeOrbDrawable(alpha: Int): GradientDrawable =
+        GradientDrawable().apply {
+            shape = GradientDrawable.OVAL
+            setColor(android.graphics.Color.argb(alpha, 255, 255, 255))
+            setStroke(3, android.graphics.Color.argb(120, 255, 255, 255))
+        }
+
+    private fun setOrbIdle() {
+        if (!::orbView.isInitialized) return
+        orbView.animate().cancel()
+        orbView.background = makeOrbDrawable(70)
+        orbView.scaleX = 0.72f
+        orbView.scaleY = 0.72f
+        orbView.alpha = 0.75f
+    }
+
+    private fun setOrbActivated() {
+        if (!::orbView.isInitialized) return
+        orbView.animate().cancel()
+        orbView.background = makeOrbDrawable(150)
+        orbView.animate()
+            .scaleX(1.22f)
+            .scaleY(1.22f)
+            .alpha(1f)
+            .setDuration(180)
+            .start()
+    }
+
+    private fun setOrbListening() {
+        if (!::orbView.isInitialized) return
+        orbView.animate().cancel()
+        orbView.background = makeOrbDrawable(135)
+        orbView.scaleX = 1.0f
+        orbView.scaleY = 1.0f
+        orbView.alpha = 1f
+
+        val pulse = ObjectAnimator.ofPropertyValuesHolder(
+            orbView,
+            PropertyValuesHolder.ofFloat(android.view.View.SCALE_X, 1.0f, 1.18f),
+            PropertyValuesHolder.ofFloat(android.view.View.SCALE_Y, 1.0f, 1.18f),
+            PropertyValuesHolder.ofFloat(android.view.View.ALPHA, 0.82f, 1.0f)
+        ).apply {
+            duration = 720
+            repeatCount = ObjectAnimator.INFINITE
+            repeatMode = ObjectAnimator.REVERSE
+        }
+        orbView.tag = pulse
+        pulse.start()
+    }
+
+    private fun setOrbProcessing() {
+        if (!::orbView.isInitialized) return
+        (orbView.tag as? ObjectAnimator)?.cancel()
+        orbView.background = makeOrbDrawable(100)
+        orbView.scaleX = 0.95f
+        orbView.scaleY = 0.95f
+        orbView.alpha = 0.9f
+
+        ObjectAnimator.ofFloat(orbView, android.view.View.ROTATION, 0f, 360f).apply {
+            duration = 1200
+            repeatCount = ObjectAnimator.INFINITE
+            interpolator = android.view.animation.LinearInterpolator()
+            orbView.tag = this
+            start()
         }
     }
 
