@@ -17,6 +17,8 @@ class MiaAccessibilityService : AccessibilityService() {
         private const val KEY_TEXT = "text"
         private const val KEY_NEW_CHAT = "new_chat"
         private const val KEY_PENDING = "pending"
+        private const val KEY_GENERIC_ACTION = "generic_action"
+        private const val KEY_GENERIC_VALUE = "generic_value"
 
         fun queueChatGptRequest(context: Context, text: String, newChat: Boolean) {
             context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -31,6 +33,16 @@ class MiaAccessibilityService : AccessibilityService() {
         fun hasPending(context: Context): Boolean =
             context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
                 .getBoolean(KEY_PENDING, false)
+
+        fun queueGenericAction(context: Context, action: String, value: String = "") {
+            context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+                .edit()
+                .putBoolean(KEY_PENDING, true)
+                .putString(KEY_PACKAGE, "*")
+                .putString(KEY_GENERIC_ACTION, action)
+                .putString(KEY_GENERIC_VALUE, value)
+                .apply()
+        }
     }
 
     private val handler = Handler(Looper.getMainLooper())
@@ -53,7 +65,7 @@ class MiaAccessibilityService : AccessibilityService() {
 
         val targetPackage = prefs.getString(KEY_PACKAGE, null) ?: return
         val activePackage = event?.packageName?.toString() ?: return
-        if (activePackage != targetPackage) return
+        if (targetPackage != "*" && activePackage != targetPackage) return
 
         busy = true
         handler.postDelayed({ executePendingRequest() }, 650)
@@ -67,6 +79,10 @@ class MiaAccessibilityService : AccessibilityService() {
         }
 
         val targetPackage = prefs.getString(KEY_PACKAGE, null)
+        if (targetPackage == "*") {
+            executeGenericAction()
+            return
+        }
         if (targetPackage != "com.openai.chatgpt") {
             clearPending()
             busy = false
@@ -129,6 +145,31 @@ class MiaAccessibilityService : AccessibilityService() {
                 }
             }, 450)
         }, if (newChat) 850 else 350)
+    }
+
+    private fun executeGenericAction() {
+        val prefs = getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val action = prefs.getString(KEY_GENERIC_ACTION, "").orEmpty()
+        val value = prefs.getString(KEY_GENERIC_VALUE, "").orEmpty()
+
+        when (action) {
+            "tap_text" -> clickFirstMatching(value)
+            "type_text" -> {
+                val editor = findEditableNode(rootInActiveWindow)
+                if (editor != null) {
+                    val args = Bundle().apply {
+                        putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, value)
+                    }
+                    editor.performAction(AccessibilityNodeInfo.ACTION_FOCUS)
+                    editor.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, args)
+                }
+            }
+            "back" -> performGlobalAction(GLOBAL_ACTION_BACK)
+            "home" -> performGlobalAction(GLOBAL_ACTION_HOME)
+        }
+
+        clearPending()
+        busy = false
     }
 
     private fun findEditableNode(node: AccessibilityNodeInfo?): AccessibilityNodeInfo? {
@@ -222,6 +263,8 @@ class MiaAccessibilityService : AccessibilityService() {
             .remove(KEY_PACKAGE)
             .remove(KEY_TEXT)
             .remove(KEY_NEW_CHAT)
+            .remove(KEY_GENERIC_ACTION)
+            .remove(KEY_GENERIC_VALUE)
             .apply()
     }
 
