@@ -49,6 +49,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         ActivityResultContracts.RequestPermission()
     ) { granted ->
         if (granted) {
+            safeStartWakeService()
             startVoiceRecognition()
         } else {
             assistantActive = false
@@ -80,10 +81,9 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         setupSpeechRecognizer()
         textToSpeech = TextToSpeech(this, this)
 
-        val serviceIntent = Intent(this, AssistantWakeService::class.java).apply {
-            action = AssistantWakeService.ACTION_START
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+            safeStartWakeService()
         }
-        ContextCompat.startForegroundService(this, serviceIntent)
 
         intent.getStringExtra(AssistantWakeService.EXTRA_VOICE_COMMAND)?.let { command ->
             intent.removeExtra(AssistantWakeService.EXTRA_VOICE_COMMAND)
@@ -221,10 +221,9 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
     override fun onResume() {
         super.onResume()
-        val serviceIntent = Intent(this, AssistantWakeService::class.java).apply {
-            action = AssistantWakeService.ACTION_PAUSE_LISTENING
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+            safeSendWakeServiceAction(AssistantWakeService.ACTION_PAUSE_LISTENING)
         }
-        startService(serviceIntent)
 
         if (assistantActive && !isListening && !isSpeaking && ::statusText.isInitialized) {
             scheduleListening(350)
@@ -234,16 +233,40 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     override fun onPause() {
         super.onPause()
         stopListening()
-        val serviceIntent = Intent(this, AssistantWakeService::class.java).apply {
-            action = AssistantWakeService.ACTION_RESUME_LISTENING
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+            safeSendWakeServiceAction(AssistantWakeService.ACTION_RESUME_LISTENING)
         }
-        startService(serviceIntent)
+    }
+
+    private fun safeStartWakeService() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) return
+
+        try {
+            val serviceIntent = Intent(this, AssistantWakeService::class.java).apply {
+                action = AssistantWakeService.ACTION_START
+            }
+            ContextCompat.startForegroundService(this, serviceIntent)
+        } catch (_: Exception) {
+            statusText.text = "Mía está lista. La escucha en segundo plano se activará cuando Android lo permita."
+        }
+    }
+
+    private fun safeSendWakeServiceAction(action: String) {
+        try {
+            val serviceIntent = Intent(this, AssistantWakeService::class.java).apply {
+                this.action = action
+            }
+            startService(serviceIntent)
+        } catch (_: Exception) {
+            // Evita cerrar la app si Android restringe temporalmente el servicio.
+        }
     }
 
     private fun ensureMicPermissionAndListen() {
         if (!assistantActive || isListening || isSpeaking) return
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+            safeStartWakeService()
             startVoiceRecognition()
         } else {
             micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
