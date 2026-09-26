@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Mía</string>
+    <string name="accessibility_description">Permite que Mía escriba, toque botones y ejecute acciones dentro de aplicaciones cuando se lo pidas.</string>
 </resources>
