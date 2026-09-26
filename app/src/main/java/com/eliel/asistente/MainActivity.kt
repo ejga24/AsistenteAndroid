@@ -52,7 +52,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             safeStartWakeService()
             startVoiceRecognition()
         } else {
-            assistantActive = false
+            assistantActive = true
             statusText.text = "Necesito permiso de micrófono para escucharte."
             Toast.makeText(this, "Necesito permiso de micrófono.", Toast.LENGTH_LONG).show()
         }
@@ -76,7 +76,30 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
         statusText = findViewById(R.id.statusText)
         findViewById<Button>(R.id.aiSettingsButton).setOnClickListener {
-            startActivity(Intent(this, AgentSettingsActivity::class.java))
+            startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+        }
+
+        findViewById<Button>(R.id.micPermissionButton).setOnClickListener {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                safeStartWakeService()
+                startVoiceRecognition()
+            } else if (shouldShowRequestPermissionRationale(Manifest.permission.RECORD_AUDIO)) {
+                micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+            } else {
+                micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                handler.postDelayed({
+                    if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED &&
+                        !shouldShowRequestPermissionRationale(Manifest.permission.RECORD_AUDIO)
+                    ) {
+                        startActivity(
+                            Intent(
+                                Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                Uri.parse("package:$packageName")
+                            )
+                        )
+                    }
+                }, 1200)
+            }
         }
         setupSpeechRecognizer()
         textToSpeech = TextToSpeech(this, this)
@@ -221,6 +244,14 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
     override fun onResume() {
         super.onResume()
+
+        val micButton = findViewById<Button>(R.id.micPermissionButton)
+        val accessButton = findViewById<Button>(R.id.aiSettingsButton)
+        micButton.visibility =
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED)
+                android.view.View.GONE else android.view.View.VISIBLE
+        accessButton.text =
+            if (isAccessibilityServiceEnabled()) "Control de apps activado" else "Activar control de apps"
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
             safeSendWakeServiceAction(AssistantWakeService.ACTION_PAUSE_LISTENING)
         }
@@ -401,7 +432,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             containsAny(command, "que puedes hacer", "ayuda", "comandos") -> respond(
                 "Puedo abrir aplicaciones, controlar acciones en pantalla, usar Waze, Spotify, YouTube y trabajar dentro de ChatGPT."
             )
-            else -> runAgentPlanner(raw)
+            else -> delegateToChatGpt(raw)
         }
     }
 
@@ -474,6 +505,28 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
         val component = "${packageName}/${MiaAccessibilityService::class.java.name}"
         return enabledServices.split(':').any { it.equals(component, ignoreCase = true) }
+    }
+
+    private fun delegateToChatGpt(raw: String) {
+        if (!isAccessibilityServiceEnabled()) {
+            respondAndThen(
+                "Para usar ChatGPT como mi inteligencia necesito que actives el acceso de Mía una sola vez."
+            ) {
+                startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+            }
+            return
+        }
+
+        val launchIntent = packageManager.getLaunchIntentForPackage("com.openai.chatgpt")
+        if (launchIntent == null) {
+            respond("ChatGPT no está instalado.")
+            return
+        }
+
+        MiaAccessibilityService.queueChatGptRequest(this, raw, true)
+        respondAndThen("Voy a consultarlo en ChatGPT.") {
+            startActivity(launchIntent)
+        }
     }
 
     private fun runAgentPlanner(raw: String) {
