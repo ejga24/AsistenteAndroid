@@ -360,13 +360,15 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
         if (afterWake.isNotBlank()) {
             waitingForCommand = false
-            statusText.text = "Sí, dime."
-            pendingAction = { handleCommand(afterWake) }
-            speakWakeResponse()
+            statusText.text = "Entendido…"
+            handler.postDelayed({ handleCommand(afterWake) }, 120)
         } else {
             waitingForCommand = true
-            statusText.text = "Sí, dime."
-            speakWakeResponse()
+            statusText.text = "Te escucho…"
+            handler.postDelayed({
+                stopListening()
+                scheduleListening(80)
+            }, 140)
         }
     }
 
@@ -378,20 +380,6 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             }
         } catch (_: Exception) {
             // El tono es una confirmación útil, pero no debe bloquear la escucha.
-        }
-    }
-
-    private fun speakWakeResponse() {
-        stopListening()
-        if (speechReady) {
-            textToSpeech.speak(
-                "Sí, dime.",
-                TextToSpeech.QUEUE_FLUSH,
-                null,
-                "wake_${System.currentTimeMillis()}"
-            )
-        } else {
-            scheduleListening(250)
         }
     }
 
@@ -879,7 +867,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         } else {
             if (waitingForCommand) {
                 statusText.text = "Te escucho…"
-                scheduleListening(180)
+                scheduleListening(80)
             } else {
                 statusText.text = "Di “Mía” para activarme."
                 scheduleListening(350)
