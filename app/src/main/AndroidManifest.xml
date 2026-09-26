@@ -13,6 +13,7 @@
         <package android:name="com.google.android.youtube" />
         <package android:name="com.disney.disneyplus" />
         <package android:name="com.spotify.music" />
+        <package android:name="com.openai.chatgpt" />
         <package android:name="com.google.android.apps.maps" />
         <package android:name="com.google.android.gm" />
         <package android:name="com.android.chrome" />
@@ -32,6 +33,18 @@
             android:name=".AssistantWakeService"
             android:exported="false"
             android:foregroundServiceType="microphone" />
+
+        <service
+            android:name=".MiaAccessibilityService"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/mia_accessibility_service" />
+        </service>
 
         <activity
             android:name=".MainActivity"
