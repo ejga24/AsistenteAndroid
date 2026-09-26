@@ -2,12 +2,16 @@ package com.eliel.asistente
 
 import android.Manifest
 import android.content.Intent
+import android.app.SearchManager
 import android.content.pm.PackageManager
+import android.media.AudioManager
+import android.media.ToneGenerator
 import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.provider.ContactsContract
+import android.provider.MediaStore
 import android.provider.Settings
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
@@ -37,6 +41,8 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private var isSpeaking = false
     private var pendingAction: (() -> Unit)? = null
     private var pendingContactName: String? = null
+    private var waitingForCommand = false
+    private val wakeWord = "asistente"
 
     private val micPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -124,11 +130,11 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                         ?.trim()
 
                     if (spoken.isNullOrBlank()) {
-                        statusText.text = "No escuché nada. Sigo atento…"
+                        statusText.text = if (waitingForCommand) "No escuché el comando. Di asistente para intentarlo de nuevo." else "Di “asistente” para activarme."
+                        waitingForCommand = false
                         scheduleListening(450)
                     } else {
-                        statusText.text = "Escuché: $spoken"
-                        handleCommand(spoken)
+                        processRecognizedSpeech(spoken)
                     }
                 }
 
@@ -137,7 +143,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                         ?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                         ?.firstOrNull()
                         ?.trim()
-                    if (!partial.isNullOrBlank()) {
+                    if (!partial.isNullOrBlank() && waitingForCommand) {
                         statusText.text = "Escuchando: $partial"
                     }
                 }
@@ -184,7 +190,8 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             }
         })
 
-        respond("Hola, ¿cómo estás? Dime, ¿en qué te puedo ayudar?")
+        statusText.text = "Listo. Di “asistente” para activarme."
+        ensureMicPermissionAndListen()
     }
 
     override fun onResume() {
@@ -235,10 +242,55 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         }
     }
 
+    private fun processRecognizedSpeech(raw: String) {
+        val normalized = normalize(raw)
+
+        if (waitingForCommand) {
+            waitingForCommand = false
+            statusText.text = "Escuché: $raw"
+            handleCommand(raw)
+            return
+        }
+
+        val wakeIndex = normalized.indexOf(wakeWord)
+        if (wakeIndex < 0) {
+            statusText.text = "Di “asistente” para activarme."
+            scheduleListening(250)
+            return
+        }
+
+        val afterWake = normalized.substring(wakeIndex + wakeWord.length)
+            .trim()
+            .trimStart(',', '.', ':', ';', '-', ' ')
+
+        playWakeTone()
+
+        if (afterWake.isNotBlank()) {
+            statusText.text = "Comando: $afterWake"
+            handler.postDelayed({ handleCommand(afterWake) }, 180)
+        } else {
+            waitingForCommand = true
+            statusText.text = "Te escucho…"
+            handler.postDelayed({ scheduleListening(0) }, 180)
+        }
+    }
+
+    private fun playWakeTone() {
+        try {
+            ToneGenerator(AudioManager.STREAM_NOTIFICATION, 85).apply {
+                startTone(ToneGenerator.TONE_PROP_BEEP, 140)
+                handler.postDelayed({ release() }, 220)
+            }
+        } catch (_: Exception) {
+            // El tono es una confirmación útil, pero no debe bloquear la escucha.
+        }
+    }
+
     private fun handleCommand(raw: String) {
         val command = normalize(raw)
         val savedPlace = extractSavedPlace(command)
         val youtubeQuery = extractYouTubeQuery(command)
+        val spotifyQuery = extractSpotifyQuery(command)
         val contactName = extractContactName(command)
         val destination = extractDestination(command)
 
@@ -249,7 +301,8 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                 respond("De acuerdo. La escucha quedó pausada.", listenAgain = false)
             }
             savedPlace != null -> savePlace(savedPlace.first, savedPlace.second)
-            youtubeQuery != null -> searchYouTube(youtubeQuery)
+            spotifyQuery != null -> playMediaSearch("com.spotify.music", "Spotify", spotifyQuery)
+            youtubeQuery != null -> playMediaSearch("com.google.android.youtube", "YouTube", youtubeQuery)
             command.contains("whatsapp") && contactName != null -> requestContactAndOpen(contactName)
             containsAny(command, "abre whatsapp", "abrir whatsapp", "whatsapp") -> openPackage("com.whatsapp", "WhatsApp")
             destination != null -> openWazeDestination(resolveDestination(destination))
@@ -265,7 +318,6 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             }
             containsAny(command, "abre calculadora", "abrir calculadora", "calculadora") -> openCalculator()
             containsAny(command, "como estas", "como te va") -> respond("Muy bien, gracias. Estoy listo para ayudarte.")
-            command == "asistente" || command.endsWith(" asistente") -> respond("Sí, dime. ¿En qué te ayudo?")
             containsAny(command, "que puedes hacer", "ayuda", "comandos") -> respond(
                 "Puedo abrir aplicaciones, buscar en YouTube, llevarte a un destino con Waze y guardar tu casa o tu trabajo."
             )
@@ -297,13 +349,41 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         )
     )
 
-    private fun extractYouTubeQuery(command: String): String? = valueAfterMarker(
-        command,
-        listOf(
-            "buscame en youtube ", "busca en youtube ", "buscar en youtube ",
-            "pon en youtube ", "youtube busca ", "youtube buscame "
+    private fun extractYouTubeQuery(command: String): String? {
+        val direct = valueAfterMarker(
+            command,
+            listOf(
+                "reproduce en youtube ", "reproducir en youtube ", "pon en youtube ",
+                "buscame en youtube ", "busca en youtube ", "buscar en youtube ",
+                "youtube reproduce ", "youtube pon ", "youtube busca ", "youtube buscame "
+            )
         )
-    )
+        if (direct != null) return direct
+
+        return valueBeforeSuffix(
+            command,
+            listOf(" en youtube"),
+            listOf("reproduce ", "reproducir ", "pon ", "quiero escuchar ", "escuchar ")
+        )
+    }
+
+    private fun extractSpotifyQuery(command: String): String? {
+        val direct = valueAfterMarker(
+            command,
+            listOf(
+                "reproduce en spotify ", "reproducir en spotify ", "pon en spotify ",
+                "buscame en spotify ", "busca en spotify ", "buscar en spotify ",
+                "spotify reproduce ", "spotify pon ", "spotify busca ", "spotify buscame "
+            )
+        )
+        if (direct != null) return direct
+
+        return valueBeforeSuffix(
+            command,
+            listOf(" en spotify"),
+            listOf("reproduce ", "reproducir ", "pon ", "quiero escuchar ", "escuchar ")
+        )
+    }
 
     private fun extractSavedPlace(command: String): Pair<String, String>? {
         val commands = listOf(
@@ -324,6 +404,19 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             command.substringAfter(marker, "").trim().takeIf { it.isNotBlank() }
         }
 
+    private fun valueBeforeSuffix(command: String, suffixes: List<String>, prefixes: List<String>): String? {
+        for (suffix in suffixes) {
+            if (!command.endsWith(suffix)) continue
+            val base = command.removeSuffix(suffix).trim()
+            for (prefix in prefixes) {
+                if (base.startsWith(prefix)) {
+                    return base.removePrefix(prefix).trim().takeIf { it.isNotBlank() }
+                }
+            }
+        }
+        return null
+    }
+
     private fun savePlace(key: String, address: String) {
         preferences.edit().putString(key, address).apply()
         val name = if (key == "work") "trabajo" else "casa"
@@ -341,14 +434,42 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         }
     }
 
-    private fun searchYouTube(query: String) {
-        if (packageManager.getLaunchIntentForPackage("com.google.android.youtube") == null) {
-            respond("YouTube no está instalado.")
+    private fun playMediaSearch(packageName: String, displayName: String, query: String) {
+        if (packageManager.getLaunchIntentForPackage(packageName) == null) {
+            respond("$displayName no está instalado.")
             return
         }
-        val uri = Uri.parse("https://www.youtube.com/results?search_query=${Uri.encode(query)}")
-        val intent = Intent(Intent.ACTION_VIEW, uri).apply { setPackage("com.google.android.youtube") }
-        respondAndThen("Buscando $query en YouTube") { startActivity(intent) }
+
+        val playIntent = Intent(MediaStore.INTENT_ACTION_MEDIA_PLAY_FROM_SEARCH).apply {
+            setPackage(packageName)
+            putExtra(SearchManager.QUERY, query)
+            putExtra(MediaStore.EXTRA_MEDIA_FOCUS, "vnd.android.cursor.item/*")
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+
+        val canPlayDirectly = playIntent.resolveActivity(packageManager) != null
+        if (canPlayDirectly) {
+            respondAndThen("Reproduciendo $query en $displayName") {
+                startActivity(playIntent)
+            }
+            return
+        }
+
+        val fallbackIntent = when (packageName) {
+            "com.spotify.music" -> Intent(
+                Intent.ACTION_VIEW,
+                Uri.parse("spotify:search:${Uri.encode(query)}")
+            ).apply { setPackage(packageName) }
+
+            else -> Intent(
+                Intent.ACTION_VIEW,
+                Uri.parse("https://www.youtube.com/results?search_query=${Uri.encode(query)}")
+            ).apply { setPackage(packageName) }
+        }
+
+        respondAndThen("Buscando $query en $displayName") {
+            startActivity(fallbackIntent)
+        }
     }
 
     private fun requestContactAndOpen(contactName: String) {
@@ -464,8 +585,10 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
         if (action != null) {
             action()
+            waitingForCommand = false
             scheduleListening(900)
         } else {
+            if (!waitingForCommand) statusText.text = "Di “asistente” para activarme."
             scheduleListening(350)
         }
     }
