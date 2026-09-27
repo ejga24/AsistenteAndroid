@@ -144,12 +144,28 @@ class UberFilterAccessibilityService : AccessibilityService() {
             val subtreeText = collectSubtreeText(node)
             val normalized = normalize(subtreeText)
 
-            val hasAccept = normalized.contains("aceptar")
+            val hasAction =
+                normalized.contains("aceptar") ||
+                normalized.contains("me interesa")
+
             val hasEstimatedRate =
                 Regex("""(?:usd|b\s*/?\.?|\$)?\s*\d{1,2}(?:[.,]\d{1,3})?\s*[/／]\s*(?:km|kilometros?|kilómetros?)\s*\(?\s*estimado\s*\)?""",
                     RegexOption.IGNORE_CASE).containsMatchIn(normalized)
 
-            val looksLikeOfferCard = hasAccept && hasEstimatedRate
+            // Validar que sea la tarjeta ACTIVA de oferta, no una notificación,
+            // historial o texto de una carrera anterior.
+            val hasRideType =
+                normalized.contains("uberx") ||
+                normalized.contains("uber x") ||
+                normalized.contains("comfort") ||
+                normalized.contains("moto")
+
+            val hasTripDetails =
+                normalized.contains("viaje:") ||
+                Regex("""\ba\s+\d{1,2}\s+min\b""").containsMatchIn(normalized)
+
+            val looksLikeOfferCard =
+                hasAction && hasEstimatedRate && hasRideType && hasTripDetails
 
             if (looksLikeOfferCard) {
                 val size = countNodes(node)

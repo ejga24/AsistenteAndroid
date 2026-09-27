@@ -11,8 +11,8 @@ android {
         applicationId = "com.eliel.uberfiltro.stable"
         minSdk = 26
         targetSdk = 35
-        versionCode = 150
-        versionName = "1.5"
+        versionCode = 160
+        versionName = "1.6"
     }
 
     compileOptions {
