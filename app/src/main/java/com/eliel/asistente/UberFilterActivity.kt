@@ -40,6 +40,14 @@ class UberFilterActivity : AppCompatActivity() {
             }
 
         box.addView(label("Filtro Uber", 30f, true))
+
+        val versionName = try {
+            packageManager.getPackageInfo(packageName, 0).versionName ?: "desconocida"
+        } catch (_: Exception) {
+            "desconocida"
+        }
+        box.addView(label("Versión instalada: " + versionName, 15f, true))
+
         box.addView(label("Analiza las solicitudes visibles de Uber Driver y calcula cuánto pagan por kilómetro.", 17f))
         box.addView(label("Mínimo por kilómetro (B/.)", 17f, true))
 
