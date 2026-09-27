@@ -8,7 +8,7 @@
         android:theme="@style/Theme.Asistente">
 
         <service
-            android:name=".MiaAccessibilityService"
+            android:name=".UberFilterAccessibilityService"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
             android:exported="true">
             <intent-filter>
@@ -20,7 +20,7 @@
         </service>
 
         <activity
-            android:name=".MainActivity"
+            android:name=".UberFilterActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
