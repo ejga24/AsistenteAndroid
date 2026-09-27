@@ -8,11 +8,11 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.eliel.asistente"
+        applicationId = "com.eliel.uberfiltro"
         minSdk = 26
         targetSdk = 35
-        versionCode = 15
-        versionName = "2.4"
+        versionCode = 1
+        versionName = "1.0"
     }
 
     compileOptions {
