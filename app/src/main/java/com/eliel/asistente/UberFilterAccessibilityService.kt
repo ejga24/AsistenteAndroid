@@ -15,6 +15,7 @@ import android.widget.TextView
 import java.text.Normalizer
 import java.util.Calendar
 import java.util.Locale
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
 class UberFilterAccessibilityService : AccessibilityService() {
@@ -27,8 +28,14 @@ class UberFilterAccessibilityService : AccessibilityService() {
     private var currentRate: Double? = null
     private var offerStartedAt = 0L
 
+    // Cache muy corto de texto emitido por Uber. Se usa porque Uber a veces
+    // dibuja el popup visualmente pero NO expone todo el texto en rootInActiveWindow.
+    private val recentUberText = ArrayDeque<String>()
+    private var lastUberEventAt = 0L
+
     companion object {
         private const val MAX_DECISION_VISIBLE_MS = 15_000L
+        private const val EVENT_CACHE_MS = 2_500L
     }
 
     override fun onServiceConnected() {
@@ -44,18 +51,55 @@ class UberFilterAccessibilityService : AccessibilityService() {
         val sundayOnly = prefs.getBoolean(UberFilterActivity.KEY_SUNDAY_ONLY, true)
         if (sundayOnly && Calendar.getInstance().get(Calendar.DAY_OF_WEEK) != Calendar.SUNDAY) return
 
-        val eventPackage = event?.packageName?.toString().orEmpty()
-        val eventLooksUber = isUberPackage(eventPackage)
+        val pkg = event?.packageName?.toString().orEmpty()
+        val eventLooksUber = isUberPackage(pkg)
         val uberWindowPresent = findUberRoots().isNotEmpty()
 
         if (!eventLooksUber && !uberWindowPresent) return
 
+        if (eventLooksUber && event != null) rememberUberEvent(event)
+
+        bubbleManager?.setState(BubbleOverlayManager.State.READING)
+
         handler.removeCallbacksAndMessages("scan")
-        handler.postAtTime({ scanCurrentOffer() }, "scan", SystemClock.uptimeMillis() + 80)
+        handler.postAtTime({ scanCurrentOffer() }, "scan", SystemClock.uptimeMillis() + 60)
     }
 
     private fun isUberPackage(pkg: String): Boolean =
         pkg.equals("com.ubercab.driver", true) || pkg.contains("uber", true)
+
+    private fun rememberUberEvent(event: AccessibilityEvent) {
+        val pieces = mutableListOf<String>()
+
+        event.text?.forEach { cs ->
+            cs?.toString()?.trim()?.takeIf { it.isNotBlank() }?.let { pieces += it }
+        }
+
+        event.contentDescription?.toString()?.trim()
+            ?.takeIf { it.isNotBlank() }
+            ?.let { pieces += it }
+
+        event.beforeText?.toString()?.trim()
+            ?.takeIf { it.isNotBlank() }
+            ?.let { pieces += it }
+
+        event.source?.let { source ->
+            val sourceText = mutableListOf<String>()
+            collect(source, sourceText, requireVisible = false)
+            pieces += sourceText
+        }
+
+        if (pieces.isNotEmpty()) {
+            lastUberEventAt = System.currentTimeMillis()
+            for (piece in pieces) {
+                val clean = piece.trim()
+                if (clean.isBlank()) continue
+                recentUberText.remove(clean)
+                recentUberText.addLast(clean)
+                while (recentUberText.size > 100) recentUberText.removeFirst()
+            }
+        }
+    }
 
     private fun findUberRoots(): List<AccessibilityNodeInfo> {
         val roots = mutableListOf<AccessibilityNodeInfo>()
@@ -75,103 +119,94 @@ class UberFilterAccessibilityService : AccessibilityService() {
     }
 
     private fun scanCurrentOffer() {
+        val now = System.currentTimeMillis()
         val roots = findUberRoots()
-        if (roots.isEmpty()) {
-            clearDecision()
-            return
+
+        val candidates = mutableListOf<String>()
+
+        // 1) Leer TODO el árbol de Uber, incluso nodos que Android marque como no visibles
+        // pero que pertenecen al popup actual.
+        for (root in roots) {
+            collect(root, candidates, requireVisible = false)
         }
 
-        val detected = roots.asSequence()
-            .mapNotNull { extractActiveOfferRate(it) }
-            .firstOrNull()
-
-        if (detected == null) {
-            clearDecision()
-            return
+        // 2) Agregar eventos recientes de Uber. Caducan rápido para no mezclar carreras viejas.
+        if (now - lastUberEventAt <= EVENT_CACHE_MS) {
+            candidates += recentUberText
+        } else {
+            recentUberText.clear()
         }
 
-        bubbleManager?.setState(BubbleOverlayManager.State.READING)
+        val rate = extractLiveEstimatedRate(candidates)
+
+        if (rate == null) {
+            // Si no hay tarifa estimada actual, no emitir decisión.
+            if (decisionLocked) clearDecision()
+            else bubbleManager?.setState(BubbleOverlayManager.State.READING)
+            return
+        }
 
         val threshold = getSharedPreferences(UberFilterActivity.PREFS, Context.MODE_PRIVATE)
             .getFloat(UberFilterActivity.KEY_THRESHOLD, 0.50f)
             .toDouble()
 
-        val now = System.currentTimeMillis()
-        val sameOffer = decisionLocked && currentRate != null &&
-            kotlin.math.abs(currentRate!! - detected) < 0.0001
+        val sameOffer = decisionLocked && currentRate != null && abs(currentRate!! - rate) < 0.0001
 
         if (!sameOffer) {
             decisionLocked = true
-            currentRate = detected
+            currentRate = rate
             offerStartedAt = now
 
-            val good = detected >= threshold
+            val good = rate >= threshold
             bubbleManager?.setState(
                 if (good) BubbleOverlayManager.State.ACCEPT else BubbleOverlayManager.State.REJECT,
-                detected
+                rate
             )
-            showDecision(detected, good)
-        } else {
-            if (now - offerStartedAt >= MAX_DECISION_VISIBLE_MS) {
-                hideOverlay()
-                bubbleManager?.setState(BubbleOverlayManager.State.IDLE)
-            }
+            showDecision(rate, good)
+        } else if (now - offerStartedAt >= MAX_DECISION_VISIBLE_MS) {
+            hideOverlay()
+            bubbleManager?.setState(BubbleOverlayManager.State.IDLE)
         }
 
         scheduleOfferWatch()
     }
 
-    private fun extractActiveOfferRate(root: AccessibilityNodeInfo): Double? {
-        val lines = mutableListOf<String>()
-        collect(root, lines)
+    private fun extractLiveEstimatedRate(parts: List<String>): Double? {
+        if (parts.isEmpty()) return null
 
-        if (lines.isEmpty()) return null
+        val normalizedParts = parts
+            .map { normalize(it) }
+            .filter { it.isNotBlank() }
 
-        val rootText = normalize(lines.joinToString(" "))
+        // Requerimos contexto de oferta actual. Esto evita historial, ganancias,
+        // mensajes viejos y otros montos de Uber.
+        val combined = normalize(normalizedParts.joinToString(" "))
+        val hasActiveOfferContext =
+            combined.contains("viaje:") ||
+            combined.contains("viaje ") ||
+            combined.contains("aceptar") ||
+            combined.contains("me interesa") ||
+            Regex("""\ba\s+\d{1,2}\s+min\b""").containsMatchIn(combined)
 
-        // Confirmar que estamos viendo una oferta activa y no historial/notificaciones.
-        val hasOfferContext =
-            rootText.contains("viaje:") ||
-            rootText.contains("viaje ") ||
-            rootText.contains("aceptar") ||
-            rootText.contains("me interesa") ||
-            Regex("""\ba\s+\d{1,2}\s+min\b""").containsMatchIn(rootText)
+        if (!hasActiveOfferContext) return null
 
-        if (!hasOfferContext) return null
-
-        // La ÚNICA cifra usada para decidir es la línea de Uber "USDx.xx/km (estimado)".
-        val strictRateRegex = Regex(
+        // Regla principal: SOLO el valor de la línea "USD0.74/km (estimado)".
+        val strict = Regex(
             """(?:usd|b\s*/?\.?|\$)?\s*(\d{1,2}(?:[.,]\d{1,3})?)\s*[/／]\s*(?:km|kilometros?|kilómetros?)\s*\(?\s*estimado\s*\)?""",
             RegexOption.IGNORE_CASE
         )
 
-        // Primero línea por línea: evita confundir montos de otras zonas.
-        for (line in lines) {
-            val normalizedLine = normalize(line)
-            val match = strictRateRegex.find(normalizedLine) ?: continue
-            val value = match.groupValues[1].replace(',', '.').toDoubleOrNull() ?: continue
+        // Primero buscar por fragmento individual.
+        for (part in normalizedParts) {
+            val m = strict.find(part) ?: continue
+            val value = m.groupValues[1].replace(',', '.').toDoubleOrNull() ?: continue
             if (value in 0.05..20.0) return value
         }
 
-        // Algunas versiones de Uber dividen "USD0.75/km" y "(estimado)" en nodos separados.
-        // En ese caso se permite combinar SOLO el árbol visible actual de Uber.
-        val combinedMatch = strictRateRegex.find(rootText)
-        if (combinedMatch != null) {
-            val value = combinedMatch.groupValues[1].replace(',', '.').toDoubleOrNull()
+        // Luego buscar sobre el texto combinado por si Uber dividió la línea en nodos.
+        strict.find(combined)?.let { m ->
+            val value = m.groupValues[1].replace(',', '.').toDoubleOrNull()
             if (value != null && value in 0.05..20.0) return value
-        }
-
-        // Último fallback para árboles que omiten la palabra "estimado" pero mantienen /km.
-        // Solo se usa si el popup tiene contexto de oferta activa.
-        val rateOnlyRegex = Regex(
-            """(?:usd|b\s*/?\.?|\$)?\s*(\d{1,2}(?:[.,]\d{1,3})?)\s*[/／]\s*(?:km|kilometros?|kilómetros?)""",
-            RegexOption.IGNORE_CASE
-        )
-        for (line in lines) {
-            val normalizedLine = normalize(line)
-            val match = rateOnlyRegex.find(normalizedLine) ?: continue
-            val value = match.groupValues[1].replace(',', '.').toDoubleOrNull() ?: continue
-            if (value in 0.05..20.0) return value
         }
 
         return null
@@ -179,11 +214,16 @@ class UberFilterAccessibilityService : AccessibilityService() {
 
     private fun scheduleOfferWatch() {
         handler.removeCallbacksAndMessages("watch")
-        handler.postAtTime({ scanCurrentOffer() }, "watch", SystemClock.uptimeMillis() + 350)
+        handler.postAtTime({ scanCurrentOffer() }, "watch", SystemClock.uptimeMillis() + 300)
     }
 
-    private fun collect(node: AccessibilityNodeInfo?, out: MutableList<String>) {
-        if (node == null || !node.isVisibleToUser) return
+    private fun collect(
+        node: AccessibilityNodeInfo?,
+        out: MutableList<String>,
+        requireVisible: Boolean
+    ) {
+        if (node == null) return
+        if (requireVisible && !node.isVisibleToUser) return
 
         node.text?.toString()?.trim()
             ?.takeIf { it.isNotBlank() }
@@ -197,7 +237,9 @@ class UberFilterAccessibilityService : AccessibilityService() {
             ?.takeIf { it.isNotBlank() }
             ?.let { out += it }
 
-        for (i in 0 until node.childCount) collect(node.getChild(i), out)
+        for (i in 0 until node.childCount) {
+            collect(node.getChild(i), out, requireVisible)
+        }
     }
 
     private fun showDecision(rate: Double, good: Boolean) {
@@ -277,6 +319,7 @@ class UberFilterAccessibilityService : AccessibilityService() {
     }
 
     override fun onDestroy() {
+        recentUberText.clear()
         clearDecision()
         bubbleManager?.hide()
         bubbleManager = null
