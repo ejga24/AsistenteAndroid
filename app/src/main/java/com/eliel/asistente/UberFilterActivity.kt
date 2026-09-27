@@ -80,6 +80,11 @@ class UberFilterActivity : AppCompatActivity() {
             box.addView(debugPreview)
         }
 
+        val ocrCaptured = debugPrefs.getString("last_ocr_text", "").orEmpty()
+        if (ocrCaptured.isNotBlank()) {
+            box.addView(label("Última lectura visual: " + ocrCaptured.take(700), 12f))
+        }
+
         box.addView(label("La app muestra ACEPTAR o RECHAZAR como recomendación visual. Tú haces el toque final en Uber.", 14f))
 
         setContentView(root)
