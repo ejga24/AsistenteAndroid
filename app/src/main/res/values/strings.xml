@@ -1,4 +1,4 @@
 <resources>
-    <string name="app_name">Mía</string>
-    <string name="accessibility_description">Permite que Mía escriba, toque botones y ejecute acciones dentro de aplicaciones cuando se lo pidas.</string>
+    <string name="app_name">Filtro Uber</string>
+    <string name="accessibility_description">Analiza la información visible de las solicitudes de Uber Driver y muestra si cumplen tu mínimo por kilómetro.</string>
 </resources>
