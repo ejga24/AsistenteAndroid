@@ -25,9 +25,18 @@ class UberFilterAccessibilityService : AccessibilityService() {
     private var decisionLocked = false
     private var offerStartedAt = 0L
     private var overlayHiddenByTimeout = false
+    private var bubbleManager: BubbleOverlayManager? = null
 
     companion object {
         private const val MAX_OFFER_VISIBLE_MS = 15_000L
+    }
+
+    override fun onServiceConnected() {
+        super.onServiceConnected()
+        bubbleManager = BubbleOverlayManager(this).also {
+            it.show()
+            it.setState(BubbleOverlayManager.State.IDLE)
+        }
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
@@ -40,6 +49,10 @@ class UberFilterAccessibilityService : AccessibilityService() {
         val uberWindowPresent = findUberRoots().isNotEmpty()
 
         if (!eventLooksUber && !uberWindowPresent) return
+
+        if (!decisionLocked) {
+            bubbleManager?.setState(BubbleOverlayManager.State.READING)
+        }
 
         handler.removeCallbacksAndMessages("scan")
         handler.postAtTime({ scanCurrentOffer() }, "scan", SystemClock.uptimeMillis() + 100)
@@ -94,6 +107,10 @@ class UberFilterAccessibilityService : AccessibilityService() {
             decisionLocked = true
             offerStartedAt = now
             overlayHiddenByTimeout = false
+            bubbleManager?.setState(
+                if (rate >= threshold) BubbleOverlayManager.State.ACCEPT else BubbleOverlayManager.State.REJECT,
+                rate
+            )
             showDecision(rate, rate >= threshold)
             scheduleOfferWatch()
             return
@@ -299,6 +316,7 @@ class UberFilterAccessibilityService : AccessibilityService() {
         decisionLocked = false
         offerStartedAt = 0L
         overlayHiddenByTimeout = false
+        bubbleManager?.setState(BubbleOverlayManager.State.IDLE)
         handler.removeCallbacksAndMessages("watch")
         hideOverlay()
     }
@@ -323,10 +341,13 @@ class UberFilterAccessibilityService : AccessibilityService() {
 
     override fun onInterrupt() {
         resetOffer()
+        bubbleManager?.setState(BubbleOverlayManager.State.IDLE)
     }
 
     override fun onDestroy() {
         resetOffer()
+        bubbleManager?.hide()
+        bubbleManager = null
         handler.removeCallbacksAndMessages(null)
         super.onDestroy()
     }
