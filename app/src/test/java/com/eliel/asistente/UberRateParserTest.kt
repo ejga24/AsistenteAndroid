@@ -18,6 +18,8 @@ class UberRateParserTest {
     @Test fun screenshot_055() = assertEquals(0.55, UberRateParser.extract(offer("USD0.55/km (estimado)"))!!, 0.0001)
     @Test fun screenshot_074() = assertEquals(0.74, UberRateParser.extract(offer("USD0.74/km (estimado)"))!!, 0.0001)
     @Test fun screenshot_075() = assertEquals(0.75, UberRateParser.extract(offer("USD0.75/km (estimado)"))!!, 0.0001)
+    @Test fun screenshot_052() = assertEquals(0.52, UberRateParser.extract(offer("USD0.52/km (estimado)"))!!, 0.0001)
+    @Test fun screenshot_054() = assertEquals(0.54, UberRateParser.extract(offer("USD0.54/km (estimado)"))!!, 0.0001)
     @Test fun screenshot_084() = assertEquals(0.84, UberRateParser.extract(offer("USD0.84/km (estimado)"))!!, 0.0001)
     @Test fun screenshot_108_priority() = assertEquals(
         1.08,

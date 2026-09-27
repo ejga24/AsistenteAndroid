@@ -30,6 +30,7 @@ class UberFilterAccessibilityService : AccessibilityService() {
 
     private val recentUberText = ArrayDeque<String>()
     private var lastUberEventAt = 0L
+    private var scanUntilAt = 0L
 
     companion object {
         private const val MAX_DECISION_VISIBLE_MS = 15_000L
@@ -57,6 +58,9 @@ class UberFilterAccessibilityService : AccessibilityService() {
 
         if (eventLooksUber && event != null) rememberUberEvent(event)
 
+        // La tarjeta puede terminar de renderizarse varios cientos de ms después
+        // del primer evento. Mantener una ventana de lectura activa.
+        scanUntilAt = System.currentTimeMillis() + 15_000L
         bubbleManager?.setState(BubbleOverlayManager.State.READING)
 
         handler.removeCallbacksAndMessages("scan")
@@ -132,11 +136,24 @@ class UberFilterAccessibilityService : AccessibilityService() {
             recentUberText.clear()
         }
 
+        val debugText = candidates.distinct().joinToString(" | ").take(5000)
+        getSharedPreferences("uber_filter_debug", Context.MODE_PRIVATE)
+            .edit()
+            .putString("last_accessibility_text", debugText)
+            .putLong("last_accessibility_at", now)
+            .apply()
+
         val rate = extractRateFromOffer(candidates)
 
         if (rate == null) {
-            if (decisionLocked) clearDecision()
-            else bubbleManager?.setState(BubbleOverlayManager.State.READING)
+            if (decisionLocked) {
+                clearDecision()
+            } else {
+                bubbleManager?.setState(BubbleOverlayManager.State.READING)
+                // IMPORTANTE: antes aquí terminábamos y no volvíamos a intentar.
+                // Ahora reintentamos mientras la oferta pueda seguir en pantalla.
+                if (now < scanUntilAt) scheduleOfferWatch()
+            }
             return
         }
 
@@ -150,6 +167,12 @@ class UberFilterAccessibilityService : AccessibilityService() {
             decisionLocked = true
             currentRate = rate
             offerStartedAt = now
+
+            getSharedPreferences("uber_filter_debug", Context.MODE_PRIVATE)
+                .edit()
+                .putFloat("last_rate", rate.toFloat())
+                .putLong("last_rate_at", now)
+                .apply()
 
             val good = rate >= threshold
             bubbleManager?.setState(

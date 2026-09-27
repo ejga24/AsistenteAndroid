@@ -72,6 +72,14 @@ class UberFilterActivity : AppCompatActivity() {
         statusText = label("", 16f)
         box.addView(statusText)
 
+        val debugPreview = label("", 12f)
+        val debugPrefs = getSharedPreferences("uber_filter_debug", MODE_PRIVATE)
+        val captured = debugPrefs.getString("last_accessibility_text", "").orEmpty()
+        if (captured.isNotBlank()) {
+            debugPreview.text = "Última lectura de Uber: " + captured.take(700)
+            box.addView(debugPreview)
+        }
+
         box.addView(label("La app muestra ACEPTAR o RECHAZAR como recomendación visual. Tú haces el toque final en Uber.", 14f))
 
         setContentView(root)
@@ -106,8 +114,24 @@ class UberFilterActivity : AppCompatActivity() {
         val prefs = getSharedPreferences(PREFS, MODE_PRIVATE)
         val threshold = prefs.getFloat(KEY_THRESHOLD, 0.50f)
         val mode = if (prefs.getBoolean(KEY_SUNDAY_ONLY, true)) "solo domingos" else "todos los días"
+        val debug = getSharedPreferences("uber_filter_debug", MODE_PRIVATE)
+        val lastRateAt = debug.getLong("last_rate_at", 0L)
+        val lastRate = if (lastRateAt > 0L) debug.getFloat("last_rate", -1f) else -1f
+
         statusText.text = if (isServiceEnabled()) {
-            "ACTIVO\nMínimo: B/. " + String.format(Locale.US, "%.2f", threshold) + "/km\nModo: " + mode
+            buildString {
+                append("ACTIVO\nMínimo: B/. ")
+                append(String.format(Locale.US, "%.2f", threshold))
+                append("/km\nModo: ")
+                append(mode)
+                append("\nVersión: ")
+                append(packageManager.getPackageInfo(packageName, 0).versionName ?: "?")
+                if (lastRate >= 0f) {
+                    append("\nÚltima tarifa detectada: USD ")
+                    append(String.format(Locale.US, "%.2f", lastRate))
+                    append("/km")
+                }
+            }
         } else {
             "INACTIVO\nActiva “Filtro Uber” en Accesibilidad."
         }
