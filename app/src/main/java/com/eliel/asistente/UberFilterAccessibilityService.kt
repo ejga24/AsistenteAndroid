@@ -3,6 +3,8 @@ package com.eliel.asistente
 import android.accessibilityservice.AccessibilityService
 import android.content.Context
 import android.graphics.PixelFormat
+import android.graphics.Bitmap
+import android.os.Build
 import android.graphics.drawable.GradientDrawable
 import android.os.Handler
 import android.os.Looper
@@ -12,6 +14,7 @@ import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import java.text.Normalizer
 import java.util.Calendar
 import java.util.Locale
@@ -31,6 +34,8 @@ class UberFilterAccessibilityService : AccessibilityService() {
     private val recentUberText = ArrayDeque<String>()
     private var lastUberEventAt = 0L
     private var scanUntilAt = 0L
+    private var screenshotReading = false
+    private var lastScreenshotAt = 0L
 
     companion object {
         private const val MAX_DECISION_VISIBLE_MS = 15_000L
@@ -150,13 +155,78 @@ class UberFilterAccessibilityService : AccessibilityService() {
                 clearDecision()
             } else {
                 bubbleManager?.setState(BubbleOverlayManager.State.READING)
-                // IMPORTANTE: antes aquí terminábamos y no volvíamos a intentar.
-                // Ahora reintentamos mientras la oferta pueda seguir en pantalla.
+                tryVisualOfferRead()
                 if (now < scanUntilAt) scheduleOfferWatch()
             }
             return
         }
 
+        applyDetectedRate(rate)
+
+        if (decisionLocked && now - offerStartedAt >= MAX_DECISION_VISIBLE_MS) {
+            hideOverlay()
+            bubbleManager?.setState(BubbleOverlayManager.State.IDLE)
+        }
+
+        scheduleOfferWatch()
+    }
+
+    private fun extractRateFromOffer(parts: List<String>): Double? =
+        UberRateParser.extract(parts)
+
+    private fun tryVisualOfferRead() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return
+
+        val now = System.currentTimeMillis()
+        if (screenshotReading || now - lastScreenshotAt < 700L) return
+
+        screenshotReading = true
+        lastScreenshotAt = now
+
+        takeScreenshot(
+            android.view.Display.DEFAULT_DISPLAY,
+            ContextCompat.getMainExecutor(this),
+            object : AccessibilityService.TakeScreenshotCallback {
+                override fun onSuccess(result: AccessibilityService.ScreenshotResult) {
+                    try {
+                        val hardware = result.hardwareBuffer
+                        val wrapped = Bitmap.wrapHardwareBuffer(hardware, result.colorSpace)
+                        val bitmap = wrapped?.copy(Bitmap.Config.ARGB_8888, false)
+                        hardware.close()
+
+                        if (bitmap == null) {
+                            screenshotReading = false
+                            return
+                        }
+
+                        UberOcrReader.readRate(bitmap) { rate, rawText ->
+                            getSharedPreferences("uber_filter_debug", Context.MODE_PRIVATE)
+                                .edit()
+                                .putString("last_ocr_text", rawText.take(5000))
+                                .putLong("last_ocr_at", System.currentTimeMillis())
+                                .apply()
+
+                            if (rate != null) {
+                                applyDetectedRate(rate)
+                            }
+
+                            bitmap.recycle()
+                            screenshotReading = false
+                        }
+                    } catch (_: Exception) {
+                        screenshotReading = false
+                    }
+                }
+
+                override fun onFailure(errorCode: Int) {
+                    screenshotReading = false
+                }
+            }
+        )
+    }
+
+    private fun applyDetectedRate(rate: Double) {
+        val now = System.currentTimeMillis()
         val threshold = getSharedPreferences(UberFilterActivity.PREFS, Context.MODE_PRIVATE)
             .getFloat(UberFilterActivity.KEY_THRESHOLD, 0.50f)
             .toDouble()
@@ -180,16 +250,8 @@ class UberFilterAccessibilityService : AccessibilityService() {
                 rate
             )
             showDecision(rate, good)
-        } else if (now - offerStartedAt >= MAX_DECISION_VISIBLE_MS) {
-            hideOverlay()
-            bubbleManager?.setState(BubbleOverlayManager.State.IDLE)
         }
-
-        scheduleOfferWatch()
     }
-
-    private fun extractRateFromOffer(parts: List<String>): Double? =
-        UberRateParser.extract(parts)
 
     private fun scheduleOfferWatch() {
         handler.removeCallbacksAndMessages("watch")
@@ -298,6 +360,7 @@ class UberFilterAccessibilityService : AccessibilityService() {
     }
 
     override fun onDestroy() {
+        screenshotReading = false
         recentUberText.clear()
         clearDecision()
         bubbleManager?.hide()
