@@ -32,6 +32,12 @@ class UberFilterAccessibilityService : AccessibilityService() {
     private var lockedSignature = ""
     private var offerMissingSince = 0L
 
+    // Texto reciente emitido por eventos de accesibilidad de Uber.
+    // Algunas versiones de Uber no exponen todos los textos en rootInActiveWindow,
+    // pero sí los entregan en AccessibilityEvent.
+    private val recentEventText = ArrayDeque<String>()
+    private var recentEventAt = 0L
+
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         val prefs = getSharedPreferences(UberFilterActivity.PREFS, Context.MODE_PRIVATE)
         val sundayOnly = prefs.getBoolean(UberFilterActivity.KEY_SUNDAY_ONLY, true)
@@ -40,6 +46,10 @@ class UberFilterAccessibilityService : AccessibilityService() {
         val eventPackage = event?.packageName?.toString().orEmpty()
         val eventLooksUber = isUberPackage(eventPackage)
         val uberWindowPresent = findUberRoots().isNotEmpty()
+
+        if (eventLooksUber && event != null) {
+            rememberEventText(event)
+        }
 
         if (!eventLooksUber && !uberWindowPresent) {
             return
@@ -90,8 +100,15 @@ class UberFilterAccessibilityService : AccessibilityService() {
             .filter { it.isNotBlank() }
             .distinct()
 
-        val visibleText = cleanValues.joinToString(" ")
-        val result = parseOffer(visibleText)
+        val candidates = mutableListOf<String>()
+        candidates.addAll(cleanValues)
+
+        if (System.currentTimeMillis() - recentEventAt <= 4000L) {
+            candidates.addAll(recentEventText)
+        }
+
+        val visibleText = candidates.distinct().joinToString(" ")
+        val result = parseOffer(visibleText, candidates)
 
         getSharedPreferences("uber_filter_debug", Context.MODE_PRIVATE)
             .edit()
@@ -101,7 +118,8 @@ class UberFilterAccessibilityService : AccessibilityService() {
             .apply()
 
         if (result == null) {
-            showDiagnostic("Uber detectado · leyendo solicitud", 0xE6D17A00.toInt(), 1800)
+            // No mostrar avisos repetitivos. Esperar al próximo evento de Uber
+            // hasta contar con suficiente información para decidir.
             return
         }
 
@@ -157,7 +175,7 @@ class UberFilterAccessibilityService : AccessibilityService() {
         if (text.isBlank()) return false
 
         val hasAccept = text.contains("aceptar")
-        val hasRate = Regex("""\d{1,2}(?:[.,]\d{1,2})?\s*/\s*km""").containsMatchIn(text)
+        val hasRate = Regex("""\d{1,2}(?:[.,]\d{1,3})?\s*[/／]\s*km""").containsMatchIn(text)
         val hasTrip = text.contains("viaje:") || text.contains("viaje ")
         val hasUberX = text.contains("uberx") || text.contains("uber x")
 
@@ -171,6 +189,41 @@ class UberFilterAccessibilityService : AccessibilityService() {
         lastSignature = ""
         handler.removeCallbacksAndMessages("unlock-check")
         hideOverlay()
+    }
+
+    private fun rememberEventText(event: AccessibilityEvent) {
+        val pieces = mutableListOf<String>()
+
+        event.text?.forEach { value ->
+            value?.toString()?.trim()?.takeIf { it.isNotBlank() }?.let { pieces += it }
+        }
+
+        event.contentDescription?.toString()?.trim()
+            ?.takeIf { it.isNotBlank() }
+            ?.let { pieces += it }
+
+        event.beforeText?.toString()?.trim()
+            ?.takeIf { it.isNotBlank() }
+            ?.let { pieces += it }
+
+        event.source?.let { source ->
+            val sourceValues = mutableListOf<String>()
+            collect(source, sourceValues)
+            pieces += sourceValues
+        }
+
+        if (pieces.isEmpty()) return
+
+        recentEventAt = System.currentTimeMillis()
+        for (piece in pieces) {
+            val clean = piece.trim()
+            if (clean.isBlank()) continue
+            recentEventText.remove(clean)
+            recentEventText.addLast(clean)
+            while (recentEventText.size > 120) {
+                recentEventText.removeFirst()
+            }
+        }
     }
 
     private fun collect(node: AccessibilityNodeInfo?, out: MutableList<String>) {
@@ -197,19 +250,29 @@ class UberFilterAccessibilityService : AccessibilityService() {
         val distanceCount: Int
     )
 
-    private fun parseOffer(raw: String): Result? {
+    private fun parseOffer(raw: String, candidates: List<String> = emptyList()): Result? {
         val normalized = normalize(raw)
 
         val directRatePatterns = listOf(
-            Regex("""(?:usd|b\s*/?\.?|\$)?\s*(\d{1,2}(?:[.,]\d{1,2})?)\s*/\s*km""", RegexOption.IGNORE_CASE),
-            Regex("""(?:usd|b\s*/?\.?|\$)?\s*(\d{1,2}(?:[.,]\d{1,2})?)\s*(?:por|x)\s*km""", RegexOption.IGNORE_CASE)
+            Regex("""(?:usd|b\s*/?\.?|\$)?\s*(\d{1,2}(?:[.,]\d{1,3})?)\s*[/／]\s*(?:km|kilometros?|kilómetros?)""", RegexOption.IGNORE_CASE),
+            Regex("""(?:usd|b\s*/?\.?|\$)?\s*(\d{1,2}(?:[.,]\d{1,3})?)\s*(?:por|x)\s*(?:km|kilometros?|kilómetros?)""", RegexOption.IGNORE_CASE)
         )
 
-        val directRate = directRatePatterns
-            .asSequence()
-            .flatMap { it.findAll(normalized).asSequence() }
-            .mapNotNull { it.groupValues.getOrNull(1)?.replace(',', '.')?.toDoubleOrNull() }
-            .firstOrNull { it in 0.05..20.0 }
+        fun findRate(text: String): Double? {
+            val normalizedText = normalize(text)
+            return directRatePatterns
+                .asSequence()
+                .flatMap { it.findAll(normalizedText).asSequence() }
+                .mapNotNull { it.groupValues.getOrNull(1)?.replace(',', '.')?.toDoubleOrNull() }
+                .firstOrNull { it in 0.05..20.0 }
+        }
+
+        // Primero buscar en cada fragmento individual. Esto cubre formatos reales de Uber
+        // como "USD0.57/km (estimado)" aunque el árbol de accesibilidad venga fragmentado.
+        val directRate = candidates.asSequence()
+            .mapNotNull { findRate(it) }
+            .firstOrNull()
+            ?: findRate(normalized)
 
         val threshold = getSharedPreferences(UberFilterActivity.PREFS, Context.MODE_PRIVATE)
             .getFloat(UberFilterActivity.KEY_THRESHOLD, 0.50f)
@@ -369,6 +432,7 @@ class UberFilterAccessibilityService : AccessibilityService() {
         decisionLocked = false
         lockedSignature = ""
         offerMissingSince = 0L
+        recentEventText.clear()
         hideOverlay()
         handler.removeCallbacksAndMessages(null)
         super.onDestroy()
