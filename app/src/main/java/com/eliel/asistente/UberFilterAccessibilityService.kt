@@ -92,7 +92,9 @@ class UberFilterAccessibilityService : AccessibilityService() {
             .minByOrNull { countNodes(it) }
 
         if (offerCard == null) {
-            resetOffer()
+            // Uber está visible pero todavía no tenemos un popup identificable.
+            // Mantener burbuja en "Leyendo" y esperar el siguiente evento.
+            bubbleManager?.setState(BubbleOverlayManager.State.READING)
             return
         }
 
@@ -179,11 +181,12 @@ class UberFilterAccessibilityService : AccessibilityService() {
                 normalized.contains("viaje ") ||
                 Regex("""\ba\s+\d{1,2}\s+min\b""").containsMatchIn(normalized)
 
-            // No limitar por producto (UberX, Priority, Comfort, etc.).
-            // Basta con que sea una tarjeta activa de Uber con acción,
-            // tarifa estimada por km y datos del viaje.
+            // En algunas versiones de Uber el botón "Aceptar" no se expone
+            // al servicio de accesibilidad aunque sí sea visible. Por eso NO
+            // lo exigimos. La tarjeta activa se identifica por la combinación
+            // única de tarifa "(estimado)" por km + datos del viaje.
             val looksLikeOfferCard =
-                hasAction && hasEstimatedRate && hasUberBrand && hasTripDetails
+                hasEstimatedRate && hasTripDetails
 
             if (looksLikeOfferCard) {
                 val size = countNodes(node)
