@@ -26,6 +26,12 @@ class UberFilterAccessibilityService : AccessibilityService() {
     private var lastShownAt = 0L
     private var lastUberSeenAt = 0L
 
+    // Una vez que una solicitud fue evaluada, no volver a leerla.
+    // El bloqueo se libera únicamente cuando la tarjeta de solicitud desaparece.
+    private var decisionLocked = false
+    private var lockedSignature = ""
+    private var offerMissingSince = 0L
+
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         val prefs = getSharedPreferences(UberFilterActivity.PREFS, Context.MODE_PRIVATE)
         val sundayOnly = prefs.getBoolean(UberFilterActivity.KEY_SUNDAY_ONLY, true)
@@ -40,6 +46,13 @@ class UberFilterAccessibilityService : AccessibilityService() {
         }
 
         lastUberSeenAt = System.currentTimeMillis()
+
+        if (decisionLocked) {
+            handler.removeCallbacksAndMessages("unlock-check")
+            handler.postAtTime({ checkIfOfferClosed() }, "unlock-check", SystemClock.uptimeMillis() + 120)
+            return
+        }
+
         handler.removeCallbacksAndMessages("parse")
         handler.postAtTime({ analyzeScreen() }, "parse", SystemClock.uptimeMillis() + 180)
     }
@@ -98,7 +111,66 @@ class UberFilterAccessibilityService : AccessibilityService() {
 
         lastSignature = signature
         lastShownAt = now
+
+        // Congela esta decisión. Mientras la tarjeta siga visible,
+        // ningún evento de Uber vuelve a analizar la misma solicitud.
+        decisionLocked = true
+        lockedSignature = signature
+        offerMissingSince = 0L
+
         showResult(result)
+    }
+
+    private fun checkIfOfferClosed() {
+        if (!decisionLocked) return
+
+        val roots = findUberRoots()
+        if (roots.isEmpty()) {
+            unlockDecision()
+            return
+        }
+
+        val values = mutableListOf<String>()
+        roots.forEach { collect(it, values) }
+        val visibleText = normalize(values.distinct().joinToString(" "))
+
+        if (isOfferCardVisible(visibleText)) {
+            // La solicitud que ya evaluamos sigue en pantalla: no hacer nada.
+            offerMissingSince = 0L
+            return
+        }
+
+        val now = System.currentTimeMillis()
+        if (offerMissingSince == 0L) {
+            offerMissingSince = now
+            handler.removeCallbacksAndMessages("unlock-check")
+            handler.postAtTime({ checkIfOfferClosed() }, "unlock-check", SystemClock.uptimeMillis() + 450)
+            return
+        }
+
+        if (now - offerMissingSince >= 400L) {
+            unlockDecision()
+        }
+    }
+
+    private fun isOfferCardVisible(text: String): Boolean {
+        if (text.isBlank()) return false
+
+        val hasAccept = text.contains("aceptar")
+        val hasRate = Regex("""\d{1,2}(?:[.,]\d{1,2})?\s*/\s*km""").containsMatchIn(text)
+        val hasTrip = text.contains("viaje:") || text.contains("viaje ")
+        val hasUberX = text.contains("uberx") || text.contains("uber x")
+
+        return hasAccept && (hasRate || hasTrip || hasUberX)
+    }
+
+    private fun unlockDecision() {
+        decisionLocked = false
+        lockedSignature = ""
+        offerMissingSince = 0L
+        lastSignature = ""
+        handler.removeCallbacksAndMessages("unlock-check")
+        hideOverlay()
     }
 
     private fun collect(node: AccessibilityNodeInfo?, out: MutableList<String>) {
@@ -286,9 +358,17 @@ class UberFilterAccessibilityService : AccessibilityService() {
     private fun dp(value: Int): Int =
         (value * resources.displayMetrics.density).roundToInt()
 
-    override fun onInterrupt() = hideOverlay()
+    override fun onInterrupt() {
+        decisionLocked = false
+        lockedSignature = ""
+        offerMissingSince = 0L
+        hideOverlay()
+    }
 
     override fun onDestroy() {
+        decisionLocked = false
+        lockedSignature = ""
+        offerMissingSince = 0L
         hideOverlay()
         handler.removeCallbacksAndMessages(null)
         super.onDestroy()
