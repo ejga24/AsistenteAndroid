@@ -128,6 +128,37 @@ class UberFilterAccessibilityService : AccessibilityService() {
     private fun parseOffer(raw: String): Result? {
         val normalized = normalize(raw)
 
+        val directRatePatterns = listOf(
+            Regex("""(?:usd|b\s*/?\.?|\$)?\s*(\d{1,2}(?:[.,]\d{1,2})?)\s*/\s*km""", RegexOption.IGNORE_CASE),
+            Regex("""(?:usd|b\s*/?\.?|\$)?\s*(\d{1,2}(?:[.,]\d{1,2})?)\s*(?:por|x)\s*km""", RegexOption.IGNORE_CASE)
+        )
+
+        val directRate = directRatePatterns
+            .asSequence()
+            .flatMap { it.findAll(normalized).asSequence() }
+            .mapNotNull { it.groupValues.getOrNull(1)?.replace(',', '.')?.toDoubleOrNull() }
+            .firstOrNull { it in 0.05..20.0 }
+
+        val threshold = getSharedPreferences(UberFilterActivity.PREFS, Context.MODE_PRIVATE)
+            .getFloat(UberFilterActivity.KEY_THRESHOLD, 0.50f)
+            .toDouble()
+
+        if (directRate != null) {
+            val payoutRegex = Regex("""(?:usd|b\s*/?\.?|\$)\s*(\d{1,3}(?:[.,]\d{1,2})?)""", RegexOption.IGNORE_CASE)
+            val payout = payoutRegex.findAll(normalized)
+                .mapNotNull { it.groupValues.getOrNull(1)?.replace(',', '.')?.toDoubleOrNull() }
+                .filter { it >= 1.0 }
+                .firstOrNull() ?: 0.0
+
+            return Result(
+                payout = payout,
+                totalKm = 0.0,
+                rate = directRate,
+                good = directRate >= threshold,
+                distanceCount = 0
+            )
+        }
+
         val moneyPatterns = listOf(
             Regex("""(?:b\s*/?\.?\s*|usd\s*|\$\s*)(\d{1,3}(?:[.,]\d{1,2})?)""", RegexOption.IGNORE_CASE),
             Regex("""(?:ganas?|ganancia|tarifa|pago|incluye|total)\s*(?:de\s*)?(?:b\s*/?\.?\s*|usd\s*|\$\s*)?(\d{1,3}(?:[.,]\d{1,2})?)""", RegexOption.IGNORE_CASE)
@@ -169,10 +200,6 @@ class UberFilterAccessibilityService : AccessibilityService() {
         val totalKm = selected.sum()
         if (totalKm <= 0.0) return null
 
-        val threshold = getSharedPreferences(UberFilterActivity.PREFS, Context.MODE_PRIVATE)
-            .getFloat(UberFilterActivity.KEY_THRESHOLD, 0.50f)
-            .toDouble()
-
         val rate = payout / totalKm
         return Result(payout, totalKm, rate, rate >= threshold, selected.size)
     }
@@ -185,11 +212,15 @@ class UberFilterAccessibilityService : AccessibilityService() {
             append("\nB/. ")
             append(String.format(Locale.US, "%.2f", result.rate))
             append(" por km")
-            append("\nPago B/. ")
-            append(String.format(Locale.US, "%.2f", result.payout))
-            append(" · ")
-            append(String.format(Locale.US, "%.1f", result.totalKm))
-            append(" km")
+            if (result.payout > 0.0) {
+                append("\nPago USD ")
+                append(String.format(Locale.US, "%.2f", result.payout))
+            }
+            if (result.totalKm > 0.0) {
+                append(" · ")
+                append(String.format(Locale.US, "%.1f", result.totalKm))
+                append(" km")
+            }
             if (result.distanceCount == 1) append("\n⚠ Solo 1 distancia visible")
         }
 
