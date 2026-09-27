@@ -171,18 +171,19 @@ class UberFilterAccessibilityService : AccessibilityService() {
 
             // Validar que sea la tarjeta ACTIVA de oferta, no una notificación,
             // historial o texto de una carrera anterior.
-            val hasRideType =
-                normalized.contains("uberx") ||
-                normalized.contains("uber x") ||
-                normalized.contains("comfort") ||
-                normalized.contains("moto")
+            val hasUberBrand =
+                normalized.contains("uber")
 
             val hasTripDetails =
                 normalized.contains("viaje:") ||
+                normalized.contains("viaje ") ||
                 Regex("""\ba\s+\d{1,2}\s+min\b""").containsMatchIn(normalized)
 
+            // No limitar por producto (UberX, Priority, Comfort, etc.).
+            // Basta con que sea una tarjeta activa de Uber con acción,
+            // tarifa estimada por km y datos del viaje.
             val looksLikeOfferCard =
-                hasAction && hasEstimatedRate && hasRideType && hasTripDetails
+                hasAction && hasEstimatedRate && hasUberBrand && hasTripDetails
 
             if (looksLikeOfferCard) {
                 val size = countNodes(node)
