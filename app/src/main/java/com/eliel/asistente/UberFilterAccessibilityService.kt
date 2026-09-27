@@ -165,71 +165,8 @@ class UberFilterAccessibilityService : AccessibilityService() {
         scheduleOfferWatch()
     }
 
-    private fun extractRateFromOffer(parts: List<String>): Double? {
-        if (parts.isEmpty()) return null
-
-        val normalizedParts = parts
-            .map { normalize(it) }
-            .filter { it.isNotBlank() }
-
-        val combined = normalize(normalizedParts.joinToString(" "))
-
-        // Confirmar contexto de popup activo.
-        val hasActiveOfferContext =
-            combined.contains("viaje:") ||
-            combined.contains("viaje ") ||
-            combined.contains("aceptar") ||
-            combined.contains("me interesa") ||
-            Regex("""\ba\s+\d{1,2}\s+min\b""").containsMatchIn(combined)
-
-        if (!hasActiveOfferContext) return null
-
-        // 1) Formato estándar observado en tus capturas:
-        //    USD0.74/km (estimado)
-        val standard = Regex(
-            """(?:usd|b\s*/?\.?|\$)?\s*(\d{1,2}(?:[.,]\d{1,3})?)\s*[/／]\s*(?:km|kilometros?|kilómetros?)\s*\(?\s*estimado\s*\)?""",
-            RegexOption.IGNORE_CASE
-        )
-
-        // 2) Algunas capas de accesibilidad eliminan el slash:
-        //    USD0.74 km (estimado)
-        val withoutSlash = Regex(
-            """(?:usd|b\s*/?\.?|\$)?\s*(\d{1,2}(?:[.,]\d{1,3})?)\s*(?:km|kilometros?|kilómetros?)\s*\(?\s*estimado\s*\)?""",
-            RegexOption.IGNORE_CASE
-        )
-
-        // 3) Si Uber divide "/km" y "(estimado)" en nodos distintos,
-        //    buscar primero una cifra con /km y validar que "estimado" exista cerca.
-        val rateOnly = Regex(
-            """(?:usd|b\s*/?\.?|\$)?\s*(\d{1,2}(?:[.,]\d{1,3})?)\s*[/／]?\s*(?:km|kilometros?|kilómetros?)""",
-            RegexOption.IGNORE_CASE
-        )
-
-        fun parseValue(match: MatchResult?): Double? {
-            val v = match?.groupValues?.getOrNull(1)
-                ?.replace(',', '.')
-                ?.toDoubleOrNull()
-                ?: return null
-            return v.takeIf { it in 0.05..20.0 }
-        }
-
-        // Probar por fragmentos individuales.
-        for (part in normalizedParts) {
-            parseValue(standard.find(part))?.let { return it }
-            parseValue(withoutSlash.find(part))?.let { return it }
-        }
-
-        // Probar texto combinado del popup actual.
-        parseValue(standard.find(combined))?.let { return it }
-        parseValue(withoutSlash.find(combined))?.let { return it }
-
-        // Fallback controlado: debe existir "estimado" en el popup actual.
-        if (combined.contains("estimado")) {
-            parseValue(rateOnly.find(combined))?.let { return it }
-        }
-
-        return null
-    }
+    private fun extractRateFromOffer(parts: List<String>): Double? =
+        UberRateParser.extract(parts)
 
     private fun scheduleOfferWatch() {
         handler.removeCallbacksAndMessages("watch")
