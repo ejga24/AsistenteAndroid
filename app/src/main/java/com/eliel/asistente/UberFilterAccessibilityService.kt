@@ -28,14 +28,12 @@ class UberFilterAccessibilityService : AccessibilityService() {
     private var currentRate: Double? = null
     private var offerStartedAt = 0L
 
-    // Cache muy corto de texto emitido por Uber. Se usa porque Uber a veces
-    // dibuja el popup visualmente pero NO expone todo el texto en rootInActiveWindow.
     private val recentUberText = ArrayDeque<String>()
     private var lastUberEventAt = 0L
 
     companion object {
         private const val MAX_DECISION_VISIBLE_MS = 15_000L
-        private const val EVENT_CACHE_MS = 2_500L
+        private const val EVENT_CACHE_MS = 3_000L
     }
 
     override fun onServiceConnected() {
@@ -62,7 +60,7 @@ class UberFilterAccessibilityService : AccessibilityService() {
         bubbleManager?.setState(BubbleOverlayManager.State.READING)
 
         handler.removeCallbacksAndMessages("scan")
-        handler.postAtTime({ scanCurrentOffer() }, "scan", SystemClock.uptimeMillis() + 60)
+        handler.postAtTime({ scanCurrentOffer() }, "scan", SystemClock.uptimeMillis() + 80)
     }
 
     private fun isUberPackage(pkg: String): Boolean =
@@ -96,7 +94,7 @@ class UberFilterAccessibilityService : AccessibilityService() {
                 if (clean.isBlank()) continue
                 recentUberText.remove(clean)
                 recentUberText.addLast(clean)
-                while (recentUberText.size > 100) recentUberText.removeFirst()
+                while (recentUberText.size > 120) recentUberText.removeFirst()
             }
         }
     }
@@ -124,23 +122,19 @@ class UberFilterAccessibilityService : AccessibilityService() {
 
         val candidates = mutableListOf<String>()
 
-        // 1) Leer TODO el árbol de Uber, incluso nodos que Android marque como no visibles
-        // pero que pertenecen al popup actual.
         for (root in roots) {
             collect(root, candidates, requireVisible = false)
         }
 
-        // 2) Agregar eventos recientes de Uber. Caducan rápido para no mezclar carreras viejas.
         if (now - lastUberEventAt <= EVENT_CACHE_MS) {
             candidates += recentUberText
         } else {
             recentUberText.clear()
         }
 
-        val rate = extractLiveEstimatedRate(candidates)
+        val rate = extractRateFromOffer(candidates)
 
         if (rate == null) {
-            // Si no hay tarifa estimada actual, no emitir decisión.
             if (decisionLocked) clearDecision()
             else bubbleManager?.setState(BubbleOverlayManager.State.READING)
             return
@@ -171,16 +165,16 @@ class UberFilterAccessibilityService : AccessibilityService() {
         scheduleOfferWatch()
     }
 
-    private fun extractLiveEstimatedRate(parts: List<String>): Double? {
+    private fun extractRateFromOffer(parts: List<String>): Double? {
         if (parts.isEmpty()) return null
 
         val normalizedParts = parts
             .map { normalize(it) }
             .filter { it.isNotBlank() }
 
-        // Requerimos contexto de oferta actual. Esto evita historial, ganancias,
-        // mensajes viejos y otros montos de Uber.
         val combined = normalize(normalizedParts.joinToString(" "))
+
+        // Confirmar contexto de popup activo.
         val hasActiveOfferContext =
             combined.contains("viaje:") ||
             combined.contains("viaje ") ||
@@ -190,23 +184,48 @@ class UberFilterAccessibilityService : AccessibilityService() {
 
         if (!hasActiveOfferContext) return null
 
-        // Regla principal: SOLO el valor de la línea "USD0.74/km (estimado)".
-        val strict = Regex(
+        // 1) Formato estándar observado en tus capturas:
+        //    USD0.74/km (estimado)
+        val standard = Regex(
             """(?:usd|b\s*/?\.?|\$)?\s*(\d{1,2}(?:[.,]\d{1,3})?)\s*[/／]\s*(?:km|kilometros?|kilómetros?)\s*\(?\s*estimado\s*\)?""",
             RegexOption.IGNORE_CASE
         )
 
-        // Primero buscar por fragmento individual.
-        for (part in normalizedParts) {
-            val m = strict.find(part) ?: continue
-            val value = m.groupValues[1].replace(',', '.').toDoubleOrNull() ?: continue
-            if (value in 0.05..20.0) return value
+        // 2) Algunas capas de accesibilidad eliminan el slash:
+        //    USD0.74 km (estimado)
+        val withoutSlash = Regex(
+            """(?:usd|b\s*/?\.?|\$)?\s*(\d{1,2}(?:[.,]\d{1,3})?)\s*(?:km|kilometros?|kilómetros?)\s*\(?\s*estimado\s*\)?""",
+            RegexOption.IGNORE_CASE
+        )
+
+        // 3) Si Uber divide "/km" y "(estimado)" en nodos distintos,
+        //    buscar primero una cifra con /km y validar que "estimado" exista cerca.
+        val rateOnly = Regex(
+            """(?:usd|b\s*/?\.?|\$)?\s*(\d{1,2}(?:[.,]\d{1,3})?)\s*[/／]?\s*(?:km|kilometros?|kilómetros?)""",
+            RegexOption.IGNORE_CASE
+        )
+
+        fun parseValue(match: MatchResult?): Double? {
+            val v = match?.groupValues?.getOrNull(1)
+                ?.replace(',', '.')
+                ?.toDoubleOrNull()
+                ?: return null
+            return v.takeIf { it in 0.05..20.0 }
         }
 
-        // Luego buscar sobre el texto combinado por si Uber dividió la línea en nodos.
-        strict.find(combined)?.let { m ->
-            val value = m.groupValues[1].replace(',', '.').toDoubleOrNull()
-            if (value != null && value in 0.05..20.0) return value
+        // Probar por fragmentos individuales.
+        for (part in normalizedParts) {
+            parseValue(standard.find(part))?.let { return it }
+            parseValue(withoutSlash.find(part))?.let { return it }
+        }
+
+        // Probar texto combinado del popup actual.
+        parseValue(standard.find(combined))?.let { return it }
+        parseValue(withoutSlash.find(combined))?.let { return it }
+
+        // Fallback controlado: debe existir "estimado" en el popup actual.
+        if (combined.contains("estimado")) {
+            parseValue(rateOnly.find(combined))?.let { return it }
         }
 
         return null
