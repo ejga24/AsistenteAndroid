@@ -14,6 +14,7 @@ class UberRateParserTest {
         "Aceptar"
     )
 
+    @Test fun screenshot_034() = assertEquals(0.34, UberRateParser.extract(offer("USD0.34/km (estimado)"))!!, 0.0001)
     @Test fun screenshot_037() = assertEquals(0.37, UberRateParser.extract(offer("USD0.37/km (estimado)"))!!, 0.0001)
     @Test fun screenshot_055() = assertEquals(0.55, UberRateParser.extract(offer("USD0.55/km (estimado)"))!!, 0.0001)
     @Test fun screenshot_074() = assertEquals(0.74, UberRateParser.extract(offer("USD0.74/km (estimado)"))!!, 0.0001)
