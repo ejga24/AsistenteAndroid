@@ -66,7 +66,9 @@ class UberFilterAccessibilityService : AccessibilityService() {
         // La tarjeta puede terminar de renderizarse varios cientos de ms después
         // del primer evento. Mantener una ventana de lectura activa.
         scanUntilAt = System.currentTimeMillis() + 15_000L
-        bubbleManager?.setState(BubbleOverlayManager.State.READING)
+        if (!decisionLocked) {
+            bubbleManager?.setState(BubbleOverlayManager.State.READING)
+        }
 
         handler.removeCallbacksAndMessages("scan")
         handler.postAtTime({ scanCurrentOffer() }, "scan", SystemClock.uptimeMillis() + 80)
@@ -151,12 +153,18 @@ class UberFilterAccessibilityService : AccessibilityService() {
         val rate = extractRateFromOffer(candidates)
 
         if (rate == null) {
-            if (decisionLocked) {
-                clearDecision()
-            } else {
+            // Uber no expone la tarifa en el árbol de accesibilidad de esta tablet.
+            // No borrar una decisión ya tomada por una lectura vacía transitoria.
+            // Mantener el ciclo visual activo durante toda la vida probable del popup.
+            if (!decisionLocked) {
                 bubbleManager?.setState(BubbleOverlayManager.State.READING)
+            }
+
+            if (now < scanUntilAt) {
                 tryVisualOfferRead()
-                if (now < scanUntilAt) scheduleOfferWatch()
+                scheduleOfferWatch()
+            } else {
+                clearDecision()
             }
             return
         }
@@ -208,10 +216,15 @@ class UberFilterAccessibilityService : AccessibilityService() {
 
                             if (rate != null) {
                                 applyDetectedRate(rate)
+                                scanUntilAt = maxOf(scanUntilAt, System.currentTimeMillis() + 15_000L)
                             }
 
                             bitmap.recycle()
                             screenshotReading = false
+
+                            if (System.currentTimeMillis() < scanUntilAt) {
+                                scheduleOfferWatch()
+                            }
                         }
                     } catch (_: Exception) {
                         screenshotReading = false
