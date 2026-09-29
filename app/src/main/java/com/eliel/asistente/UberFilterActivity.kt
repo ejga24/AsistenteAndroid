@@ -76,13 +76,13 @@ class UberFilterActivity : AppCompatActivity() {
         val debugPrefs = getSharedPreferences("uber_filter_debug", MODE_PRIVATE)
         val captured = debugPrefs.getString("last_accessibility_text", "").orEmpty()
         if (captured.isNotBlank()) {
-            debugPreview.text = "Última lectura de Uber: " + captured.take(700)
+            debugPreview.text = "Última lectura de Uber: " + captured.replace("estimado", "est.").take(700)
             box.addView(debugPreview)
         }
 
         val ocrCaptured = debugPrefs.getString("last_ocr_text", "").orEmpty()
         if (ocrCaptured.isNotBlank()) {
-            box.addView(label("Última lectura visual: " + ocrCaptured.take(700), 12f))
+            box.addView(label("Última lectura visual: " + ocrCaptured.replace("estimado", "est.").take(700), 12f))
         }
 
         box.addView(label("La app muestra ACEPTAR o RECHAZAR como recomendación visual. Tú haces el toque final en Uber.", 14f))
