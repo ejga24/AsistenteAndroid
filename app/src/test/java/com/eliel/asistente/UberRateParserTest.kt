@@ -6,57 +6,64 @@ import org.junit.Test
 
 class UberRateParserTest {
 
-    private fun offer(rateLine: String) = listOf(
+    private fun offer(rateLine: String, action: String = "Aceptar") = listOf(
         "UberX",
         rateLine,
         "A 3 min (0.9 km)",
         "Viaje: 5 min (1.7 km)",
-        "Aceptar"
+        action
     )
 
     @Test fun screenshot_034() = assertEquals(0.34, UberRateParser.extract(offer("USD0.34/km (estimado)"))!!, 0.0001)
     @Test fun screenshot_037() = assertEquals(0.37, UberRateParser.extract(offer("USD0.37/km (estimado)"))!!, 0.0001)
+    @Test fun screenshot_039() = assertEquals(0.39, UberRateParser.extract(offer("USD0.39/km (estimado)"))!!, 0.0001)
+    @Test fun screenshot_045() = assertEquals(0.45, UberRateParser.extract(offer("USD0.45/km (estimado)"))!!, 0.0001)
     @Test fun screenshot_052() = assertEquals(0.52, UberRateParser.extract(offer("USD0.52/km (estimado)"))!!, 0.0001)
     @Test fun screenshot_054() = assertEquals(0.54, UberRateParser.extract(offer("USD0.54/km (estimado)"))!!, 0.0001)
-    @Test fun screenshot_055() = assertEquals(0.55, UberRateParser.extract(offer("USD0.55/km (estimado)"))!!, 0.0001)
-    @Test fun screenshot_074() = assertEquals(0.74, UberRateParser.extract(offer("USD0.74/km (estimado)"))!!, 0.0001)
-    @Test fun screenshot_075() = assertEquals(0.75, UberRateParser.extract(offer("USD0.75/km (estimado)"))!!, 0.0001)
+    @Test fun screenshot_081() = assertEquals(0.81, UberRateParser.extract(offer("USD0.81/km (estimado)"))!!, 0.0001)
     @Test fun screenshot_084() = assertEquals(0.84, UberRateParser.extract(offer("USD0.84/km (estimado)"))!!, 0.0001)
-    @Test fun screenshot_108_priority() = assertEquals(
-        1.08,
-        UberRateParser.extract(listOf("Uber Priority", "USD1.08/km (estimado)", "+USD0.46 por inicio de viaje", "Aceptar"))!!,
+
+    @Test fun me_interesa_is_valid_action() = assertEquals(
+        0.54,
+        UberRateParser.extract(offer("USD0.54/km (estimado)", "Me interesa"))!!,
         0.0001
     )
 
-    @Test fun ignores_priority_extra() {
-        assertNull(
-            UberRateParser.extract(
-                listOf("Uber Priority", "+USD0.46 por inicio de viaje", "Viaje: 4 min (1.2 km)", "Aceptar")
+    @Test fun priority_extra_is_ignored_and_estimated_rate_wins() = assertEquals(
+        0.52,
+        UberRateParser.extract(
+            listOf(
+                "Uber Priority",
+                "USD0.52/km (estimado)",
+                "+USD0.46 por inicio de viaje",
+                "Viaje: 8 min (3.1 km)",
+                "Aceptar"
             )
-        )
+        )!!,
+        0.0001
+    )
+
+    @Test fun ignores_priority_extra_without_estimated_rate() {
+        assertNull(UberRateParser.extract(listOf("Uber Priority", "+USD0.46 por inicio de viaje", "Aceptar")))
     }
 
-    @Test fun ignores_total_money_without_rate() {
-        assertNull(
-            UberRateParser.extract(
-                listOf("UberX", "USD30.00", "Viaje: 10 min (4 km)", "Aceptar")
-            )
-        )
+    @Test fun rejects_total_money() {
+        assertNull(UberRateParser.extract(listOf("USD4.18", "Viaje: 16 min", "Me interesa")))
     }
 
-    @Test fun rejects_if_estimado_is_on_another_line() {
-        assertNull(
-            UberRateParser.extract(
-                listOf("USD0.84/km", "(estimado)", "Viaje: 5 min", "Aceptar")
-            )
-        )
+    @Test fun rejects_rate_when_estimado_is_separate_line() {
+        assertNull(UberRateParser.extract(listOf("USD0.84/km", "(estimado)", "Aceptar")))
     }
 
-    @Test fun rejects_rate_without_estimado() {
-        assertNull(
-            UberRateParser.extract(
-                listOf("USD0.84/km", "Viaje: 5 min", "Aceptar")
-            )
-        )
+    @Test fun rejects_rate_without_active_action() {
+        assertNull(UberRateParser.extract(listOf("USD0.84/km (estimado)", "Viaje: 5 min")))
+    }
+
+    @Test fun rejects_our_own_old_banner_text() {
+        assertNull(UberRateParser.extract(listOf("✅ ACEPTAR", "USD 1.00/km", "(estimado de Uber)")))
+    }
+
+    @Test fun rejects_our_new_banner_text_even_with_action_word() {
+        assertNull(UberRateParser.extract(listOf("✅ ACEPTAR", "0.45/km")))
     }
 }
