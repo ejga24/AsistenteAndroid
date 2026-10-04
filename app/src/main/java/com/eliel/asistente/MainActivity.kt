@@ -845,9 +845,8 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                     val guidance = NexoRecoveryPolicy.fromThrowable("Agent Brain", it)
                     NexoRuntimeState.markIssue(this, "Agent Brain", guidance.logMessage)
                     NexoActionLog.add(this, "Plan IA", guidance.logMessage, false)
-                    setOrbError()
                     refreshSystemOverview()
-                    respond(guidance.userMessage)
+                    respondError(guidance.userMessage)
                 }
             }
         }.start()
@@ -881,8 +880,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
             NexoRiskLevel.BLOCK -> {
                 NexoActionLog.add(this, "Acción bloqueada", safety.reason, false)
-                setOrbError()
-                respond("No voy a ejecutar esa acción porque puede afectar de forma importante al dispositivo.")
+                respondError("No voy a ejecutar esa acción porque puede afectar de forma importante al dispositivo.")
                 onRejected()
             }
 
@@ -922,8 +920,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         planHandler.removeCallbacksAndMessages(null)
         nowRunningCard.visibility = android.view.View.GONE
         NexoActionLog.add(this, "Plan interrumpido", logDetail, false)
-        setOrbError()
-        respond(message)
+        respondError(message)
     }
 
     private fun awaitAccessibilityResult(
@@ -1235,8 +1232,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             ?.name ?: skillId
 
         NexoActionLog.add(this, "Skill bloqueada", skillName, false)
-        setOrbError()
-        respond("La capacidad " + skillName + " está desactivada. Puedes habilitarla desde Skills.")
+        respondError("La capacidad " + skillName + " está desactivada. Puedes habilitarla desde Skills.")
         return false
     }
 
@@ -1489,6 +1485,23 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         }
         if (preferred != null) {
             textToSpeech.voice = preferred
+        }
+    }
+
+    private fun respondError(message: String, listenAgain: Boolean = true) {
+        stopListening()
+        statusText.text = message
+        setOrbError()
+
+        if (speechReady) {
+            textToSpeech.speak(
+                message,
+                TextToSpeech.QUEUE_FLUSH,
+                null,
+                "error_" + System.currentTimeMillis()
+            )
+        } else if (listenAgain) {
+            scheduleListening()
         }
     }
 
