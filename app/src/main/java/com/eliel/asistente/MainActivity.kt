@@ -4,6 +4,7 @@ import android.Manifest
 import android.app.KeyguardManager
 import android.content.Intent
 import android.app.SearchManager
+import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
 import android.media.AudioManager
 import android.media.ToneGenerator
@@ -791,9 +792,18 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private fun isAccessibilityServiceEnabled(): Boolean =
         NexoAccessibilityStatus.isEnabled(this)
 
+    private fun lockOrientationForPlan() {
+        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LOCKED
+    }
+
+    private fun unlockOrientationAfterPlan() {
+        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+    }
+
     private fun cancelCurrentPlan() {
         planCancelled = true
         planActive = false
+        unlockOrientationAfterPlan()
         NexoPlanSessionStore.clear(this)
         planGeneration++
         planHandler.removeCallbacksAndMessages(null)
@@ -843,6 +853,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
     private fun finishPlanSurface() {
         planActive = false
+        unlockOrientationAfterPlan()
         NexoPlanSessionStore.clear(this)
         setOrbSuccess()
         planProgressText.text = "Completado"
@@ -890,6 +901,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         NexoPlanSessionStore.markStarted(this, planSummary)
         planCancelled = false
         planActive = true
+        lockOrientationForPlan()
         val generation = ++planGeneration
         planHandler.removeCallbacksAndMessages(null)
         statusText.text = "Ejecutando plan…"
@@ -938,6 +950,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private fun failPlanExecution(message: String, logDetail: String) {
         planCancelled = true
         planActive = false
+        unlockOrientationAfterPlan()
         NexoPlanSessionStore.clear(this)
         planGeneration++
         planHandler.removeCallbacksAndMessages(null)
@@ -1257,6 +1270,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
             "answer" -> {
                 planActive = false
+                unlockOrientationAfterPlan()
                 NexoPlanSessionStore.clear(this)
                 NexoActionLog.add(this, "Plan: respuesta", "Respuesta generada")
                 respond(decision.text.ifBlank { plan.speech.ifBlank { "Listo." } })
@@ -1264,6 +1278,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
             "clarify" -> {
                 planActive = false
+                unlockOrientationAfterPlan()
                 NexoPlanSessionStore.clear(this)
                 NexoActionLog.add(this, "Plan: aclaración", "Se solicitó información adicional")
                 respond(decision.text.ifBlank { "Necesito un dato más para continuar." })
