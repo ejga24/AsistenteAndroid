@@ -1,6 +1,7 @@
 package com.eliel.asistente
 
 import android.Manifest
+import android.content.ComponentName
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
@@ -176,7 +177,13 @@ object NexoSystemHealth {
             Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
         ).orEmpty()
 
-        val component = context.packageName + "/" + MiaAccessibilityService::class.java.name
-        return enabled.split(':').any { it.equals(component, ignoreCase = true) }
+        val component = ComponentName(
+            context,
+            MiaAccessibilityService::class.java
+        ).flattenToString()
+
+        return enabled.split(':')
+            .map { it.trim() }
+            .any { it.equals(component, ignoreCase = true) }
     }
 }
