@@ -776,21 +776,20 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             return
         }
 
-        MiaAccessibilityService.queueChatGptRequest(this, text, newChat)
+        val actionId = MiaAccessibilityService.queueChatGptRequest(this, text, newChat)
+        val immediateResult = MiaAccessibilityService.consumeResult(this, actionId)
+        if (immediateResult != null && !immediateResult.success) {
+            respondError("No pude preparar la automatización de ChatGPT de forma segura.")
+            return
+        }
+
         respondAndThen("Listo. Voy a escribirlo en ChatGPT.") {
             startActivity(launchIntent)
         }
     }
 
-    private fun isAccessibilityServiceEnabled(): Boolean {
-        val enabledServices = Settings.Secure.getString(
-            contentResolver,
-            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
-        ) ?: return false
-
-        val component = "${packageName}/${MiaAccessibilityService::class.java.name}"
-        return enabledServices.split(':').any { it.equals(component, ignoreCase = true) }
-    }
+    private fun isAccessibilityServiceEnabled(): Boolean =
+        NexoAccessibilityStatus.isEnabled(this)
 
     private fun delegateToChatGpt(raw: String) {
         if (!isAccessibilityServiceEnabled()) {
