@@ -45,6 +45,7 @@ object NexoSystemHealth {
         val access = accessibilityEnabled(context)
         val ai = MiaAgentPlanner(context).isConfigured()
         val wake = NexoWakeRuntime.status(context)
+        val runtimeIssue = NexoRuntimeState.currentIssue(context)
 
         val checks = listOf(
             NexoHealthCheck(
@@ -94,7 +95,7 @@ object NexoSystemHealth {
         val missingRequired = checks.filter { it.required && !it.ready }
         val state = when {
             !mic -> NexoHealthState.BLOCKED
-            missingRequired.isNotEmpty() -> NexoHealthState.DEGRADED
+            missingRequired.isNotEmpty() || runtimeIssue != null -> NexoHealthState.DEGRADED
             else -> NexoHealthState.READY
         }
 
@@ -108,6 +109,7 @@ object NexoSystemHealth {
             !mic -> "Activa el micrófono para usar NEXO por voz."
             !access -> "Activa Control de aplicaciones para automatizaciones de pantalla."
             !ai -> "Configura Inteligencia para planes complejos y Vision."
+            runtimeIssue != null -> "Último incidente: " + runtimeIssue.source + ". " + runtimeIssue.message
             !camera -> "Vision está disponible cuando autorices la cámara."
             else -> "Todos los núcleos principales están listos."
         }
