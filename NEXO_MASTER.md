@@ -4,7 +4,7 @@
 > Antes de continuar desarrollo, cambios de arquitectura, diseño, seguridad o releases, consultar este documento primero.
 > Los documentos especializados (`NEXO_ARCHITECTURE.md`, `NEXO_DESIGN_SYSTEM.md`) amplían esta información, pero este archivo conserva el estado vigente, decisiones, reglas, pendientes y criterio de release.
 
-**Última actualización:** 04-10-2026 12:40 p. m. · Panamá  
+**Última actualización:** 04-10-2026 12:42 p. m. · Panamá  
 **Repositorio:** `ejga24/AsistenteAndroid`  
 **Rama de desarrollo:** `nexo-agent-v3`  
 **Versión en desarrollo:** `3.0-alpha1`  
@@ -192,6 +192,7 @@ Reglas principales:
 - [x] Volumen.
 - [x] Brillo.
 - [x] Modo carro inicial.
+- [x] Modes Center con estado actual y perfiles futuros claramente desactivados.
 - [x] Activity log.
 - [x] System Health.
 - [x] Security & Privacy Center.
@@ -202,9 +203,9 @@ Reglas principales:
 ### En desarrollo / siguiente cola
 - [ ] Hotword local dedicado **NEXO**.
 - [ ] Confirmaciones sensibles más completas por categoría de acción.
-- [x] Vision/cámara — base CameraX, captura local y módulo desacoplado; análisis IA pendiente.
+- [x] Vision/cámara — CameraX, captura local temporal, análisis IA, UI de resultados y limpieza segura.
 - [ ] Skills configurables desde UI.
-- [ ] Modes: base central creada; casa / trabajo / kiosco pendientes de comportamiento final.
+- [ ] Modes: centro premium creado; Normal/Carro funcionales; Casa/Trabajo/Kiosco pendientes de comportamiento final.
 - [ ] Automation Hub.
 - [ ] Integraciones externas / webhooks / Home Assistant.
 - [ ] Persistencia de contexto de agente.
@@ -214,6 +215,8 @@ Reglas principales:
 - [ ] Accesibilidad visual y font scaling.
 - [x] Setup Center inicial para preparación de permisos y capacidades.
 - [x] Checklist formal de Release Candidate creado.
+- [x] Foreground wake-word gating para evitar comandos por conversación ambiental.
+- [x] Cola de Accessibility para preservar acciones multi-step.
 
 ---
 
