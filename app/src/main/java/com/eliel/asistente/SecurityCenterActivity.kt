@@ -70,7 +70,9 @@ class SecurityCenterActivity : AppCompatActivity() {
             append("• NEXO registra localmente las acciones ejecutadas.\n")
             append("• Los planes se pueden detener desde Now Running.\n")
             append("• Las futuras acciones sensibles requerirán confirmación explícita.\n")
-            append("• Los permisos se solicitan solo cuando una capacidad los necesita.")
+            append("• Los permisos se solicitan solo cuando una capacidad los necesita.\n")
+            append("• Vision envía únicamente la captura solicitada al motor configurado para analizarla.\n")
+            append("• La captura temporal de Vision se elimina después del análisis o de un error.")
         }
     }
 
