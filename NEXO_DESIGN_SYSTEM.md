@@ -1,5 +1,7 @@
 # NEXO Design System Contract
 
+> Project source of truth: `NEXO_MASTER.md`. This file defines the mandatory visual contract.
+
 This document is the UI contract for every current and future NEXO screen. New features must inherit this system rather than introduce independent visual rules.
 
 ## Product character
