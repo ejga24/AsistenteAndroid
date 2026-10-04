@@ -4,7 +4,7 @@
 > Antes de continuar desarrollo, cambios de arquitectura, diseño, seguridad o releases, consultar este documento primero.
 > Los documentos especializados (`NEXO_ARCHITECTURE.md`, `NEXO_DESIGN_SYSTEM.md`) amplían esta información, pero este archivo conserva el estado vigente, decisiones, reglas, pendientes y criterio de release.
 
-**Última actualización:** 04-10-2026 11:26 a. m. · Panamá  
+**Última actualización:** 04-10-2026 12:27 p. m. · Panamá  
 **Repositorio:** `ejga24/AsistenteAndroid`  
 **Rama de desarrollo:** `nexo-agent-v3`  
 **Versión en desarrollo:** `3.0-alpha1`  
@@ -94,6 +94,13 @@ Estado:
 - Security & Privacy Center.
 - Registro local de acciones.
 - Acciones de alto riesgo preparadas para bloqueo.
+
+### Runtime Health / Recovery
+Estado:
+- `NexoSystemHealth` centraliza READY / DEGRADED / BLOCKED.
+- `NexoRuntimeState` conserva incidentes transitorios recientes.
+- `NexoRecoveryPolicy` convierte errores técnicos en recuperación y mensajes claros.
+- Dashboard, Setup Center y System Health consumen la misma fuente de estado.
 
 ### Visual / UX
 Estado:
@@ -195,11 +202,11 @@ Reglas principales:
 - [ ] Integraciones externas / webhooks / Home Assistant.
 - [ ] Persistencia de contexto de agente.
 - [ ] Hardening de credenciales con Android Keystore / backend según necesidad.
-- [ ] Recuperación avanzada ante errores.
+- [x] Recuperación centralizada ante errores con estado degradado temporal.
 - [ ] QA responsive vertical/horizontal.
 - [ ] Accesibilidad visual y font scaling.
 - [x] Setup Center inicial para preparación de permisos y capacidades.
-- [ ] Release checklist automatizable.
+- [x] Checklist formal de Release Candidate creado.
 
 ---
 
@@ -276,7 +283,7 @@ No entregar APK por cada commit.
 - [ ] Pruebas de background/foreground en MagicOS.
 - [ ] Prueba de instalación limpia.
 - [ ] Prueba de actualización desde versión anterior.
-- [ ] Checklist QA documentado y aprobado.
+- [x] Checklist QA documentado; ejecución/aprobación pendiente sobre dispositivo.
 
 La primera versión entregada al usuario será una **Release Candidate**, no una alpha para probar “por probar”.
 
@@ -288,6 +295,7 @@ La primera versión entregada al usuario será una **Release Candidate**, no una
 - `NEXO_ARCHITECTURE.md` — detalle de arquitectura y evolución.
 - `NEXO_DESIGN_SYSTEM.md` — contrato visual obligatorio.
 - `PROJECT_GOVERNANCE_STANDARD.md` — estándar reutilizable para otros repositorios y sistemas web.
+- `NEXO_QA_CHECKLIST.md` — gate formal para Release Candidate.
 - Código fuente y GitHub Actions — implementación vigente.
 
 ---
