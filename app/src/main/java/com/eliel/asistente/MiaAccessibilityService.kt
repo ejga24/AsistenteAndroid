@@ -44,6 +44,7 @@ class MiaAccessibilityService : AccessibilityService() {
                     put("created", System.currentTimeMillis())
                 }
             )
+            return id
         }
 
         fun queueGenericAction(context: Context, action: String, value: String = ""): String {
@@ -65,17 +66,30 @@ class MiaAccessibilityService : AccessibilityService() {
         fun hasPending(context: Context): Boolean =
             peek(context) != null
 
+        fun consumeResult(context: Context, id: String): NexoAccessibilityActionResult? {
+            val prefs = context.getSharedPreferences(RESULT_PREFS, Context.MODE_PRIVATE)
+            val raw = prefs.getString(id, null) ?: return null
+            prefs.edit().remove(id).apply()
+
+            return runCatching {
+                val json = JSONObject(raw)
+                NexoAccessibilityActionResult(
+                    success = json.optBoolean("success", false),
+                    detail = json.optString("detail")
+                )
+            }.getOrNull()
+        }
+
         private fun enqueue(context: Context, item: JSONObject) {
             synchronized(queueLock) {
                 val current = readQueue(context)
                 val next = JSONArray()
-
                 val start = (current.length() - (MAX_QUEUE - 1)).coerceAtLeast(0)
+
                 for (i in start until current.length()) {
                     next.put(current.getJSONObject(i))
                 }
                 next.put(item)
-
                 writeQueue(context, next)
             }
         }
@@ -116,10 +130,12 @@ class MiaAccessibilityService : AccessibilityService() {
                         return@synchronized item
                     }
 
-                    val expiredItem = item
-                    if (expiredItem != null) {
-                        recordResult(context, expiredItem, false, "La acción expiró antes de poder ejecutarse.")
-                    }
+                    recordResult(
+                        context,
+                        item,
+                        false,
+                        "La acción expiró antes de poder ejecutarse."
+                    )
                     queue = withoutHead(queue)
                     changed = true
                 }
@@ -145,16 +161,29 @@ class MiaAccessibilityService : AccessibilityService() {
 
         private fun removeHead(context: Context) {
             synchronized(queueLock) {
-                val queue = readQueue(context)
-                val next = JSONArray()
-                for (i in 1 until queue.length()) {
-                    next.put(queue.getJSONObject(i))
-                }
-                context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-                    .edit()
-                    .putString(KEY_QUEUE, next.toString())
-                    .apply()
+                writeQueue(context, withoutHead(readQueue(context)))
             }
+        }
+
+        private fun recordResult(
+            context: Context,
+            item: JSONObject,
+            success: Boolean,
+            detail: String
+        ) {
+            val id = item.optString("id")
+            if (id.isBlank()) return
+
+            val json = JSONObject().apply {
+                put("success", success)
+                put("detail", detail)
+                put("time", System.currentTimeMillis())
+            }
+
+            context.getSharedPreferences(RESULT_PREFS, Context.MODE_PRIVATE)
+                .edit()
+                .putString(id, json.toString())
+                .apply()
         }
     }
 
