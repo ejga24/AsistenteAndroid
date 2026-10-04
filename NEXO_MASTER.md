@@ -4,10 +4,10 @@
 > Antes de continuar desarrollo, cambios de arquitectura, diseño, seguridad o releases, consultar este documento primero.
 > Los documentos especializados (`NEXO_ARCHITECTURE.md`, `NEXO_DESIGN_SYSTEM.md`) amplían esta información, pero este archivo conserva el estado vigente, decisiones, reglas, pendientes y criterio de release.
 
-**Última actualización:** 04-10-2026 12:49 p. m. · Panamá  
+**Última actualización:** 04-10-2026 5:08 p. m. · Panamá  
 **Repositorio:** `ejga24/AsistenteAndroid`  
 **Rama de desarrollo:** `nexo-agent-v3`  
-**Versión en desarrollo:** `3.0-alpha1`  
+**Versión en desarrollo:** `3.0-alpha1` · preparación RC1  
 **Dispositivo objetivo principal:** HONOR Pad X9a · MagicOS 10 · Android 16 · Snapdragon 685
 
 ---
@@ -204,6 +204,8 @@ Reglas principales:
 - [x] System Health.
 - [x] Security & Privacy Center.
 - [x] Política SAFE / CONFIRM / BLOCK.
+- [x] Premium authorization surface para acciones sensibles.
+- [x] Planes se detienen ante paso desconocido/fallido en vez de continuar en estado incierto.
 - [x] Design System Contract.
 - [x] Layout landscape dedicado para dashboard de tablet.
 - [x] GitHub Actions compilando la rama NEXO.
@@ -289,7 +291,7 @@ Antes de release final:
 No entregar APK por cada commit.
 
 ### Gate para primer APK que se instalará en la HONOR
-- [ ] Wake word suficientemente estable.
+- [x] Wake path RC1 definido con fallback Android + gating exacto; validación física pendiente.
 - [x] Multiacción.
 - [x] Skills base.
 - [x] Control de apps.
@@ -299,7 +301,7 @@ No entregar APK por cada commit.
 - [x] Security Center.
 - [x] Diseño coherente en pantallas principales.
 - [x] Setup Center inicial implementado; onboarding guiado final pendiente de QA.
-- [ ] Pruebas de orientación.
+- [ ] Pruebas de orientación — layout portrait/landscape implementado; validación física pendiente.
 - [ ] Pruebas de permisos.
 - [ ] Pruebas de background/foreground en MagicOS.
 - [ ] Prueba de instalación limpia.
@@ -318,6 +320,7 @@ La primera versión entregada al usuario será una **Release Candidate**, no una
 - `PROJECT_GOVERNANCE_STANDARD.md` — estándar reutilizable para otros repositorios y sistemas web.
 - `NEXO_QA_CHECKLIST.md` — gate formal para Release Candidate.
 - `NEXO_RELEASE_PLAN.md` — estimado, ruta crítica y criterio de entrega del primer APK.
+- `NEXO_INSTALLATION_GUIDE.md` — instalación y QA físico en HONOR Pad.
 - Código fuente y GitHub Actions — implementación vigente.
 
 ---
@@ -350,8 +353,8 @@ No reconstruir el estado desde recuerdos sueltos si este documento está disponi
 
 ## 13. Estimado de primera Release Candidate
 
-Estimado vigente de ingeniería: **12–18 horas efectivas de desarrollo**.
+Estimado vigente de ingeniería: **7–11 horas efectivas de desarrollo**.
 
-A ritmo actual, objetivo de calendario: **24–36 horas** para llegar al primer APK serio que valga la pena instalar, siempre que el hotword local o las restricciones de MagicOS no introduzcan un bloqueo inesperado.
+A ritmo actual, objetivo de calendario: **12–20 horas** para llegar al primer APK serio que valga la pena instalar, siempre que el hotword local o las restricciones de MagicOS no introduzcan un bloqueo inesperado.
 
 La entrega no espera a tener todas las futuras integraciones del roadmap; espera a que el núcleo RC cumpla seguridad, build, fallback de voz, coherencia visual y estabilidad suficiente para que lo restante requiera prueba física en la HONOR.
