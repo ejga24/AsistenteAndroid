@@ -45,13 +45,7 @@ class SecurityCenterActivity : AppCompatActivity() {
         val mic = permissionGranted(Manifest.permission.RECORD_AUDIO)
         val contacts = permissionGranted(Manifest.permission.READ_CONTACTS)
 
-        val enabledServices = Settings.Secure.getString(
-            contentResolver,
-            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
-        ).orEmpty()
-        val component = packageName + "/" + MiaAccessibilityService::class.java.name
-        val accessibility = enabledServices.split(':')
-            .any { it.equals(component, ignoreCase = true) }
+        val accessibility = NexoAccessibilityStatus.isEnabled(this)
 
         val ai = MiaAgentPlanner(this).isConfigured()
 
@@ -67,7 +61,7 @@ class SecurityCenterActivity : AppCompatActivity() {
 
             append("\n\nPOLÍTICA DE NEXO\n")
             append("• Las credenciales se cifran con Android Keystore y no se incluyen en GitHub.\n")
-            append("• El historial local oculta patrones de credenciales antes de guardarlos.\n")
+            append("• El historial local no conserva comandos de voz, texto escrito, consultas ni destinos sensibles.\n")
             append("• El backup de datos privados de NEXO está desactivado.\n")
             append("• NEXO exige la palabra de activación antes de ejecutar órdenes de voz.\n")
             append("• Los planes se pueden detener desde Now Running.\n")
