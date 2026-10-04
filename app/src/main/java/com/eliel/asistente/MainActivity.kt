@@ -404,7 +404,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     override fun onPause() {
         activityResumed = false
         stopListening()
-        if (assistantActive && !planActive &&
+        if (assistantActive &&
             ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
         ) {
             safeSendWakeServiceAction(AssistantWakeService.ACTION_RESUME_LISTENING)
@@ -612,6 +612,25 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private fun handleCommand(raw: String) {
         NexoActionLog.add(this, "Comando de voz", "Orden recibida")
         val command = normalize(raw)
+
+        if (planActive) {
+            val wantsCancel = containsAny(
+                command,
+                "cancela plan", "cancelar plan", "deten plan", "detén plan",
+                "detener plan", "para el plan", "parar plan", "cancela eso",
+                "detente", "deten eso", "detén eso"
+            )
+
+            if (wantsCancel) {
+                cancelCurrentPlan()
+                respond("Plan detenido.")
+            } else {
+                respond(
+                    "Hay un plan en ejecución. Di “NEXO, cancela plan” si quieres detenerlo antes de dar otra orden."
+                )
+            }
+            return
+        }
         val savedPlace = extractSavedPlace(command)
         val youtubeQuery = extractYouTubeQuery(command)
         val spotifyQuery = extractSpotifyQuery(command)
