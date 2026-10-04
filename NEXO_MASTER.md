@@ -184,7 +184,7 @@ Reglas principales:
 ### En desarrollo / siguiente cola
 - [ ] Hotword local dedicado **NEXO**.
 - [ ] Confirmaciones sensibles más completas por categoría de acción.
-- [ ] Vision/cámara.
+- [x] Vision/cámara — base CameraX, captura local y módulo desacoplado; análisis IA pendiente.
 - [ ] Skills configurables desde UI.
 - [ ] Modes: casa / trabajo / kiosco.
 - [ ] Automation Hub.
@@ -283,6 +283,7 @@ La primera versión entregada al usuario será una **Release Candidate**, no una
 - `NEXO_MASTER.md` — fuente principal de verdad.
 - `NEXO_ARCHITECTURE.md` — detalle de arquitectura y evolución.
 - `NEXO_DESIGN_SYSTEM.md` — contrato visual obligatorio.
+- `PROJECT_GOVERNANCE_STANDARD.md` — estándar reutilizable para otros repositorios y sistemas web.
 - Código fuente y GitHub Actions — implementación vigente.
 
 ---
@@ -293,8 +294,8 @@ La primera versión entregada al usuario será una **Release Candidate**, no una
 2. Completar arquitectura/selección del motor local de wake word.
 3. Implementar hotword local detrás de `NexoWakeEngine`.
 4. Ampliar confirmaciones sensibles.
-5. Crear núcleo de Vision.
-6. Añadir UI premium de Vision respetando Design System.
+5. Conectar motor de análisis a Vision.
+6. Completar resultados y estados premium de Vision.
 7. Modes y Automation Hub.
 8. Hardening / onboarding / QA.
 9. Release Candidate para HONOR Pad X9a.
