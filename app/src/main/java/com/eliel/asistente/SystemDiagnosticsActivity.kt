@@ -1,8 +1,6 @@
 package com.eliel.asistente
 
-import android.Manifest
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.os.BatteryManager
 import android.os.Build
 import android.os.Bundle
@@ -10,7 +8,6 @@ import android.provider.Settings
 import android.widget.Button
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContextCompat
 
 class SystemDiagnosticsActivity : AppCompatActivity() {
 
@@ -48,6 +45,10 @@ class SystemDiagnosticsActivity : AppCompatActivity() {
         val battery = (getSystemService(BATTERY_SERVICE) as BatteryManager)
             .getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
         val wake = NexoWakeRuntime.status(this)
+        val versionName = runCatching {
+            packageManager.getPackageInfo(packageName, 0).versionName
+        }.getOrNull().orEmpty()
+        val enabledSkills = NexoSkillPolicy.enabledNames(this)
 
         reportText.text = buildString {
             append("ESTADO GENERAL\n")
