@@ -12,7 +12,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Inteligencia de Mía"
+            android:text="Inteligencia de NEXO"
             android:textSize="26sp"
             android:textStyle="bold"
             android:layout_marginBottom="12dp" />
@@ -20,7 +20,7 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="La clave se guarda únicamente en el almacenamiento privado de esta aplicación y no se sube al repositorio."
+            android:text="La clave se guarda en el almacenamiento privado de NEXO y nunca se incluye en GitHub."
             android:textSize="15sp"
             android:layout_marginBottom="20dp" />
 
