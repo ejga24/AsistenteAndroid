@@ -80,12 +80,16 @@ object NexoSecretStore {
 
     private fun migrateLegacyIfNeeded(context: Context) {
         val securePrefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-        if (securePrefs.contains(KEY_API_CIPHER)) return
-
         val legacy = context.getSharedPreferences(
             MiaAgentPlanner.PREFS,
             Context.MODE_PRIVATE
         )
+
+        if (securePrefs.contains(KEY_API_CIPHER)) {
+            legacy.edit().remove(MiaAgentPlanner.KEY_API_KEY).apply()
+            return
+        }
+
         val oldKey = legacy.getString(MiaAgentPlanner.KEY_API_KEY, "")
             ?.trim()
             .orEmpty()
