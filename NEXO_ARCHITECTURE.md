@@ -129,3 +129,7 @@ La primera instalación en la HONOR será tratada como **release candidate**, no
 - [x] Now Running: plan visible paso a paso con progreso en vivo.
 - [x] Cancelación manual de planes desde la interfaz.
 - [x] Activity e Intelligence alineadas con el sistema visual premium.
+- [x] Design System Contract para impedir divergencias visuales entre módulos.
+- [x] Estilos compartidos de tipografía, botones, inputs, colores, radios y espaciado.
+- [x] Orb semántico con estados visuales para escucha, procesamiento, éxito y error.
+- [x] Security & Privacy Center con estado de permisos y reglas de confianza.
