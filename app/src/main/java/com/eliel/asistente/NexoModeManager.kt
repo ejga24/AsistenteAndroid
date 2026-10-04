@@ -1,6 +1,8 @@
 package com.eliel.asistente
 
+import android.app.Activity
 import android.content.Context
+import android.view.WindowManager
 
 enum class NexoMode(val id: String, val displayName: String) {
     NORMAL("normal", "Normal"),
@@ -28,6 +30,24 @@ object NexoModeManager {
             .apply()
 
         NexoActionLog.add(context, "Modo", mode.displayName)
+    }
+
+    fun applyWindowProfile(activity: Activity, mode: NexoMode = current(activity)) {
+        when (mode) {
+            NexoMode.CAR -> {
+                activity.window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                activity.window.attributes = activity.window.attributes.apply {
+                    screenBrightness = 0.85f
+                }
+            }
+
+            else -> {
+                activity.window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                activity.window.attributes = activity.window.attributes.apply {
+                    screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+                }
+            }
+        }
     }
 
     fun isProductionEnabled(mode: NexoMode): Boolean =
