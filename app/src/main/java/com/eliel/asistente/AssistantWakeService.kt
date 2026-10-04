@@ -53,6 +53,11 @@ class AssistantWakeService : Service(), TextToSpeech.OnInitListener {
     override fun onCreate() {
         super.onCreate()
 
+        if (!NexoVoiceState.isEnabled(this)) {
+            stopSelf()
+            return
+        }
+
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
             stopSelf()
             return
@@ -77,6 +82,11 @@ class AssistantWakeService : Service(), TextToSpeech.OnInitListener {
                 cancelRecognition()
             }
             ACTION_RESUME_LISTENING, ACTION_START, null -> {
+                if (!NexoVoiceState.isEnabled(this)) {
+                    shouldListen = false
+                    stopSelf()
+                    return START_NOT_STICKY
+                }
                 shouldListen = true
                 scheduleListening(350)
             }
