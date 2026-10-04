@@ -100,6 +100,9 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         findViewById<Button>(R.id.historyButton).setOnClickListener {
             startActivity(Intent(this, ActionHistoryActivity::class.java))
         }
+        findViewById<Button>(R.id.diagnosticsButton).setOnClickListener {
+            startActivity(Intent(this, SystemDiagnosticsActivity::class.java))
+        }
 
         findViewById<Button>(R.id.micPermissionButton).setOnClickListener {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
