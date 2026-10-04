@@ -122,3 +122,7 @@ No se entregará NEXO para instalar hasta alcanzar una build candidata que cumpl
 - Checklist de pruebas documentado antes de entregar el APK.
 
 La primera instalación en la HONOR será tratada como **release candidate**, no como experimento.
+
+- [x] Sistema visual premium inicial: paleta, espaciado, tarjetas y tema oscuro.
+- [x] Dashboard con estado operativo, salud del sistema y resumen de capacidades.
+- [x] Pantalla System Health con diagnóstico de permisos, IA y dispositivo.
