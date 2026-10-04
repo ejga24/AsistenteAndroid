@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
+import android.speech.SpeechRecognizer
 import androidx.core.content.ContextCompat
 
 enum class NexoHealthState {
@@ -51,6 +52,7 @@ object NexoSystemHealth {
         val access = accessibilityEnabled(context)
         val ai = MiaAgentPlanner(context).isConfigured()
         val wake = NexoWakeRuntime.status(context)
+        val recognitionAvailable = SpeechRecognizer.isRecognitionAvailable(context)
         val voiceEnabled = NexoVoiceState.isEnabled(context)
         val runtimeIssue = NexoRuntimeState.currentIssue(context)
 
@@ -86,9 +88,13 @@ object NexoSystemHealth {
             NexoHealthCheck(
                 id = "wake",
                 label = "Wake engine",
-                ready = mic,
+                ready = mic && (wake.local || recognitionAvailable),
                 required = true,
-                detail = if (wake.local) "Hotword local" else "Fallback Android activo"
+                detail = when {
+                    wake.local -> "Hotword local"
+                    recognitionAvailable -> "Fallback Android activo"
+                    else -> "Reconocimiento de voz no disponible"
+                }
             ),
             NexoHealthCheck(
                 id = "vision",
