@@ -59,6 +59,7 @@ class SystemDiagnosticsActivity : AppCompatActivity() {
             .any { it.equals(component, ignoreCase = true) }
 
         val ai = MiaAgentPlanner(this).isConfigured()
+        val wake = NexoWakeRuntime.status(this)
         val battery = (getSystemService(BATTERY_SERVICE) as BatteryManager)
             .getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
 
@@ -85,6 +86,10 @@ class SystemDiagnosticsActivity : AppCompatActivity() {
             append("\nAndroid ").append(Build.VERSION.RELEASE)
             append(" · API ").append(Build.VERSION.SDK_INT)
             append("\nBatería ").append(battery).append("%")
+            append("\n\nVOICE CORE\n")
+            append("Wake word: NEXO")
+            append("\nMotor: ").append(wake.displayName)
+            append("\nModo: ").append(if (wake.local) "Local" else "Compatibilidad")
             append("\n\nNEXO\n")
             append("3.0 alpha · ").append(NexoSkillRegistry.knownSkills().size).append(" skills base")
         }
