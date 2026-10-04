@@ -33,10 +33,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="NEXO"
-                    android:textColor="@color/nexo_text"
-                    android:textSize="30sp"
-                    android:textStyle="bold"
-                    android:letterSpacing="0.13" />
+                    style="@style/Nexo.Text.Hero" />
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -97,8 +94,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Di “NEXO” · manos libres"
-                    android:textColor="@color/nexo_text_muted"
-                    android:textSize="14sp" />
+                    style="@style/Nexo.Text.BodyMuted" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -136,9 +132,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="NOW RUNNING"
-                            android:textColor="@color/nexo_accent"
-                            android:textSize="10sp"
-                            android:letterSpacing="0.14" />
+                            style="@style/Nexo.Text.SectionAccent" />
 
                         <TextView
                             android:id="@+id/planTitleText"
@@ -171,7 +165,8 @@
                     android:layout_marginTop="14dp"
                     android:layout_marginBottom="14dp" />
 
-                <Button
+                <com.google.android.material.button.MaterialButton
+                    style="@style/Nexo.Button.Secondary"
                     android:id="@+id/cancelPlanButton"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -207,9 +202,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="SISTEMA"
-                        android:textColor="@color/nexo_text_muted"
-                        android:textSize="10sp"
-                        android:letterSpacing="0.12" />
+                        style="@style/Nexo.Text.Section" />
 
                     <TextView
                         android:id="@+id/healthText"
@@ -243,9 +236,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="CAPACIDADES"
-                        android:textColor="@color/nexo_text_muted"
-                        android:textSize="10sp"
-                        android:letterSpacing="0.12" />
+                        style="@style/Nexo.Text.Section" />
 
                     <TextView
                         android:id="@+id/skillsText"
@@ -263,47 +254,51 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="CONTROLES"
-            android:textColor="@color/nexo_text_muted"
-            android:textSize="11sp"
-            android:letterSpacing="0.14"
+            style="@style/Nexo.Text.Section"
             android:layout_marginBottom="10dp" />
 
-        <Button
+        <com.google.android.material.button.MaterialButton
+            style="@style/Nexo.Button.Secondary"
             android:id="@+id/micPermissionButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Dar permiso de micrófono"
             android:layout_marginBottom="9dp" />
 
-        <Button
+        <com.google.android.material.button.MaterialButton
+            style="@style/Nexo.Button.Secondary"
             android:id="@+id/aiSettingsButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Control de aplicaciones"
             android:layout_marginBottom="9dp" />
 
-        <Button
+        <com.google.android.material.button.MaterialButton
+            style="@style/Nexo.Button.Secondary"
             android:id="@+id/intelligenceButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Inteligencia de NEXO"
             android:layout_marginBottom="9dp" />
 
-        <Button
+        <com.google.android.material.button.MaterialButton
+            style="@style/Nexo.Button.Secondary"
             android:id="@+id/carModeButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Activar modo carro"
             android:layout_marginBottom="9dp" />
 
-        <Button
+        <com.google.android.material.button.MaterialButton
+            style="@style/Nexo.Button.Secondary"
             android:id="@+id/historyButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Actividad de NEXO"
             android:layout_marginBottom="9dp" />
 
-        <Button
+        <com.google.android.material.button.MaterialButton
+            style="@style/Nexo.Button.Secondary"
             android:id="@+id/diagnosticsButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
