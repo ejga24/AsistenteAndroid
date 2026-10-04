@@ -107,6 +107,7 @@ class VisionActivity : AppCompatActivity() {
             val result = OpenAIVisionEngine(this).analyze(bitmap)
             runOnUiThread {
                 result.onSuccess {
+                    NexoRuntimeState.clearIssue(this, "Vision")
                     resultCard.visibility = android.view.View.VISIBLE
                     resultText.text = it.summary
                     stateText.text = "Análisis completado. La captura temporal fue eliminada."
@@ -114,15 +115,13 @@ class VisionActivity : AppCompatActivity() {
                     cleanupCapturedFile(file)
                     NexoActionLog.add(this, "Vision", "Análisis completado y captura temporal eliminada")
                 }.onFailure {
+                    val guidance = NexoRecoveryPolicy.fromThrowable("Vision", it)
+                    NexoRuntimeState.markIssue(this, "Vision", guidance.logMessage)
                     resultCard.visibility = android.view.View.GONE
-                    stateText.text = if (it.message == "NEXO_VISION_NOT_CONFIGURED") {
-                        "Vision necesita que configures la inteligencia de NEXO."
-                    } else {
-                        "No pude analizar la imagen en este momento."
-                    }
+                    stateText.text = guidance.userMessage
                     captureButton.isEnabled = true
                     cleanupCapturedFile(file)
-                    NexoActionLog.add(this, "Vision", it.message ?: "Error de análisis", false)
+                    NexoActionLog.add(this, "Vision", guidance.logMessage, false)
                 }
             }
         }.start()
