@@ -16,15 +16,13 @@
             android:layout_height="wrap_content"
             android:text="Intelligence"
             android:textColor="@color/nexo_text"
-            android:textSize="28sp"
-            android:textStyle="bold" />
+            style="@style/Nexo.Text.H1" />
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Configura el motor que usa NEXO para entender, planificar y encadenar acciones."
-            android:textColor="@color/nexo_text_muted"
-            android:textSize="14sp"
+            style="@style/Nexo.Text.BodyMuted"
             android:layout_marginTop="4dp"
             android:layout_marginBottom="20dp" />
 
@@ -48,9 +46,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="CREDENCIALES"
-                    android:textColor="@color/nexo_accent"
-                    android:textSize="10sp"
-                    android:letterSpacing="0.14"
+                    style="@style/Nexo.Text.SectionAccent"
                     android:layout_marginBottom="8dp" />
 
                 <TextView
@@ -61,7 +57,8 @@
                     android:textSize="13sp"
                     android:layout_marginBottom="16dp" />
 
-                <EditText
+                <com.google.android.material.textfield.TextInputEditText
+                    style="@style/Nexo.Input"
                     android:id="@+id/apiKeyInput"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -80,7 +77,8 @@
                     android:textSize="10sp"
                     android:letterSpacing="0.14" />
 
-                <EditText
+                <com.google.android.material.textfield.TextInputEditText
+                    style="@style/Nexo.Input"
                     android:id="@+id/modelInput"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -92,7 +90,8 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <Button
+        <com.google.android.material.button.MaterialButton
+            style="@style/Nexo.Button.Secondary"
             android:id="@+id/saveAiButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
