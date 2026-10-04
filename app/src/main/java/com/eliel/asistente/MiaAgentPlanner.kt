@@ -81,8 +81,8 @@ class MiaAgentPlanner(private val context: Context) {
                     - youtube: buscar/reproducir; text = búsqueda.
                     - chatgpt: abrir ChatGPT y escribir/enviar; text = consulta; new_chat según corresponda.
                     - vision: abrir el módulo de cámara/visión bajo demanda.
-                    - tap_text: tocar un control visible; target = texto.
-                    - type_text: escribir en el campo editable visible; text = contenido.
+                    - tap_text: tocar un control visible; target = texto; app = aplicación visible objetivo cuando se conozca.
+                    - type_text: escribir en el campo editable visible; text = contenido; app = aplicación visible objetivo cuando se conozca.
                     - back: volver.
                     - home: ir a inicio.
                     - set_volume: volumen multimedia; target = entero 0..100.
@@ -95,9 +95,11 @@ class MiaAgentPlanner(private val context: Context) {
                     2) No uses Accessibility si existe una herramienta directa.
                     3) No incluyas acciones que el usuario no pidió, salvo ajustes estrictamente necesarios para completar una orden.
                     4) Si una acción es ambigua y no puede ejecutarse con seguridad, usa clarify y no continúes después.
-                    5) Si usas vision, vision debe ser la última acción del plan. No inventes ni anticipes lo que la cámara verá.
-                    6) No encadenes acciones que dependan del resultado de vision hasta que exista una herramienta explícita para ese resultado.
-                    7) speech es una confirmación breve del plan completo en español natural de Panamá.
+                    5) Para tap_text y type_text, completa app cuando puedas identificar la aplicación objetivo; no uses otra app distinta.
+
+                    6) Si usas vision, vision debe ser la última acción del plan. No inventes ni anticipes lo que la cámara verá.
+                    7) No encadenes acciones que dependan del resultado de vision hasta que exista una herramienta explícita para ese resultado.
+                    8) speech es una confirmación breve del plan completo en español natural de Panamá.
                     """.trimIndent()
                 )
                 put("input", userRequest)
