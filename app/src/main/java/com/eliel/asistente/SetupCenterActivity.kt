@@ -2,7 +2,6 @@ package com.eliel.asistente
 
 import android.Manifest
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.result.contract.ActivityResultContracts
@@ -10,7 +9,6 @@ import android.provider.Settings
 import android.widget.Button
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContextCompat
 
 class SetupCenterActivity : AppCompatActivity() {
 
@@ -105,15 +103,4 @@ class SetupCenterActivity : AppCompatActivity() {
         }
     }
 
-    private fun permissionGranted(permission: String): Boolean =
-        ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
-
-    private fun isAccessibilityEnabled(): Boolean {
-        val enabledServices = Settings.Secure.getString(
-            contentResolver,
-            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
-        ).orEmpty()
-        val component = packageName + "/" + MiaAccessibilityService::class.java.name
-        return enabledServices.split(':').any { it.equals(component, ignoreCase = true) }
-    }
 }
