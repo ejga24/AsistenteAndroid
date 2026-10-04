@@ -19,8 +19,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Registro de decisiones y acciones de NEXO"
-        android:textColor="@color/nexo_text_muted"
-        android:textSize="14sp"
+        style="@style/Nexo.Text.BodyMuted"
         android:layout_marginTop="4dp"
         android:layout_marginBottom="18dp" />
 
@@ -43,14 +42,14 @@
                 android:id="@+id/historyText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textColor="@color/nexo_text"
-                android:textSize="15sp"
+                style="@style/Nexo.Text.Body"
                 android:lineSpacingExtra="5dp"
                 android:padding="20dp" />
         </ScrollView>
     </com.google.android.material.card.MaterialCardView>
 
-    <Button
+    <com.google.android.material.button.MaterialButton
+        style="@style/Nexo.Button.Secondary"
         android:id="@+id/clearHistoryButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
