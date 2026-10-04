@@ -432,7 +432,6 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
     private fun processRecognizedSpeech(raw: String) {
         val normalized = normalize(raw)
-        val wakeIndex = normalized.indexOf(wakeWord)
 
         if (waitingForCommand) {
             waitingForCommand = false
@@ -453,8 +452,8 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             return
         }
 
-        if (wakeIndex < 0) {
-            // En foreground NEXO no debe ejecutar conversaciones ambientales.
+        val wake = NexoWakePhrase.extract(normalized)
+        if (!wake.found) {
             statusText.text = "Di “NEXO” para activarme."
             setOrbIdle()
             scheduleListening(220)
@@ -464,11 +463,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         playWakeTone()
         setOrbActivated()
 
-        val command = normalized.substring(wakeIndex + wakeWord.length)
-            .trim()
-            .trimStart(',', '.', ':', ';', '-', ' ')
-
-        if (command.isBlank()) {
+        if (wake.command.isBlank()) {
             waitingForCommand = true
             statusText.text = "Sí, dime…"
             setOrbListening()
@@ -487,7 +482,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
         statusText.text = "Entendido…"
         setOrbProcessing()
-        handleCommand(command)
+        handleCommand(wake.command)
     }
 
     private fun playWakeTone() {
