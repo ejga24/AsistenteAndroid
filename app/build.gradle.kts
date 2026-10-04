@@ -4,6 +4,11 @@ plugins {
 }
 
 android {
+    val nexoKeystoreFile = providers.gradleProperty("NEXO_KEYSTORE_FILE").orNull
+    val nexoKeystorePassword = providers.gradleProperty("NEXO_KEYSTORE_PASSWORD").orNull
+    val nexoKeyAlias = providers.gradleProperty("NEXO_KEY_ALIAS").orNull
+    val nexoKeyPassword = providers.gradleProperty("NEXO_KEY_PASSWORD").orNull
+
     namespace = "com.eliel.asistente"
     compileSdk = 35
 
@@ -22,6 +27,31 @@ android {
 
     kotlinOptions {
         jvmTarget = "17"
+    }
+
+    signingConfigs {
+        if (
+            !nexoKeystoreFile.isNullOrBlank() &&
+            !nexoKeystorePassword.isNullOrBlank() &&
+            !nexoKeyAlias.isNullOrBlank() &&
+            !nexoKeyPassword.isNullOrBlank()
+        ) {
+            create("nexoRelease") {
+                storeFile = file(nexoKeystoreFile)
+                storePassword = nexoKeystorePassword
+                keyAlias = nexoKeyAlias
+                keyPassword = nexoKeyPassword
+            }
+        }
+    }
+
+    buildTypes {
+        getByName("release") {
+            signingConfigs.findByName("nexoRelease")?.let {
+                signingConfig = it
+            }
+            isMinifyEnabled = false
+        }
     }
 }
 
