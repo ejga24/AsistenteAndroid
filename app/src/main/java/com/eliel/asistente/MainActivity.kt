@@ -587,11 +587,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         when (decision.tool) {
             "open_app" -> {
                 val target = decision.app.ifBlank { decision.text }
-                val launch = packageManager.getInstalledApplications(PackageManager.GET_META_DATA)
-                    .firstOrNull {
-                        packageManager.getApplicationLabel(it).toString().equals(target, ignoreCase = true)
-                    }
-                    ?.let { packageManager.getLaunchIntentForPackage(it.packageName) }
+                val launch = NexoSkillRegistry.resolveLaunchIntent(this, target)
 
                 if (launch != null) {
                     NexoActionLog.add(this, "Plan: abrir app", target)
