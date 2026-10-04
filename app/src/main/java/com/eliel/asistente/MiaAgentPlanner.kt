@@ -32,10 +32,10 @@ class MiaAgentPlanner(private val context: Context) {
     private val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
     fun isConfigured(): Boolean =
-        !prefs.getString(KEY_API_KEY, "").isNullOrBlank()
+        NexoSecretStore.hasApiKey(context)
 
     fun plan(userRequest: String): Result<NexoAgentPlan> {
-        val apiKey = prefs.getString(KEY_API_KEY, "")?.trim().orEmpty()
+        val apiKey = NexoSecretStore.readApiKey(context).trim()
         if (apiKey.isBlank()) {
             return Result.failure(IllegalStateException("NEXO_AI_NOT_CONFIGURED"))
         }
