@@ -71,6 +71,16 @@ class AssistantWakeService : Service(), TextToSpeech.OnInitListener {
             return
         }
 
+        if (!SpeechRecognizer.isRecognitionAvailable(this)) {
+            NexoRuntimeState.markIssue(
+                this,
+                "Voice Core",
+                "Reconocimiento de voz Android no disponible"
+            )
+            stopSelf()
+            return
+        }
+
         setupRecognizer()
         tts = TextToSpeech(this, this)
     }
@@ -128,8 +138,6 @@ class AssistantWakeService : Service(), TextToSpeech.OnInitListener {
     }
 
     private fun setupRecognizer() {
-        if (!SpeechRecognizer.isRecognitionAvailable(this)) return
-
         speechIntent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
             putExtra(RecognizerIntent.EXTRA_LANGUAGE, "es-PA")
