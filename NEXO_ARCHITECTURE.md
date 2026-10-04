@@ -126,3 +126,6 @@ La primera instalación en la HONOR será tratada como **release candidate**, no
 - [x] Sistema visual premium inicial: paleta, espaciado, tarjetas y tema oscuro.
 - [x] Dashboard con estado operativo, salud del sistema y resumen de capacidades.
 - [x] Pantalla System Health con diagnóstico de permisos, IA y dispositivo.
+- [x] Now Running: plan visible paso a paso con progreso en vivo.
+- [x] Cancelación manual de planes desde la interfaz.
+- [x] Activity e Intelligence alineadas con el sistema visual premium.
