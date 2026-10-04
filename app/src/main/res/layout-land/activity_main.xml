@@ -298,6 +298,14 @@
 
                 <com.google.android.material.button.MaterialButton
                     style="@style/Nexo.Button.Secondary"
+                    android:id="@+id/voiceToggleButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Pausar escucha"
+                    android:layout_marginBottom="7dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    style="@style/Nexo.Button.Secondary"
                     android:id="@+id/historyButton"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
