@@ -1,7 +1,6 @@
 package com.eliel.asistente
 
 import android.os.Bundle
-import android.view.WindowManager
 import android.widget.Button
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
@@ -27,6 +26,7 @@ class ModesActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        NexoModeManager.applyWindowProfile(this)
         refresh()
     }
 
@@ -35,20 +35,14 @@ class ModesActivity : AppCompatActivity() {
     }
 
     private fun applyNormalMode() {
-        window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        window.attributes = window.attributes.apply {
-            screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
-        }
         NexoModeManager.set(this, NexoMode.NORMAL)
+        NexoModeManager.applyWindowProfile(this, NexoMode.NORMAL)
         refresh()
     }
 
     private fun applyCarMode() {
-        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        window.attributes = window.attributes.apply {
-            screenBrightness = 0.85f
-        }
         NexoModeManager.set(this, NexoMode.CAR)
+        NexoModeManager.applyWindowProfile(this, NexoMode.CAR)
         refresh()
     }
 }
