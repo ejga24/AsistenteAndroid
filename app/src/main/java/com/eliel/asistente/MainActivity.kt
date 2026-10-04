@@ -37,6 +37,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private lateinit var healthText: TextView
     private lateinit var skillsText: TextView
     private lateinit var systemStateText: TextView
+    private lateinit var versionText: TextView
     private lateinit var nowRunningCard: android.view.View
     private lateinit var planTitleText: TextView
     private lateinit var planProgressText: TextView
@@ -94,6 +95,11 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         healthText = findViewById(R.id.healthText)
         skillsText = findViewById(R.id.skillsText)
         systemStateText = findViewById(R.id.systemStateText)
+        versionText = findViewById(R.id.versionText)
+        val versionName = runCatching {
+            packageManager.getPackageInfo(packageName, 0).versionName
+        }.getOrNull().orEmpty()
+        versionText.text = "AGENT OS · " + versionName.ifBlank { "3.0" }
         nowRunningCard = findViewById(R.id.nowRunningCard)
         planTitleText = findViewById(R.id.planTitleText)
         planProgressText = findViewById(R.id.planProgressText)
