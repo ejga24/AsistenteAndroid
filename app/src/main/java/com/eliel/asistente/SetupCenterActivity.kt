@@ -3,7 +3,9 @@ package com.eliel.asistente
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
+import androidx.activity.result.contract.ActivityResultContracts
 import android.provider.Settings
 import android.widget.Button
 import android.widget.TextView
@@ -14,6 +16,12 @@ class SetupCenterActivity : AppCompatActivity() {
 
     private lateinit var progressText: TextView
     private lateinit var checklistText: TextView
+
+    private val notificationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) {
+        refresh()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -53,7 +61,7 @@ class SetupCenterActivity : AppCompatActivity() {
     private fun refresh() {
         val health = NexoSystemHealth.snapshot(this)
         val primaryChecks = health.checks.filter {
-            it.id in setOf("microphone", "accessibility", "intelligence", "vision")
+            it.id in setOf("microphone", "accessibility", "intelligence", "vision", "notifications", "battery")
         }
         val completed = primaryChecks.count { it.ready }
         val percent = (completed * 100) / primaryChecks.size
