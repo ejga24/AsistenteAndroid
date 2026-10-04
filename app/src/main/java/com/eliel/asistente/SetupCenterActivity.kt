@@ -76,7 +76,7 @@ class SetupCenterActivity : AppCompatActivity() {
     private fun refresh() {
         val health = NexoSystemHealth.snapshot(this)
         val primaryChecks = health.checks.filter {
-            it.id in setOf("microphone", "accessibility", "intelligence", "vision", "notifications", "battery")
+            it.id in setOf("voice", "microphone", "accessibility", "intelligence", "vision", "notifications", "battery")
         }
         val completed = primaryChecks.count { it.ready }
         val percent = (completed * 100) / primaryChecks.size
