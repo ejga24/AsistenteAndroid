@@ -330,6 +330,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     override fun onResume() {
         super.onResume()
         activityResumed = true
+        NexoModeManager.applyWindowProfile(this)
 
         val micButton = findViewById<Button>(R.id.micPermissionButton)
         val accessButton = findViewById<Button>(R.id.aiSettingsButton)
@@ -1623,13 +1624,12 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             if (speak) requireSkill("modes")
             return
         }
-        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        window.attributes = window.attributes.apply { screenBrightness = 0.85f }
+        NexoModeManager.set(this, NexoMode.CAR)
+        NexoModeManager.applyWindowProfile(this, NexoMode.CAR)
         val audio = getSystemService(AUDIO_SERVICE) as AudioManager
         val max = audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
         val target = (max * 0.65f).toInt().coerceAtLeast(1)
         audio.setStreamVolume(AudioManager.STREAM_MUSIC, target, 0)
-        NexoModeManager.set(this, NexoMode.CAR)
         NexoActionLog.add(this, "Modo carro", "Pantalla activa, brillo alto y audio preparado")
         if (speak) respond("Modo carro activado. Mantendré la pantalla encendida y el audio preparado.")
     }
