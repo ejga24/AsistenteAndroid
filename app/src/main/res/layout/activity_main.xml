@@ -310,6 +310,14 @@
             android:id="@+id/securityButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Security &amp; Privacy" />
+            android:text="Security &amp; Privacy"
+            android:layout_marginBottom="9dp" />
+
+        <com.google.android.material.button.MaterialButton
+            style="@style/Nexo.Button.Secondary"
+            android:id="@+id/visionButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Vision" />
     </LinearLayout>
 </ScrollView>
