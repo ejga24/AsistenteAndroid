@@ -12,6 +12,14 @@ object NexoActionLog {
     private const val KEY = "entries"
     private const val MAX = 80
 
+    private fun sanitizeDetail(value: String): String {
+        if (value.isBlank()) return ""
+        return value
+            .replace(Regex("""sk-[A-Za-z0-9_-]{12,}"""), "[credencial oculta]")
+            .replace(Regex("""(?i)bearer\s+[A-Za-z0-9._-]{12,}"""), "Bearer [oculto]")
+            .take(280)
+    }
+
     fun add(context: Context, action: String, detail: String = "", success: Boolean = true) {
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         val current = runCatching { JSONArray(prefs.getString(KEY, "[]")) }.getOrElse { JSONArray() }
@@ -19,7 +27,7 @@ object NexoActionLog {
         next.put(JSONObject().apply {
             put("time", System.currentTimeMillis())
             put("action", action)
-            put("detail", detail)
+            put("detail", sanitizeDetail(detail))
             put("success", success)
         })
         for (i in 0 until minOf(current.length(), MAX - 1)) next.put(current.get(i))
