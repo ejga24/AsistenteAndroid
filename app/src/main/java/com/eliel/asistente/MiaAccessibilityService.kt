@@ -223,6 +223,7 @@ class MiaAccessibilityService : AccessibilityService() {
             TYPE_CHATGPT -> executeChatGpt(pending)
             TYPE_GENERIC -> executeGenericAction(pending)
             else -> {
+                recordResult(this, pending, false, "Tipo de acción no soportado.")
                 removeHead(this)
                 busy = false
             }
@@ -234,6 +235,7 @@ class MiaAccessibilityService : AccessibilityService() {
         val newChat = pending.optBoolean("new_chat", true)
 
         if (text.isBlank()) {
+            recordResult(this, pending, false, "La consulta estaba vacía.")
             removeHead(this)
             busy = false
             return
@@ -267,7 +269,7 @@ class MiaAccessibilityService : AccessibilityService() {
             editor.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, args)
 
             handler.postDelayed({
-                val sent = clickFirstMatching(
+                var sent = clickFirstMatching(
                     "Enviar", "Send", "Enviar mensaje", "Send message"
                 ) || clickNodeByDescription(
                     rootInActiveWindow,
@@ -275,10 +277,16 @@ class MiaAccessibilityService : AccessibilityService() {
                 )
 
                 if (!sent) {
-                    findLikelySendButton(rootInActiveWindow)
-                        ?.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+                    sent = findLikelySendButton(rootInActiveWindow)
+                        ?.performAction(AccessibilityNodeInfo.ACTION_CLICK) == true
                 }
 
+                recordResult(
+                    this,
+                    pending,
+                    sent,
+                    if (sent) "Consulta enviada." else "No encontré el control para enviar."
+                )
                 removeHead(this)
                 busy = false
                 triggerNext()
@@ -290,22 +298,34 @@ class MiaAccessibilityService : AccessibilityService() {
         val action = pending.optString("action")
         val value = pending.optString("value")
 
-        when (action) {
+        val success = when (action) {
             "tap_text" -> clickFirstMatching(value)
             "type_text" -> {
                 val editor = findEditableNode(rootInActiveWindow)
                 if (editor != null) {
                     val args = Bundle().apply {
-                        putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, value)
+                        putCharSequence(
+                            AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE,
+                            value
+                        )
                     }
                     editor.performAction(AccessibilityNodeInfo.ACTION_FOCUS)
                     editor.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, args)
+                } else {
+                    false
                 }
             }
             "back" -> performGlobalAction(GLOBAL_ACTION_BACK)
             "home" -> performGlobalAction(GLOBAL_ACTION_HOME)
+            else -> false
         }
 
+        recordResult(
+            this,
+            pending,
+            success,
+            if (success) "Acción ejecutada." else "No se pudo ejecutar la acción visible."
+        )
         removeHead(this)
         busy = false
         triggerNext()
