@@ -78,23 +78,32 @@ class OpenAIVisionEngine(private val context: Context) : NexoVisionEngine {
                 setRequestProperty("Content-Type", "application/json")
             }
 
-            connection.outputStream.use {
-                it.write(body.toString().toByteArray())
+            try {
+                connection.outputStream.use {
+                    it.write(body.toString().toByteArray(Charsets.UTF_8))
+                }
+
+                val code = connection.responseCode
+                val stream = if (code in 200..299) {
+                    connection.inputStream
+                } else {
+                    connection.errorStream
+                }
+                val responseText = stream?.bufferedReader()?.use { it.readText() }.orEmpty()
+
+                if (code !in 200..299) {
+                    throw IllegalStateException("Vision HTTP " + code)
+                }
+                if (responseText.isBlank()) {
+                    throw IllegalStateException("Vision devolvió una respuesta vacía.")
+                }
+
+                val response = JSONObject(responseText)
+                val summary = extractOutputText(response)
+                NexoVisionResult(summary = summary)
+            } finally {
+                connection.disconnect()
             }
-
-            val code = connection.responseCode
-            val responseText = (
-                if (code in 200..299) connection.inputStream
-                else connection.errorStream
-            ).bufferedReader().use { it.readText() }
-
-            if (code !in 200..299) {
-                throw IllegalStateException("Vision HTTP " + code)
-            }
-
-            val response = JSONObject(responseText)
-            val summary = extractOutputText(response)
-            NexoVisionResult(summary = summary)
         }
     }
 
