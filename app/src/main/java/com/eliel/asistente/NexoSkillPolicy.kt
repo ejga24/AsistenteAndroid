@@ -32,6 +32,12 @@ object NexoSkillPolicy {
             tools = setOf("spotify", "youtube")
         ),
         NexoSkillDefinition(
+            id = "messaging",
+            name = "Mensajería",
+            description = "WhatsApp y contactos asociados.",
+            tools = emptySet()
+        ),
+        NexoSkillDefinition(
             id = "chatgpt",
             name = "ChatGPT",
             description = "Abrir y automatizar ChatGPT.",
