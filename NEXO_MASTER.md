@@ -7,7 +7,7 @@
 **Última actualización:** 04-10-2026 5:08 p. m. · Panamá  
 **Repositorio:** `ejga24/AsistenteAndroid`  
 **Rama de desarrollo:** `nexo-agent-v3`  
-**Versión en desarrollo:** `3.0-alpha1` · preparación RC1  
+**Versión en desarrollo:** `3.0-rc1` · Release Candidate en cierre técnico  
 **Dispositivo objetivo principal:** HONOR Pad X9a · MagicOS 10 · Android 16 · Snapdragon 685
 
 ---
