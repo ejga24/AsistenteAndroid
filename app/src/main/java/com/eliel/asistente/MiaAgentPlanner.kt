@@ -11,7 +11,11 @@ data class MiaAgentDecision(
     val app: String = "",
     val text: String = "",
     val target: String = "",
-    val newChat: Boolean = false,
+    val newChat: Boolean = false
+)
+
+data class NexoAgentPlan(
+    val actions: List<MiaAgentDecision>,
     val speech: String = ""
 )
 
@@ -22,6 +26,7 @@ class MiaAgentPlanner(private val context: Context) {
         const val KEY_API_KEY = "openai_api_key"
         const val KEY_MODEL = "openai_model"
         const val DEFAULT_MODEL = "gpt-5.6-luna"
+        private const val MAX_ACTIONS = 6
     }
 
     private val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -29,38 +34,67 @@ class MiaAgentPlanner(private val context: Context) {
     fun isConfigured(): Boolean =
         !prefs.getString(KEY_API_KEY, "").isNullOrBlank()
 
-    fun plan(userRequest: String): Result<MiaAgentDecision> {
+    fun plan(userRequest: String): Result<NexoAgentPlan> {
         val apiKey = prefs.getString(KEY_API_KEY, "")?.trim().orEmpty()
         if (apiKey.isBlank()) {
-            return Result.failure(IllegalStateException("MIA_AI_NOT_CONFIGURED"))
+            return Result.failure(IllegalStateException("NEXO_AI_NOT_CONFIGURED"))
         }
 
         val model = prefs.getString(KEY_MODEL, DEFAULT_MODEL)?.trim()
             .takeUnless { it.isNullOrBlank() } ?: DEFAULT_MODEL
 
         return runCatching {
+            val actionSchema = JSONObject().apply {
+                put("type", "object")
+                put("additionalProperties", false)
+                put("properties", JSONObject().apply {
+                    put("tool", JSONObject().apply {
+                        put("type", "string")
+                        put("enum", JSONArray(listOf(
+                            "open_app", "waze", "spotify", "youtube", "chatgpt",
+                            "tap_text", "type_text", "back", "home",
+                            "set_volume", "set_brightness", "car_mode",
+                            "answer", "clarify"
+                        )))
+                    })
+                    put("app", JSONObject().put("type", "string"))
+                    put("text", JSONObject().put("type", "string"))
+                    put("target", JSONObject().put("type", "string"))
+                    put("new_chat", JSONObject().put("type", "boolean"))
+                })
+                put("required", JSONArray(listOf("tool", "app", "text", "target", "new_chat")))
+            }
+
             val body = JSONObject().apply {
                 put("model", model)
                 put("reasoning", JSONObject().put("effort", "low"))
                 put(
                     "instructions",
                     """
-                    Eres el planificador de NEXO, un agente de voz que controla una tableta Android.
-                    Convierte la solicitud del usuario en UNA acción concreta y segura.
-                    No inventes datos que no estén en la solicitud.
-                    Usa:
-                    - open_app: abrir una aplicación por nombre.
-                    - waze: navegar a un destino.
-                    - spotify: buscar/reproducir música en Spotify.
-                    - youtube: buscar/reproducir contenido en YouTube.
-                    - chatgpt: abrir ChatGPT, opcionalmente crear chat nuevo y escribir/enviar una consulta.
-                    - tap_text: tocar un elemento visible por su texto.
-                    - type_text: escribir texto en el campo editable visible.
-                    - back: volver atrás.
+                    Eres el cerebro de planificación de NEXO, un agente Android en una HONOR Pad.
+                    Convierte la solicitud del usuario en un plan de 1 a $MAX_ACTIONS acciones, en el orden correcto.
+                    Divide solicitudes compuestas en varias acciones. No inventes destinos, nombres, textos ni aplicaciones.
+                    Herramientas:
+                    - open_app: abrir una aplicación; app = nombre visible.
+                    - waze: navegar; target = destino.
+                    - spotify: buscar/reproducir; text = búsqueda.
+                    - youtube: buscar/reproducir; text = búsqueda.
+                    - chatgpt: abrir ChatGPT y escribir/enviar; text = consulta; new_chat según corresponda.
+                    - tap_text: tocar un control visible; target = texto.
+                    - type_text: escribir en el campo editable visible; text = contenido.
+                    - back: volver.
                     - home: ir a inicio.
-                    - answer: responder verbalmente sin ejecutar acción.
-                    - clarify: pedir una aclaración imprescindible.
-                    En speech escribe una confirmación corta y natural en español de Panamá.
+                    - set_volume: volumen multimedia; target = entero 0..100.
+                    - set_brightness: brillo de pantalla; target = entero 0..100.
+                    - car_mode: target = "on" u "off".
+                    - answer: solo responder; text = respuesta.
+                    - clarify: falta un dato imprescindible; text = pregunta corta.
+                    Reglas:
+                    1) Si el usuario pide varias cosas, genera varias acciones.
+                    2) No uses Accessibility si existe una herramienta directa.
+                    3) No incluyas acciones que el usuario no pidió, salvo ajustes estrictamente necesarios para completar una orden.
+                    4) Si una acción es ambigua y no puede ejecutarse con seguridad, usa clarify y no continúes después.
+                    5) speech es una confirmación breve del plan completo en español natural de Panamá.
                     """.trimIndent()
                 )
                 put("input", userRequest)
@@ -70,50 +104,22 @@ class MiaAgentPlanner(private val context: Context) {
                         "format",
                         JSONObject().apply {
                             put("type", "json_schema")
-                            put("name", "mia_android_action")
+                            put("name", "nexo_android_plan")
                             put("strict", true)
-                            put(
-                                "schema",
-                                JSONObject().apply {
-                                    put("type", "object")
-                                    put("additionalProperties", false)
-                                    put(
-                                        "properties",
-                                        JSONObject().apply {
-                                            put(
-                                                "tool",
-                                                JSONObject().apply {
-                                                    put("type", "string")
-                                                    put(
-                                                        "enum",
-                                                        JSONArray(
-                                                            listOf(
-                                                                "open_app", "waze", "spotify", "youtube",
-                                                                "chatgpt", "tap_text", "type_text",
-                                                                "back", "home", "answer", "clarify"
-                                                            )
-                                                        )
-                                                    )
-                                                }
-                                            )
-                                            put("app", JSONObject().put("type", "string"))
-                                            put("text", JSONObject().put("type", "string"))
-                                            put("target", JSONObject().put("type", "string"))
-                                            put("new_chat", JSONObject().put("type", "boolean"))
-                                            put("speech", JSONObject().put("type", "string"))
-                                        }
-                                    )
-                                    put(
-                                        "required",
-                                        JSONArray(
-                                            listOf(
-                                                "tool", "app", "text", "target",
-                                                "new_chat", "speech"
-                                            )
-                                        )
-                                    )
-                                }
-                            )
+                            put("schema", JSONObject().apply {
+                                put("type", "object")
+                                put("additionalProperties", false)
+                                put("properties", JSONObject().apply {
+                                    put("actions", JSONObject().apply {
+                                        put("type", "array")
+                                        put("minItems", 1)
+                                        put("maxItems", MAX_ACTIONS)
+                                        put("items", actionSchema)
+                                    })
+                                    put("speech", JSONObject().put("type", "string"))
+                                })
+                                put("required", JSONArray(listOf("actions", "speech")))
+                            })
                         }
                     )
                 )
@@ -141,22 +147,33 @@ class MiaAgentPlanner(private val context: Context) {
 
             val responseJson = JSONObject(responseText)
             val structuredText = extractOutputText(responseJson)
-            val action = JSONObject(structuredText)
+            val planJson = JSONObject(structuredText)
+            val actionArray = planJson.getJSONArray("actions")
+            val actions = buildList {
+                for (i in 0 until minOf(actionArray.length(), MAX_ACTIONS)) {
+                    val action = actionArray.getJSONObject(i)
+                    add(
+                        MiaAgentDecision(
+                            tool = action.getString("tool"),
+                            app = action.optString("app"),
+                            text = action.optString("text"),
+                            target = action.optString("target"),
+                            newChat = action.optBoolean("new_chat", false)
+                        )
+                    )
+                }
+            }
 
-            MiaAgentDecision(
-                tool = action.getString("tool"),
-                app = action.optString("app"),
-                text = action.optString("text"),
-                target = action.optString("target"),
-                newChat = action.optBoolean("new_chat", false),
-                speech = action.optString("speech")
+            NexoAgentPlan(
+                actions = actions,
+                speech = planJson.optString("speech")
             )
         }
     }
 
     private fun extractOutputText(response: JSONObject): String {
         val output = response.optJSONArray("output")
-            ?: throw IllegalStateException("La IA no devolvió una acción.")
+            ?: throw IllegalStateException("La IA no devolvió un plan.")
 
         for (i in 0 until output.length()) {
             val item = output.optJSONObject(i) ?: continue
