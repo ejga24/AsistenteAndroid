@@ -56,6 +56,10 @@
             android:exported="false" />
 
         <activity
+            android:name=".SystemDiagnosticsActivity"
+            android:exported="false" />
+
+        <activity
             android:name=".MainActivity"
             android:exported="true"
             android:showWhenLocked="true"
