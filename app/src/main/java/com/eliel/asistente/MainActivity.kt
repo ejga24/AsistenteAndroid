@@ -24,6 +24,7 @@ import android.speech.tts.UtteranceProgressListener
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
+import android.view.WindowManager
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
@@ -47,7 +48,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private var pendingAction: (() -> Unit)? = null
     private var pendingContactName: String? = null
     private var waitingForCommand = false
-    private val wakeWord = "mia"
+    private val wakeWord = "nexo"
 
     private val micPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -83,6 +84,15 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         setOrbIdle()
         findViewById<Button>(R.id.aiSettingsButton).setOnClickListener {
             startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+        }
+        findViewById<Button>(R.id.intelligenceButton).setOnClickListener {
+            startActivity(Intent(this, AgentSettingsActivity::class.java))
+        }
+        findViewById<Button>(R.id.carModeButton).setOnClickListener {
+            activateCarMode()
+        }
+        findViewById<Button>(R.id.historyButton).setOnClickListener {
+            startActivity(Intent(this, ActionHistoryActivity::class.java))
         }
 
         findViewById<Button>(R.id.micPermissionButton).setOnClickListener {
@@ -290,7 +300,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             }
             ContextCompat.startForegroundService(this, serviceIntent)
         } catch (_: Exception) {
-            statusText.text = "Mía está lista. La escucha en segundo plano se activará cuando Android lo permita."
+            statusText.text = "NEXO está listo. La escucha en segundo plano se activará cuando Android lo permita."
         }
     }
 
@@ -383,6 +393,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     }
 
     private fun handleCommand(raw: String) {
+        NexoActionLog.add(this, "Comando de voz", raw)
         val command = normalize(raw)
         val savedPlace = extractSavedPlace(command)
         val youtubeQuery = extractYouTubeQuery(command)
@@ -392,6 +403,18 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         val chatGptRequest = extractChatGptRequest(command)
 
         when {
+            containsAny(command, "modo carro", "activa modo carro", "activar modo carro") -> activateCarMode()
+            containsAny(command, "modo normal", "desactiva modo carro", "salir de modo carro") -> deactivateCarMode()
+            containsAny(command, "historial", "actividad de nexo", "que hiciste") -> {
+                respondAndThen("Abriendo mi actividad reciente.") {
+                    startActivity(Intent(this, ActionHistoryActivity::class.java))
+                }
+            }
+            containsAny(command, "configura tu inteligencia", "configurar inteligencia", "inteligencia de nexo") -> {
+                respondAndThen("Abriendo la configuración de inteligencia.") {
+                    startActivity(Intent(this, AgentSettingsActivity::class.java))
+                }
+            }
             containsAny(command, "deja de escuchar", "detente", "pausa asistente", "para de escuchar") -> {
                 assistantActive = false
                 stopListening()
@@ -419,7 +442,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             containsAny(command, "que puedes hacer", "ayuda", "comandos") -> respond(
                 "Puedo abrir aplicaciones, usar Waze, Spotify, YouTube y ejecutar comandos de voz directamente."
             )
-            else -> respond("No entendí esa orden. Inténtalo de otra forma.")
+            else -> runAgentPlanner(raw)
         }
     }
 
@@ -465,7 +488,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private fun automateChatGpt(text: String, newChat: Boolean) {
         if (!isAccessibilityServiceEnabled()) {
             respondAndThen(
-                "Para controlar aplicaciones necesito que actives el acceso de Mía una sola vez. Te llevo a la pantalla para habilitarlo."
+                "Para controlar aplicaciones necesito que actives el acceso de NEXO una sola vez. Te llevo a la pantalla para habilitarlo."
             ) {
                 startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
             }
@@ -497,7 +520,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private fun delegateToChatGpt(raw: String) {
         if (!isAccessibilityServiceEnabled()) {
             respondAndThen(
-                "Para usar ChatGPT como mi inteligencia necesito que actives el acceso de Mía una sola vez."
+                "Para usar ChatGPT como mi inteligencia necesito que actives el acceso de NEXO una sola vez."
             ) {
                 startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
             }
@@ -561,7 +584,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
             "tap_text", "type_text", "back", "home" -> {
                 if (!isAccessibilityServiceEnabled()) {
-                    respondAndThen("Necesito que actives el acceso de Mía para controlar la pantalla.") {
+                    respondAndThen("Necesito que actives el acceso de NEXO para controlar la pantalla.") {
                         startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
                     }
                     return
@@ -586,8 +609,10 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private fun openPackage(packageName: String, displayName: String) {
         val launchIntent = packageManager.getLaunchIntentForPackage(packageName)
         if (launchIntent != null) {
+            NexoActionLog.add(this, "Abrir aplicación", displayName)
             respondAndThen("Abriendo $displayName") { startActivity(launchIntent) }
         } else {
+            NexoActionLog.add(this, "Abrir aplicación", "$displayName no está instalado", false)
             respond("$displayName no está instalado.")
         }
     }
@@ -941,6 +966,24 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             orbView.tag = this
             start()
         }
+    }
+
+    private fun activateCarMode() {
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        window.attributes = window.attributes.apply { screenBrightness = 0.85f }
+        val audio = getSystemService(AUDIO_SERVICE) as AudioManager
+        val max = audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+        val target = (max * 0.65f).toInt().coerceAtLeast(1)
+        audio.setStreamVolume(AudioManager.STREAM_MUSIC, target, 0)
+        NexoActionLog.add(this, "Modo carro", "Pantalla activa, brillo alto y audio preparado")
+        respond("Modo carro activado. Mantendré la pantalla encendida y el audio preparado.")
+    }
+
+    private fun deactivateCarMode() {
+        window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        window.attributes = window.attributes.apply { screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE }
+        NexoActionLog.add(this, "Modo carro", "Desactivado")
+        respond("Modo carro desactivado.")
     }
 
     private fun openCalculator() {
