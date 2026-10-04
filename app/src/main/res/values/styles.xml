@@ -35,7 +35,7 @@
     </style>
 
     <style name="Nexo.Button" parent="Widget.Material3.Button">
-        <item name="android:minHeight">48dp</item>
+        <item name="android:minHeight">@dimen/nexo_touch_min</item>
         <item name="cornerRadius">16dp</item>
         <item name="android:textAllCaps">false</item>
         <item name="android:textStyle">bold</item>
@@ -45,6 +45,19 @@
         <item name="android:minHeight">48dp</item>
         <item name="cornerRadius">16dp</item>
         <item name="android:textAllCaps">false</item>
+    </style>
+
+    <style name="Nexo.Card" parent="Widget.Material3.CardView.Filled">
+        <item name="cardBackgroundColor">@color/nexo_surface</item>
+        <item name="cardCornerRadius">@dimen/nexo_card_radius</item>
+        <item name="cardElevation">0dp</item>
+        <item name="strokeColor">@color/nexo_outline</item>
+        <item name="strokeWidth">1dp</item>
+    </style>
+
+    <style name="Nexo.Card.Accent" parent="Nexo.Card">
+        <item name="cardBackgroundColor">@color/nexo_accent_soft</item>
+        <item name="strokeColor">@color/nexo_accent</item>
     </style>
 
     <style name="Nexo.Input" parent="Widget.Material3.TextInputEditText.FilledBox">
