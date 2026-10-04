@@ -51,6 +51,23 @@ class SetupCenterActivity : AppCompatActivity() {
         findViewById<Button>(R.id.setupVisionButton).setOnClickListener {
             startActivity(Intent(this, VisionActivity::class.java))
         }
+
+        findViewById<Button>(R.id.setupNotificationsButton).setOnClickListener {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            } else {
+                startActivity(
+                    Intent(
+                        Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                        android.net.Uri.parse("package:" + packageName)
+                    )
+                )
+            }
+        }
+
+        findViewById<Button>(R.id.setupBatteryButton).setOnClickListener {
+            startActivity(Intent(Settings.ACTION_BATTERY_SAVER_SETTINGS))
+        }
     }
 
     override fun onResume() {
