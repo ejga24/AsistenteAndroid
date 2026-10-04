@@ -648,6 +648,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     }
 
     private fun finishPlanSurface() {
+        setOrbSuccess()
         planProgressText.text = "Completado"
         handler.postDelayed({
             if (::nowRunningCard.isInitialized) nowRunningCard.visibility = android.view.View.GONE
@@ -671,6 +672,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                 result.onSuccess { executeAgentPlan(it) }
                     .onFailure {
                         NexoActionLog.add(this, "Plan IA", it.message ?: "Error desconocido", false)
+                        setOrbError()
                         respond("No pude procesar esa orden con mi inteligencia en este momento.")
                     }
             }
@@ -1148,26 +1150,42 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         }
     }
 
-    private fun makeOrbDrawable(alpha: Int): GradientDrawable =
-        GradientDrawable().apply {
+    private fun makeOrbDrawable(alpha: Int, colorRes: Int): GradientDrawable {
+        val base = ContextCompat.getColor(this, colorRes)
+        val fill = android.graphics.Color.argb(
+            alpha,
+            android.graphics.Color.red(base),
+            android.graphics.Color.green(base),
+            android.graphics.Color.blue(base)
+        )
+        val stroke = android.graphics.Color.argb(
+            150,
+            android.graphics.Color.red(base),
+            android.graphics.Color.green(base),
+            android.graphics.Color.blue(base)
+        )
+        return GradientDrawable().apply {
             shape = GradientDrawable.OVAL
-            setColor(android.graphics.Color.argb(alpha, 255, 255, 255))
-            setStroke(3, android.graphics.Color.argb(120, 255, 255, 255))
+            setColor(fill)
+            setStroke(3, stroke)
         }
+    }
 
     private fun setOrbIdle() {
         if (!::orbView.isInitialized) return
+        (orbView.tag as? ObjectAnimator)?.cancel()
         orbView.animate().cancel()
-        orbView.background = makeOrbDrawable(70)
+        orbView.background = makeOrbDrawable(68, R.color.nexo_text_muted)
         orbView.scaleX = 0.72f
         orbView.scaleY = 0.72f
-        orbView.alpha = 0.75f
+        orbView.alpha = 0.76f
     }
 
     private fun setOrbActivated() {
         if (!::orbView.isInitialized) return
+        (orbView.tag as? ObjectAnimator)?.cancel()
         orbView.animate().cancel()
-        orbView.background = makeOrbDrawable(150)
+        orbView.background = makeOrbDrawable(160, R.color.nexo_accent)
         orbView.animate()
             .scaleX(1.22f)
             .scaleY(1.22f)
@@ -1178,8 +1196,9 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
     private fun setOrbListening() {
         if (!::orbView.isInitialized) return
+        (orbView.tag as? ObjectAnimator)?.cancel()
         orbView.animate().cancel()
-        orbView.background = makeOrbDrawable(135)
+        orbView.background = makeOrbDrawable(145, R.color.nexo_accent)
         orbView.scaleX = 1.0f
         orbView.scaleY = 1.0f
         orbView.alpha = 1f
@@ -1201,10 +1220,10 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private fun setOrbProcessing() {
         if (!::orbView.isInitialized) return
         (orbView.tag as? ObjectAnimator)?.cancel()
-        orbView.background = makeOrbDrawable(100)
+        orbView.background = makeOrbDrawable(115, R.color.nexo_warning)
         orbView.scaleX = 0.95f
         orbView.scaleY = 0.95f
-        orbView.alpha = 0.9f
+        orbView.alpha = 0.94f
 
         ObjectAnimator.ofFloat(orbView, android.view.View.ROTATION, 0f, 360f).apply {
             duration = 1200
@@ -1213,6 +1232,22 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             orbView.tag = this
             start()
         }
+    }
+
+    private fun setOrbSuccess() {
+        if (!::orbView.isInitialized) return
+        (orbView.tag as? ObjectAnimator)?.cancel()
+        orbView.animate().cancel()
+        orbView.background = makeOrbDrawable(150, R.color.nexo_success)
+        orbView.animate().scaleX(1.08f).scaleY(1.08f).alpha(1f).setDuration(220).start()
+    }
+
+    private fun setOrbError() {
+        if (!::orbView.isInitialized) return
+        (orbView.tag as? ObjectAnimator)?.cancel()
+        orbView.animate().cancel()
+        orbView.background = makeOrbDrawable(150, R.color.nexo_error)
+        orbView.animate().scaleX(1.04f).scaleY(1.04f).alpha(1f).setDuration(180).start()
     }
 
     private fun activateCarMode(speak: Boolean = true) {
