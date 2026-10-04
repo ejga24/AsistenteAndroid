@@ -1,0 +1,355 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:background="@color/nexo_bg">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingStart="30dp"
+        android:paddingEnd="30dp"
+        android:paddingTop="22dp"
+        android:paddingBottom="28dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="16dp">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/titleText"
+                    style="@style/Nexo.Text.Hero"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="NEXO" />
+
+                <TextView
+                    style="@style/Nexo.Text.BodyMuted"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="AGENT OS · v3.0 alpha"
+                    android:textSize="11sp"
+                    android:letterSpacing="0.08" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/systemStateText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="●  Inicializando"
+                android:textColor="@color/nexo_warning"
+                android:textSize="12sp"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="8dp"
+                android:background="@color/nexo_surface_alt" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:baselineAligned="false">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="0.95"
+                android:orientation="vertical"
+                android:layout_marginEnd="9dp">
+
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:cardBackgroundColor="@color/nexo_surface"
+                    app:cardCornerRadius="@dimen/nexo_card_radius"
+                    app:cardElevation="0dp"
+                    app:strokeColor="@color/nexo_outline"
+                    app:strokeWidth="1dp"
+                    android:layout_marginBottom="14dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:gravity="center"
+                        android:padding="22dp">
+
+                        <View
+                            android:id="@+id/orbView"
+                            android:layout_width="138dp"
+                            android:layout_height="138dp"
+                            android:layout_marginBottom="18dp" />
+
+                        <TextView
+                            android:id="@+id/statusText"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Inicializando NEXO…"
+                            android:textColor="@color/nexo_text"
+                            android:textSize="20sp"
+                            android:textStyle="bold"
+                            android:gravity="center"
+                            android:layout_marginBottom="8dp" />
+
+                        <TextView
+                            style="@style/Nexo.Text.BodyMuted"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Di “NEXO” · manos libres" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/nowRunningCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:visibility="gone"
+                    app:cardBackgroundColor="@color/nexo_accent_soft"
+                    app:cardCornerRadius="@dimen/nexo_card_radius"
+                    app:cardElevation="0dp"
+                    app:strokeColor="@color/nexo_accent"
+                    app:strokeWidth="1dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="18dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical">
+
+                            <TextView
+                                android:id="@+id/planTitleText"
+                                style="@style/Nexo.Text.Body"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="Ejecutando plan"
+                                android:textStyle="bold"
+                                android:textSize="18sp" />
+
+                            <TextView
+                                android:id="@+id/planProgressText"
+                                style="@style/Nexo.Text.BodyMuted"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="1 / 1"
+                                android:textSize="12sp" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/planStepsText"
+                            style="@style/Nexo.Text.Body"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Preparando acciones…"
+                            android:lineSpacingExtra="5dp"
+                            android:layout_marginTop="12dp"
+                            android:layout_marginBottom="12dp" />
+
+                        <com.google.android.material.button.MaterialButton
+                            style="@style/Nexo.Button.Secondary"
+                            android:id="@+id/cancelPlanButton"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Detener plan" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1.05"
+                android:orientation="vertical"
+                android:layout_marginStart="9dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:baselineAligned="false"
+                    android:layout_marginBottom="14dp">
+
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="6dp"
+                        app:cardBackgroundColor="@color/nexo_surface_alt"
+                        app:cardCornerRadius="18dp"
+                        app:cardElevation="0dp"
+                        app:strokeColor="@color/nexo_outline"
+                        app:strokeWidth="1dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:padding="15dp">
+
+                            <TextView
+                                style="@style/Nexo.Text.Section"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="SISTEMA" />
+
+                            <TextView
+                                android:id="@+id/healthText"
+                                style="@style/Nexo.Text.Body"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="Verificando permisos…"
+                                android:textSize="13sp"
+                                android:layout_marginTop="6dp" />
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:layout_marginStart="6dp"
+                        app:cardBackgroundColor="@color/nexo_surface_alt"
+                        app:cardCornerRadius="18dp"
+                        app:cardElevation="0dp"
+                        app:strokeColor="@color/nexo_outline"
+                        app:strokeWidth="1dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:padding="15dp">
+
+                            <TextView
+                                style="@style/Nexo.Text.Section"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="CAPACIDADES" />
+
+                            <TextView
+                                android:id="@+id/skillsText"
+                                style="@style/Nexo.Text.Body"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="Cargando skills…"
+                                android:textSize="13sp"
+                                android:layout_marginTop="6dp" />
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+                </LinearLayout>
+
+                <TextView
+                    style="@style/Nexo.Text.Section"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="CONTROLES"
+                    android:layout_marginBottom="8dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    style="@style/Nexo.Button.Secondary"
+                    android:id="@+id/micPermissionButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Dar permiso de micrófono"
+                    android:layout_marginBottom="7dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    style="@style/Nexo.Button.Secondary"
+                    android:id="@+id/aiSettingsButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Control de aplicaciones"
+                    android:layout_marginBottom="7dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    style="@style/Nexo.Button.Secondary"
+                    android:id="@+id/intelligenceButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Inteligencia de NEXO"
+                    android:layout_marginBottom="7dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    style="@style/Nexo.Button.Secondary"
+                    android:id="@+id/carModeButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Activar modo carro"
+                    android:layout_marginBottom="7dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    style="@style/Nexo.Button.Secondary"
+                    android:id="@+id/historyButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Actividad de NEXO"
+                    android:layout_marginBottom="7dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    style="@style/Nexo.Button.Secondary"
+                    android:id="@+id/diagnosticsButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="System Health"
+                    android:layout_marginBottom="7dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    style="@style/Nexo.Button.Secondary"
+                    android:id="@+id/securityButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Security &amp; Privacy"
+                    android:layout_marginBottom="7dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    style="@style/Nexo.Button.Secondary"
+                    android:id="@+id/visionButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Vision"
+                    android:layout_marginBottom="7dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    style="@style/Nexo.Button.Secondary"
+                    android:id="@+id/setupButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Setup Center"
+                    android:layout_marginBottom="7dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    style="@style/Nexo.Button.Secondary"
+                    android:id="@+id/modesButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Modes"
+                    android:layout_marginBottom="7dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    style="@style/Nexo.Button.Secondary"
+                    android:id="@+id/skillsButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Skills" />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>
