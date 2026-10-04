@@ -326,6 +326,14 @@
             android:id="@+id/setupButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Setup Center" />
+            android:text="Setup Center"
+            android:layout_marginBottom="9dp" />
+
+        <com.google.android.material.button.MaterialButton
+            style="@style/Nexo.Button.Secondary"
+            android:id="@+id/modesButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Modes" />
     </LinearLayout>
 </ScrollView>
