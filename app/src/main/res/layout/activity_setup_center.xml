@@ -70,7 +70,7 @@
             android:id="@+id/setupMicButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Permisos de NEXO"
+            android:text="Preparar voz y micrófono"
             android:layout_marginBottom="9dp" />
 
         <com.google.android.material.button.MaterialButton
