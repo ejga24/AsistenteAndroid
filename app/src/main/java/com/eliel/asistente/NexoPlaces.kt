@@ -5,12 +5,15 @@ import android.content.Context
 object NexoPlaces {
     private const val LEGACY_PREFS = "assistant_places"
 
-    fun save(context: Context, key: String, value: String) {
-        NexoPrivateStore.putString(context, key, value.trim())
-        context.getSharedPreferences(LEGACY_PREFS, Context.MODE_PRIVATE)
-            .edit()
-            .remove(key)
-            .apply()
+    fun save(context: Context, key: String, value: String): Boolean {
+        val saved = NexoPrivateStore.putString(context, key, value.trim())
+        if (saved) {
+            context.getSharedPreferences(LEGACY_PREFS, Context.MODE_PRIVATE)
+                .edit()
+                .remove(key)
+                .apply()
+        }
+        return saved
     }
 
     fun get(context: Context, key: String): String? {
@@ -22,8 +25,7 @@ object NexoPlaces {
             .takeUnless { it.isNullOrBlank() }
             ?: return null
 
-        runCatching {
-            NexoPrivateStore.putString(context, key, legacy)
+        if (NexoPrivateStore.putString(context, key, legacy)) {
             context.getSharedPreferences(LEGACY_PREFS, Context.MODE_PRIVATE)
                 .edit()
                 .remove(key)
