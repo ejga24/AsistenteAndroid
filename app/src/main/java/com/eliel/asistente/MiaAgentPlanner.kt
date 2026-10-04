@@ -139,40 +139,53 @@ class MiaAgentPlanner(private val context: Context) {
                 setRequestProperty("Content-Type", "application/json")
             }
 
-            connection.outputStream.use { it.write(body.toString().toByteArray()) }
-
-            val code = connection.responseCode
-            val responseText = (if (code in 200..299) connection.inputStream else connection.errorStream)
-                .bufferedReader()
-                .use { it.readText() }
-
-            if (code !in 200..299) {
-                throw IllegalStateException("OpenAI HTTP $code")
-            }
-
-            val responseJson = JSONObject(responseText)
-            val structuredText = extractOutputText(responseJson)
-            val planJson = JSONObject(structuredText)
-            val actionArray = planJson.getJSONArray("actions")
-            val actions = buildList {
-                for (i in 0 until minOf(actionArray.length(), MAX_ACTIONS)) {
-                    val action = actionArray.getJSONObject(i)
-                    add(
-                        MiaAgentDecision(
-                            tool = action.getString("tool"),
-                            app = action.optString("app"),
-                            text = action.optString("text"),
-                            target = action.optString("target"),
-                            newChat = action.optBoolean("new_chat", false)
-                        )
-                    )
+            try {
+                connection.outputStream.use {
+                    it.write(body.toString().toByteArray(Charsets.UTF_8))
                 }
-            }
 
-            NexoAgentPlan(
-                actions = actions,
-                speech = planJson.optString("speech")
-            )
+                val code = connection.responseCode
+                val stream = if (code in 200..299) {
+                    connection.inputStream
+                } else {
+                    connection.errorStream
+                }
+
+                val responseText = stream?.bufferedReader()?.use { it.readText() }.orEmpty()
+
+                if (code !in 200..299) {
+                    throw IllegalStateException("OpenAI HTTP $code")
+                }
+                if (responseText.isBlank()) {
+                    throw IllegalStateException("OpenAI devolvió una respuesta vacía.")
+                }
+
+                val responseJson = JSONObject(responseText)
+                val structuredText = extractOutputText(responseJson)
+                val planJson = JSONObject(structuredText)
+                val actionArray = planJson.getJSONArray("actions")
+                val actions = buildList {
+                    for (i in 0 until minOf(actionArray.length(), MAX_ACTIONS)) {
+                        val action = actionArray.getJSONObject(i)
+                        add(
+                            MiaAgentDecision(
+                                tool = action.getString("tool"),
+                                app = action.optString("app"),
+                                text = action.optString("text"),
+                                target = action.optString("target"),
+                                newChat = action.optBoolean("new_chat", false)
+                            )
+                        )
+                    }
+                }
+
+                NexoAgentPlan(
+                    actions = actions,
+                    speech = planJson.optString("speech")
+                )
+            } finally {
+                connection.disconnect()
+            }
         }
     }
 
