@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/nexo_bg"
+    android:padding="24dp">
+
+    <TextView
+        style="@style/Nexo.Text.H1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Vision" />
+
+    <TextView
+        style="@style/Nexo.Text.BodyMuted"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="La cámara se activa solo dentro de este módulo y bajo tu control."
+        android:layout_marginTop="4dp"
+        android:layout_marginBottom="16dp" />
+
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        app:cardBackgroundColor="@color/nexo_surface"
+        app:cardCornerRadius="@dimen/nexo_card_radius"
+        app:cardElevation="0dp"
+        app:strokeColor="@color/nexo_outline"
+        app:strokeWidth="1dp"
+        android:layout_marginBottom="14dp">
+
+        <androidx.camera.view.PreviewView
+            android:id="@+id/visionPreview"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="fillCenter" />
+    </com.google.android.material.card.MaterialCardView>
+
+    <TextView
+        android:id="@+id/visionStateText"
+        style="@style/Nexo.Text.Body"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Inicializando Vision…"
+        android:layout_marginBottom="14dp" />
+
+    <com.google.android.material.button.MaterialButton
+        style="@style/Nexo.Button"
+        android:id="@+id/visionCaptureButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Capturar para analizar"
+        android:layout_marginBottom="9dp" />
+
+    <com.google.android.material.button.MaterialButton
+        style="@style/Nexo.Button.Secondary"
+        android:id="@+id/visionCloseButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Cerrar Vision" />
+</LinearLayout>
