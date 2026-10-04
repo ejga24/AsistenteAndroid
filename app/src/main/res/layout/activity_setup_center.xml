@@ -94,6 +94,22 @@
             android:id="@+id/setupVisionButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Preparar Vision" />
+            android:text="Preparar Vision"
+            android:layout_marginBottom="9dp" />
+
+        <com.google.android.material.button.MaterialButton
+            style="@style/Nexo.Button.Secondary"
+            android:id="@+id/setupNotificationsButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Notificaciones de segundo plano"
+            android:layout_marginBottom="9dp" />
+
+        <com.google.android.material.button.MaterialButton
+            style="@style/Nexo.Button.Secondary"
+            android:id="@+id/setupBatteryButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Revisar batería / MagicOS" />
     </LinearLayout>
 </ScrollView>
