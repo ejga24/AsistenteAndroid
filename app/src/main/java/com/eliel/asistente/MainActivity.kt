@@ -116,6 +116,9 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         findViewById<Button>(R.id.securityButton).setOnClickListener {
             startActivity(Intent(this, SecurityCenterActivity::class.java))
         }
+        findViewById<Button>(R.id.visionButton).setOnClickListener {
+            startActivity(Intent(this, VisionActivity::class.java))
+        }
         findViewById<Button>(R.id.cancelPlanButton).setOnClickListener {
             cancelCurrentPlan()
         }
@@ -471,6 +474,11 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         when {
             containsAny(command, "modo carro", "activa modo carro", "activar modo carro") -> activateCarMode()
             containsAny(command, "modo normal", "desactiva modo carro", "salir de modo carro") -> deactivateCarMode()
+            containsAny(command, "abre vision", "vision", "abre la camara", "camara de nexo", "que ves") -> {
+                respondAndThen("Abriendo Vision.") {
+                    startActivity(Intent(this, VisionActivity::class.java))
+                }
+            }
             containsAny(command, "historial", "actividad de nexo", "que hiciste") -> {
                 respondAndThen("Abriendo mi actividad reciente.") {
                     startActivity(Intent(this, ActionHistoryActivity::class.java))
@@ -622,6 +630,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             "spotify" -> "Spotify · " + decision.text.ifBlank { decision.target }
             "youtube" -> "YouTube · " + decision.text.ifBlank { decision.target }
             "chatgpt" -> "Consultar ChatGPT"
+            "vision" -> "Abrir Vision"
             "tap_text" -> "Tocar " + decision.target.ifBlank { decision.text }
             "type_text" -> "Escribir texto"
             "back" -> "Volver"
@@ -818,6 +827,12 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                 } else {
                     NexoActionLog.add(this, "Plan: " + displayName, "Aplicación no disponible", false)
                 }
+                continuePlan()
+            }
+
+            "vision" -> {
+                NexoActionLog.add(this, "Plan: Vision", "Abrir cámara")
+                startActivity(Intent(this, VisionActivity::class.java))
                 continuePlan()
             }
 
