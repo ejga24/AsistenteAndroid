@@ -95,7 +95,9 @@ class MiaAgentPlanner(private val context: Context) {
                     2) No uses Accessibility si existe una herramienta directa.
                     3) No incluyas acciones que el usuario no pidió, salvo ajustes estrictamente necesarios para completar una orden.
                     4) Si una acción es ambigua y no puede ejecutarse con seguridad, usa clarify y no continúes después.
-                    5) speech es una confirmación breve del plan completo en español natural de Panamá.
+                    5) Si usas vision, vision debe ser la última acción del plan. No inventes ni anticipes lo que la cámara verá.
+                    6) No encadenes acciones que dependan del resultado de vision hasta que exista una herramienta explícita para ese resultado.
+                    7) speech es una confirmación breve del plan completo en español natural de Panamá.
                     """.trimIndent()
                 )
                 put("input", userRequest)
