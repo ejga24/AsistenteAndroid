@@ -10,12 +10,19 @@ import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import org.json.JSONArray
 import org.json.JSONObject
+import java.util.UUID
+
+data class NexoAccessibilityActionResult(
+    val success: Boolean,
+    val detail: String
+)
 
 class MiaAccessibilityService : AccessibilityService() {
 
     companion object {
         private const val PREFS = "mia_automation"
         private const val KEY_QUEUE = "action_queue"
+        private const val RESULT_PREFS = "nexo_accessibility_results"
         private const val MAX_QUEUE = 12
         private const val GENERIC_TTL_MS = 45_000L
         private const val CHATGPT_TTL_MS = 90_000L
@@ -24,10 +31,12 @@ class MiaAccessibilityService : AccessibilityService() {
         private const val TYPE_CHATGPT = "chatgpt"
         private const val TYPE_GENERIC = "generic"
 
-        fun queueChatGptRequest(context: Context, text: String, newChat: Boolean) {
+        fun queueChatGptRequest(context: Context, text: String, newChat: Boolean): String {
+            val id = UUID.randomUUID().toString()
             enqueue(
                 context,
                 JSONObject().apply {
+                    put("id", id)
                     put("type", TYPE_CHATGPT)
                     put("package", "com.openai.chatgpt")
                     put("text", text)
@@ -37,10 +46,12 @@ class MiaAccessibilityService : AccessibilityService() {
             )
         }
 
-        fun queueGenericAction(context: Context, action: String, value: String = "") {
+        fun queueGenericAction(context: Context, action: String, value: String = ""): String {
+            val id = UUID.randomUUID().toString()
             enqueue(
                 context,
                 JSONObject().apply {
+                    put("id", id)
                     put("type", TYPE_GENERIC)
                     put("package", "*")
                     put("action", action)
@@ -48,12 +59,11 @@ class MiaAccessibilityService : AccessibilityService() {
                     put("created", System.currentTimeMillis())
                 }
             )
+            return id
         }
 
         fun hasPending(context: Context): Boolean =
-            synchronized(queueLock) {
-                readQueue(context).length() > 0
-            }
+            peek(context) != null
 
         private fun enqueue(context: Context, item: JSONObject) {
             synchronized(queueLock) {
@@ -106,6 +116,10 @@ class MiaAccessibilityService : AccessibilityService() {
                         return@synchronized item
                     }
 
+                    val expiredItem = item
+                    if (expiredItem != null) {
+                        recordResult(context, expiredItem, false, "La acción expiró antes de poder ejecutarse.")
+                    }
                     queue = withoutHead(queue)
                     changed = true
                 }
