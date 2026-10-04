@@ -44,7 +44,7 @@ object NexoSkillRegistry {
     }
 
     fun knownSkills(): List<String> = listOf(
-        "Apps", "Waze", "Spotify", "YouTube", "ChatGPT",
+        "Apps", "Waze", "Spotify", "YouTube", "ChatGPT", "Vision",
         "Control de pantalla", "Volumen", "Brillo", "Modo carro"
     )
 
