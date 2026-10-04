@@ -91,10 +91,18 @@
         </com.google.android.material.card.MaterialCardView>
 
         <com.google.android.material.button.MaterialButton
-            style="@style/Nexo.Button.Secondary"
+            style="@style/Nexo.Button"
             android:id="@+id/saveAiButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Guardar inteligencia" />
+            android:text="Guardar inteligencia"
+            android:layout_marginBottom="9dp" />
+
+        <com.google.android.material.button.MaterialButton
+            style="@style/Nexo.Button.Secondary"
+            android:id="@+id/removeAiButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Desconectar credencial" />
     </LinearLayout>
 </ScrollView>
