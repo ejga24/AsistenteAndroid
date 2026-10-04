@@ -4,7 +4,7 @@
 > Antes de continuar desarrollo, cambios de arquitectura, diseño, seguridad o releases, consultar este documento primero.
 > Los documentos especializados (`NEXO_ARCHITECTURE.md`, `NEXO_DESIGN_SYSTEM.md`) amplían esta información, pero este archivo conserva el estado vigente, decisiones, reglas, pendientes y criterio de release.
 
-**Última actualización:** 04-10-2026 12:45 p. m. · Panamá  
+**Última actualización:** 04-10-2026 12:49 p. m. · Panamá  
 **Repositorio:** `ejga24/AsistenteAndroid`  
 **Rama de desarrollo:** `nexo-agent-v3`  
 **Versión en desarrollo:** `3.0-alpha1`  
@@ -210,7 +210,7 @@ Reglas principales:
 
 ### En desarrollo / siguiente cola
 - [ ] Hotword local dedicado **NEXO**.
-- [ ] Confirmaciones sensibles más completas por categoría de acción.
+- [x] Confirmaciones sensibles categorizadas por dinero, destrucción, comunicación, cuenta, instalación y reservas; ampliación futura según nuevas skills.
 - [x] Vision/cámara — CameraX, captura local temporal, análisis IA, UI de resultados y limpieza segura.
 - [x] Skills configurables desde UI con enforcement en planes y comandos directos principales.
 - [ ] Modes: centro premium creado; Normal/Carro funcionales; Casa/Trabajo/Kiosco pendientes de comportamiento final.
@@ -317,6 +317,7 @@ La primera versión entregada al usuario será una **Release Candidate**, no una
 - `NEXO_DESIGN_SYSTEM.md` — contrato visual obligatorio.
 - `PROJECT_GOVERNANCE_STANDARD.md` — estándar reutilizable para otros repositorios y sistemas web.
 - `NEXO_QA_CHECKLIST.md` — gate formal para Release Candidate.
+- `NEXO_RELEASE_PLAN.md` — estimado, ruta crítica y criterio de entrega del primer APK.
 - Código fuente y GitHub Actions — implementación vigente.
 
 ---
@@ -343,3 +344,14 @@ Si se retoma NEXO en otra conversación:
 Después consultar los documentos especializados solo cuando el cambio afecte arquitectura o diseño.
 
 No reconstruir el estado desde recuerdos sueltos si este documento está disponible.
+
+
+---
+
+## 13. Estimado de primera Release Candidate
+
+Estimado vigente de ingeniería: **12–18 horas efectivas de desarrollo**.
+
+A ritmo actual, objetivo de calendario: **24–36 horas** para llegar al primer APK serio que valga la pena instalar, siempre que el hotword local o las restricciones de MagicOS no introduzcan un bloqueo inesperado.
+
+La entrega no espera a tener todas las futuras integraciones del roadmap; espera a que el núcleo RC cumpla seguridad, build, fallback de voz, coherencia visual y estabilidad suficiente para que lo restante requiera prueba física en la HONOR.
