@@ -1159,6 +1159,17 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                             index,
                             decision
                         )
+
+                        if (decision.tool in setOf("tap_text", "type_text") &&
+                            expectedPackage == null
+                        ) {
+                            failPlanExecution(
+                                "No pude verificar en qué aplicación debía ejecutar esa acción. Detuve el plan para evitar tocar la pantalla equivocada.",
+                                "Acción UI sin aplicación objetivo verificada"
+                            )
+                            return@requestSafetyConfirmation
+                        }
+
                         val actionId = MiaAccessibilityService.queueGenericAction(
                             this,
                             decision.tool,
