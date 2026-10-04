@@ -147,7 +147,7 @@ class AssistantWakeService : Service() {
         }
         val pendingIntent = PendingIntent.getActivity(
             this,
-            0,
+            if (pendingVoiceCommand.isNullOrBlank()) 0 else 2,
             openIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
@@ -349,6 +349,8 @@ class AssistantWakeService : Service() {
             return
         }
         pendingCommand = null
+        fallbackCommand = null
+        refreshNotification()
         shouldListen = false
         cancelRecognition()
 
