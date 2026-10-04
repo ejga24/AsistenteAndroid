@@ -36,9 +36,10 @@
                     style="@style/Nexo.Text.Hero" />
 
                 <TextView
+                    android:id="@+id/versionText"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="AGENT OS · v3.0 alpha"
+                    android:text="AGENT OS"
                     android:textColor="@color/nexo_text_muted"
                     android:textSize="11sp"
                     android:letterSpacing="0.08" />
