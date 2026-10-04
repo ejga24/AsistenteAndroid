@@ -18,14 +18,25 @@ object NexoWakeRuntime {
             NexoWakeConfig.ENGINE_ANDROID_FALLBACK
         ) ?: NexoWakeConfig.ENGINE_ANDROID_FALLBACK
 
-        val local = configured == NexoWakeConfig.ENGINE_LOCAL
+        val requestedLocal = configured == NexoWakeConfig.ENGINE_LOCAL
 
-        return Status(
-            configuredEngine = configured,
-            displayName = NexoWakeConfig.displayName(configured),
-            local = local,
-            productionReady = !local
-        )
+        // RC1 has no validated local engine implementation yet. Never report
+        // a local engine as active until the runtime can actually instantiate it.
+        return if (requestedLocal) {
+            Status(
+                configuredEngine = configured,
+                displayName = "Android Speech (fallback · hotword local pendiente)",
+                local = false,
+                productionReady = true
+            )
+        } else {
+            Status(
+                configuredEngine = configured,
+                displayName = NexoWakeConfig.displayName(configured),
+                local = false,
+                productionReady = true
+            )
+        }
     }
 
     fun setEngine(context: Context, engine: String) {
