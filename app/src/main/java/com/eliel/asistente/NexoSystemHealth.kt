@@ -51,9 +51,17 @@ object NexoSystemHealth {
         val access = accessibilityEnabled(context)
         val ai = MiaAgentPlanner(context).isConfigured()
         val wake = NexoWakeRuntime.status(context)
+        val voiceEnabled = NexoVoiceState.isEnabled(context)
         val runtimeIssue = NexoRuntimeState.currentIssue(context)
 
         val checks = listOf(
+            NexoHealthCheck(
+                id = "voice",
+                label = "Escucha",
+                ready = voiceEnabled,
+                required = true,
+                detail = if (voiceEnabled) "Voice Core activo" else "Pausada por el usuario"
+            ),
             NexoHealthCheck(
                 id = "microphone",
                 label = "Micrófono",
@@ -122,6 +130,7 @@ object NexoSystemHealth {
 
         val missingRequired = checks.filter { it.required && !it.ready }
         val state = when {
+            !voiceEnabled -> NexoHealthState.DEGRADED
             !mic -> NexoHealthState.BLOCKED
             missingRequired.isNotEmpty() || runtimeIssue != null -> NexoHealthState.DEGRADED
             else -> NexoHealthState.READY
@@ -134,6 +143,7 @@ object NexoSystemHealth {
         }
 
         val recommendation = when {
+            !voiceEnabled -> "La escucha está pausada. Puedes reanudarla desde el dashboard."
             !mic -> "Activa el micrófono para usar NEXO por voz."
             !access -> "Activa Control de aplicaciones para automatizaciones de pantalla."
             !ai -> "Configura Inteligencia para planes complejos y Vision."
