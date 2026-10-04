@@ -25,10 +25,7 @@ class OpenAIVisionEngine(private val context: Context) : NexoVisionEngine {
             return Result.failure(IllegalStateException("NEXO_VISION_NOT_CONFIGURED"))
         }
 
-        val model = prefs.getString(
-            MiaAgentPlanner.KEY_MODEL,
-            MiaAgentPlanner.DEFAULT_MODEL
-        )?.trim().takeUnless { it.isNullOrBlank() } ?: MiaAgentPlanner.DEFAULT_MODEL
+        val model = MiaAgentPlanner.resolveConfiguredModel(context)
 
         return runCatching {
             val prepared = prepareBitmap(bitmap)
