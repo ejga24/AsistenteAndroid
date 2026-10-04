@@ -329,6 +329,8 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     override fun onResume() {
         super.onResume()
         activityResumed = true
+        assistantActive = NexoVoiceState.isEnabled(this)
+        updateVoiceControl()
         NexoModeManager.applyWindowProfile(this)
 
         val micButton = findViewById<Button>(R.id.micPermissionButton)
@@ -454,6 +456,12 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     }
 
     private fun ensureMicPermissionAndListen() {
+        if (!NexoVoiceState.isEnabled(this)) {
+            assistantActive = false
+            updateVoiceControl()
+            stopListening()
+            return
+        }
         if (!assistantActive || isListening || isSpeaking) return
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
@@ -507,6 +515,15 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     }
 
     private fun processRecognizedSpeech(raw: String) {
+        if (!NexoVoiceState.isEnabled(this)) {
+            assistantActive = false
+            updateVoiceControl()
+            stopListening()
+            statusText.text = "Escucha pausada."
+            setOrbIdle()
+            return
+        }
+
         val normalized = normalize(raw)
 
         if (waitingForCommand) {
