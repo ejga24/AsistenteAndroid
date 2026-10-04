@@ -24,6 +24,11 @@
         <package android:name="com.sec.android.app.popupcalculator" />
         <package android:name="com.android.calculator2" />
         <package android:name="com.huawei.calculator" />
+
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
     </queries>
 
     <application
