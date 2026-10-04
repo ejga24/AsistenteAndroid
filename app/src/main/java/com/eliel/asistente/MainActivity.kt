@@ -1139,7 +1139,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                         decision.text,
                         decision.newChat
                     )
-                    NexoActionLog.add(this, "Plan: ChatGPT", decision.text)
+                    NexoActionLog.add(this, "Plan: ChatGPT", "Consulta enviada")
                     startActivity(launch)
                     awaitAccessibilityResult(actionId, generation, 18_000L) {
                         continuePlan()
@@ -1193,7 +1193,11 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                         NexoActionLog.add(
                             this,
                             "Plan: " + decision.tool,
-                            decision.target.ifBlank { decision.text }
+                            if (decision.tool == "type_text") {
+                                "[contenido oculto]"
+                            } else {
+                                decision.target.ifBlank { decision.text }
+                            }
                         )
                         awaitAccessibilityResult(actionId, generation) {
                             continuePlan()
@@ -1238,14 +1242,14 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             "answer" -> {
                 planActive = false
                 NexoPlanSessionStore.clear(this)
-                NexoActionLog.add(this, "Plan: respuesta", decision.text)
+                NexoActionLog.add(this, "Plan: respuesta", "Respuesta generada")
                 respond(decision.text.ifBlank { plan.speech.ifBlank { "Listo." } })
             }
 
             "clarify" -> {
                 planActive = false
                 NexoPlanSessionStore.clear(this)
-                NexoActionLog.add(this, "Plan: aclaración", decision.text)
+                NexoActionLog.add(this, "Plan: aclaración", "Se solicitó información adicional")
                 respond(decision.text.ifBlank { "Necesito un dato más para continuar." })
             }
 
