@@ -523,6 +523,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                 }
             }
             containsAny(command, "abre vision", "vision", "abre la camara", "camara de nexo", "que ves") -> {
+                if (!requireSkill("vision")) return
                 respondAndThen("Abriendo Vision.") {
                     startActivity(Intent(this, VisionActivity::class.java))
                 }
@@ -608,6 +609,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     }
 
     private fun automateChatGpt(text: String, newChat: Boolean) {
+        if (!requireSkill("chatgpt")) return
         if (!isAccessibilityServiceEnabled()) {
             respondAndThen(
                 "Para controlar aplicaciones necesito que actives el acceso de NEXO una sola vez. Te llevo a la pantalla para habilitarlo."
@@ -994,7 +996,21 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private fun containsAny(text: String, vararg options: String): Boolean =
         options.any { text.contains(it) }
 
+    private fun requireSkill(skillId: String): Boolean {
+        if (NexoSkillPolicy.isEnabled(this, skillId)) return true
+
+        val skillName = NexoSkillPolicy.definitions
+            .firstOrNull { it.id == skillId }
+            ?.name ?: skillId
+
+        NexoActionLog.add(this, "Skill bloqueada", skillName, false)
+        setOrbError()
+        respond("La capacidad " + skillName + " está desactivada. Puedes habilitarla desde Skills.")
+        return false
+    }
+
     private fun openPackage(packageName: String, displayName: String) {
+        if (!requireSkill("apps")) return
         val launchIntent = packageManager.getLaunchIntentForPackage(packageName)
         if (launchIntent != null) {
             NexoActionLog.add(this, "Abrir aplicación", displayName)
@@ -1103,6 +1119,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     }
 
     private fun playMediaSearch(packageName: String, displayName: String, query: String) {
+        if (!requireSkill("media")) return
         if (packageManager.getLaunchIntentForPackage(packageName) == null) {
             respond("$displayName no está instalado.")
             return
@@ -1141,6 +1158,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     }
 
     private fun requestContactAndOpen(contactName: String) {
+        if (!requireSkill("messaging")) return
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED) {
             openWhatsAppContact(contactName)
         } else {
@@ -1197,6 +1215,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     }
 
     private fun openWazeDestination(destination: String) {
+        if (!requireSkill("navigation")) return
         if ((destination == "mi trabajo" || destination == "trabajo") && !preferences.contains("work")) {
             respond("Todavía no sé dónde queda tu trabajo. Dime: guarda mi trabajo como, y luego la dirección.")
             return
@@ -1390,6 +1409,10 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     }
 
     private fun activateCarMode(speak: Boolean = true) {
+        if (!NexoSkillPolicy.isEnabled(this, "modes")) {
+            if (speak) requireSkill("modes")
+            return
+        }
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         window.attributes = window.attributes.apply { screenBrightness = 0.85f }
         val audio = getSystemService(AUDIO_SERVICE) as AudioManager
