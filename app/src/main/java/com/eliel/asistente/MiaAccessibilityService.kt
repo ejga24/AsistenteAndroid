@@ -8,40 +8,95 @@ import android.os.Handler
 import android.os.Looper
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
+import org.json.JSONArray
+import org.json.JSONObject
 
 class MiaAccessibilityService : AccessibilityService() {
 
     companion object {
         private const val PREFS = "mia_automation"
-        private const val KEY_PACKAGE = "target_package"
-        private const val KEY_TEXT = "text"
-        private const val KEY_NEW_CHAT = "new_chat"
-        private const val KEY_PENDING = "pending"
-        private const val KEY_GENERIC_ACTION = "generic_action"
-        private const val KEY_GENERIC_VALUE = "generic_value"
+        private const val KEY_QUEUE = "action_queue"
+        private const val MAX_QUEUE = 12
+        private val queueLock = Any()
+
+        private const val TYPE_CHATGPT = "chatgpt"
+        private const val TYPE_GENERIC = "generic"
 
         fun queueChatGptRequest(context: Context, text: String, newChat: Boolean) {
-            context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-                .edit()
-                .putString(KEY_PACKAGE, "com.openai.chatgpt")
-                .putString(KEY_TEXT, text)
-                .putBoolean(KEY_NEW_CHAT, newChat)
-                .putBoolean(KEY_PENDING, true)
-                .apply()
+            enqueue(
+                context,
+                JSONObject().apply {
+                    put("type", TYPE_CHATGPT)
+                    put("package", "com.openai.chatgpt")
+                    put("text", text)
+                    put("new_chat", newChat)
+                    put("created", System.currentTimeMillis())
+                }
+            )
+        }
+
+        fun queueGenericAction(context: Context, action: String, value: String = "") {
+            enqueue(
+                context,
+                JSONObject().apply {
+                    put("type", TYPE_GENERIC)
+                    put("package", "*")
+                    put("action", action)
+                    put("value", value)
+                    put("created", System.currentTimeMillis())
+                }
+            )
         }
 
         fun hasPending(context: Context): Boolean =
-            context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-                .getBoolean(KEY_PENDING, false)
+            synchronized(queueLock) {
+                readQueue(context).length() > 0
+            }
 
-        fun queueGenericAction(context: Context, action: String, value: String = "") {
-            context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-                .edit()
-                .putBoolean(KEY_PENDING, true)
-                .putString(KEY_PACKAGE, "*")
-                .putString(KEY_GENERIC_ACTION, action)
-                .putString(KEY_GENERIC_VALUE, value)
-                .apply()
+        private fun enqueue(context: Context, item: JSONObject) {
+            synchronized(queueLock) {
+                val current = readQueue(context)
+                val next = JSONArray()
+
+                val start = (current.length() - (MAX_QUEUE - 1)).coerceAtLeast(0)
+                for (i in start until current.length()) {
+                    next.put(current.getJSONObject(i))
+                }
+                next.put(item)
+
+                context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+                    .edit()
+                    .putString(KEY_QUEUE, next.toString())
+                    .apply()
+            }
+        }
+
+        private fun readQueue(context: Context): JSONArray {
+            val raw = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+                .getString(KEY_QUEUE, "[]")
+                .orEmpty()
+
+            return runCatching { JSONArray(raw) }.getOrElse { JSONArray() }
+        }
+
+        private fun peek(context: Context): JSONObject? =
+            synchronized(queueLock) {
+                val queue = readQueue(context)
+                if (queue.length() == 0) null else queue.optJSONObject(0)
+            }
+
+        private fun removeHead(context: Context) {
+            synchronized(queueLock) {
+                val queue = readQueue(context)
+                val next = JSONArray()
+                for (i in 1 until queue.length()) {
+                    next.put(queue.getJSONObject(i))
+                }
+                context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+                    .edit()
+                    .putString(KEY_QUEUE, next.toString())
+                    .apply()
+            }
         }
     }
 
@@ -60,40 +115,39 @@ class MiaAccessibilityService : AccessibilityService() {
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (busy) return
 
-        val prefs = getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-        if (!prefs.getBoolean(KEY_PENDING, false)) return
-
-        val targetPackage = prefs.getString(KEY_PACKAGE, null) ?: return
+        val pending = peek(this) ?: return
+        val targetPackage = pending.optString("package")
         val activePackage = event?.packageName?.toString() ?: return
+
         if (targetPackage != "*" && activePackage != targetPackage) return
 
         busy = true
-        handler.postDelayed({ executePendingRequest() }, 650)
+        handler.postDelayed({ executePendingRequest() }, 450)
     }
 
     private fun executePendingRequest() {
-        val prefs = getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-        if (!prefs.getBoolean(KEY_PENDING, false)) {
+        val pending = peek(this)
+        if (pending == null) {
             busy = false
             return
         }
 
-        val targetPackage = prefs.getString(KEY_PACKAGE, null)
-        if (targetPackage == "*") {
-            executeGenericAction()
-            return
+        when (pending.optString("type")) {
+            TYPE_CHATGPT -> executeChatGpt(pending)
+            TYPE_GENERIC -> executeGenericAction(pending)
+            else -> {
+                removeHead(this)
+                busy = false
+            }
         }
-        if (targetPackage != "com.openai.chatgpt") {
-            clearPending()
-            busy = false
-            return
-        }
+    }
 
-        val text = prefs.getString(KEY_TEXT, "")?.trim().orEmpty()
-        val newChat = prefs.getBoolean(KEY_NEW_CHAT, true)
+    private fun executeChatGpt(pending: JSONObject) {
+        val text = pending.optString("text").trim()
+        val newChat = pending.optBoolean("new_chat", true)
 
         if (text.isBlank()) {
-            clearPending()
+            removeHead(this)
             busy = false
             return
         }
@@ -133,24 +187,21 @@ class MiaAccessibilityService : AccessibilityService() {
                     listOf("Enviar", "Send", "Enviar mensaje", "Send message")
                 )
 
-                if (sent) {
-                    clearPending()
-                    busy = false
-                } else {
-                    val currentRoot = rootInActiveWindow
-                    val possibleButton = findLikelySendButton(currentRoot)
-                    possibleButton?.performAction(AccessibilityNodeInfo.ACTION_CLICK)
-                    clearPending()
-                    busy = false
+                if (!sent) {
+                    findLikelySendButton(rootInActiveWindow)
+                        ?.performAction(AccessibilityNodeInfo.ACTION_CLICK)
                 }
+
+                removeHead(this)
+                busy = false
+                triggerNext()
             }, 450)
         }, if (newChat) 850 else 350)
     }
 
-    private fun executeGenericAction() {
-        val prefs = getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-        val action = prefs.getString(KEY_GENERIC_ACTION, "").orEmpty()
-        val value = prefs.getString(KEY_GENERIC_VALUE, "").orEmpty()
+    private fun executeGenericAction(pending: JSONObject) {
+        val action = pending.optString("action")
+        val value = pending.optString("value")
 
         when (action) {
             "tap_text" -> clickFirstMatching(value)
@@ -168,13 +219,19 @@ class MiaAccessibilityService : AccessibilityService() {
             "home" -> performGlobalAction(GLOBAL_ACTION_HOME)
         }
 
-        clearPending()
+        removeHead(this)
         busy = false
+        triggerNext()
+    }
+
+    private fun triggerNext() {
+        if (peek(this) != null) {
+            handler.postDelayed({ executePendingRequest() }, 350)
+        }
     }
 
     private fun findEditableNode(node: AccessibilityNodeInfo?): AccessibilityNodeInfo? {
         if (node == null) return null
-
         if (node.isEditable && node.isVisibleToUser) return node
 
         for (i in 0 until node.childCount) {
@@ -233,7 +290,7 @@ class MiaAccessibilityService : AccessibilityService() {
 
         if (looksLikeButton &&
             (desc.contains("send") || desc.contains("enviar") ||
-             text.contains("send") || text.contains("enviar"))
+                text.contains("send") || text.contains("enviar"))
         ) {
             return node
         }
@@ -254,18 +311,6 @@ class MiaAccessibilityService : AccessibilityService() {
             hops++
         }
         return node
-    }
-
-    private fun clearPending() {
-        getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .edit()
-            .putBoolean(KEY_PENDING, false)
-            .remove(KEY_PACKAGE)
-            .remove(KEY_TEXT)
-            .remove(KEY_NEW_CHAT)
-            .remove(KEY_GENERIC_ACTION)
-            .remove(KEY_GENERIC_VALUE)
-            .apply()
     }
 
     override fun onInterrupt() = Unit
