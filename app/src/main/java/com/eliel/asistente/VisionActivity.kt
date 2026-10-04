@@ -4,6 +4,8 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.graphics.BitmapFactory
 import android.os.Bundle
+import android.speech.tts.TextToSpeech
+import java.util.Locale
 import android.widget.Button
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
@@ -19,12 +21,21 @@ import java.io.File
 
 class VisionActivity : AppCompatActivity() {
 
+    companion object {
+        const val EXTRA_AUTO_ANALYZE = "nexo_vision_auto_analyze"
+    }
+
     private lateinit var previewView: PreviewView
     private lateinit var stateText: TextView
     private lateinit var resultText: TextView
     private lateinit var resultCard: android.view.View
     private lateinit var captureButton: Button
     private var imageCapture: ImageCapture? = null
+    private var autoAnalyzeRequested = false
+    private var autoCaptureTriggered = false
+    private var tts: TextToSpeech? = null
+    private var ttsReady = false
+    private var pendingSpeech: String? = null
 
     private val cameraPermission = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -40,6 +51,27 @@ class VisionActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_vision)
+        autoAnalyzeRequested = intent.getBooleanExtra(EXTRA_AUTO_ANALYZE, false)
+
+        tts = TextToSpeech(this) { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                val engine = tts ?: return@TextToSpeech
+                var languageResult = engine.setLanguage(Locale("es", "PA"))
+                if (languageResult == TextToSpeech.LANG_MISSING_DATA ||
+                    languageResult == TextToSpeech.LANG_NOT_SUPPORTED
+                ) {
+                    languageResult = engine.setLanguage(Locale("es"))
+                }
+                ttsReady = languageResult != TextToSpeech.LANG_MISSING_DATA &&
+                    languageResult != TextToSpeech.LANG_NOT_SUPPORTED
+                if (ttsReady) {
+                    pendingSpeech?.let {
+                        pendingSpeech = null
+                        engine.speak(it, TextToSpeech.QUEUE_FLUSH, null, "nexo_vision_result")
+                    }
+                }
+            }
+        }
 
         previewView = findViewById(R.id.visionPreview)
         stateText = findViewById(R.id.visionStateText)
@@ -80,13 +112,31 @@ class VisionActivity : AppCompatActivity() {
                     preview,
                     imageCapture
                 )
-                stateText.text = "Vision lista · análisis bajo demanda"
+                stateText.text = if (autoAnalyzeRequested) {
+                    "Vision lista · preparando análisis…"
+                } else {
+                    "Vision lista · análisis bajo demanda"
+                }
                 NexoActionLog.add(this, "Vision", "Cámara preparada")
+                if (autoAnalyzeRequested && !autoCaptureTriggered) {
+                    autoCaptureTriggered = true
+                    previewView.postDelayed({ captureFrame() }, 650)
+                }
             }.onFailure {
                 stateText.text = "No pude iniciar la cámara."
                 NexoActionLog.add(this, "Vision", it.message ?: "Error de cámara", false)
             }
         }, ContextCompat.getMainExecutor(this))
+    }
+
+    private fun speakAnalysisResult(text: String) {
+        if (!autoAnalyzeRequested) return
+        val engine = tts
+        if (ttsReady && engine != null) {
+            engine.speak(text, TextToSpeech.QUEUE_FLUSH, null, "nexo_vision_result")
+        } else {
+            pendingSpeech = text
+        }
     }
 
     private fun cleanupCapturedFile(file: File) {
@@ -112,6 +162,7 @@ class VisionActivity : AppCompatActivity() {
                     resultText.text = it.summary
                     stateText.text = "Análisis completado. La captura temporal fue eliminada."
                     captureButton.isEnabled = true
+                    speakAnalysisResult(it.summary)
                     cleanupCapturedFile(file)
                     NexoActionLog.add(this, "Vision", "Análisis completado y captura temporal eliminada")
                 }.onFailure {
@@ -161,5 +212,11 @@ class VisionActivity : AppCompatActivity() {
                 }
             }
         )
+    }
+    override fun onDestroy() {
+        tts?.stop()
+        tts?.shutdown()
+        tts = null
+        super.onDestroy()
     }
 }
