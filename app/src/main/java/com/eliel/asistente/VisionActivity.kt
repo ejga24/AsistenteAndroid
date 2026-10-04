@@ -149,8 +149,12 @@ class VisionActivity : AppCompatActivity() {
     private fun analyzeCapturedFrame(file: File) {
         val bitmap = BitmapFactory.decodeFile(file.absolutePath)
         if (bitmap == null) {
-            stateText.text = "No pude preparar la imagen para análisis."
+            val message = "No pude preparar la imagen para análisis."
+            stateText.text = message
             captureButton.isEnabled = true
+            cleanupCapturedFile(file)
+            speakAnalysisResult(message)
+            NexoActionLog.add(this, "Vision", "No pude decodificar la captura temporal", false)
             return
         }
 
@@ -172,6 +176,7 @@ class VisionActivity : AppCompatActivity() {
                     resultCard.visibility = android.view.View.GONE
                     stateText.text = guidance.userMessage
                     captureButton.isEnabled = true
+                    speakAnalysisResult(guidance.userMessage)
                     cleanupCapturedFile(file)
                     NexoActionLog.add(this, "Vision", guidance.logMessage, false)
                 }
@@ -202,8 +207,11 @@ class VisionActivity : AppCompatActivity() {
                 }
 
                 override fun onError(exception: ImageCaptureException) {
-                    stateText.text = "No pude capturar la imagen."
+                    val message = "No pude capturar la imagen."
+                    stateText.text = message
                     captureButton.isEnabled = true
+                    cleanupCapturedFile(file)
+                    speakAnalysisResult(message)
                     NexoActionLog.add(
                         this@VisionActivity,
                         "Vision",
