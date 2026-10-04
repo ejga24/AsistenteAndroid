@@ -36,10 +36,11 @@
                     android:text="NEXO" />
 
                 <TextView
+                    android:id="@+id/versionText"
                     style="@style/Nexo.Text.BodyMuted"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="AGENT OS · v3.0 alpha"
+                    android:text="AGENT OS"
                     android:textSize="11sp"
                     android:letterSpacing="0.08" />
             </LinearLayout>
