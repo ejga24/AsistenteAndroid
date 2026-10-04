@@ -326,9 +326,9 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                 if (it.ready) it.label + " listo" else it.label + " pendiente"
             }
 
-        skillsText.text = NexoSkillRegistry.knownSkills()
-            .take(4)
-            .joinToString(" · ")
+        val mode = NexoModeManager.current(this)
+        skillsText.text = "Modo actual: " + mode.displayName + " · " +
+            NexoSkillRegistry.knownSkills().take(3).joinToString(" · ")
 
         systemStateText.text = "●  " + health.summary
         systemStateText.setTextColor(
@@ -1333,6 +1333,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         val max = audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
         val target = (max * 0.65f).toInt().coerceAtLeast(1)
         audio.setStreamVolume(AudioManager.STREAM_MUSIC, target, 0)
+        NexoModeManager.set(this, NexoMode.CAR)
         NexoActionLog.add(this, "Modo carro", "Pantalla activa, brillo alto y audio preparado")
         if (speak) respond("Modo carro activado. Mantendré la pantalla encendida y el audio preparado.")
     }
@@ -1340,6 +1341,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private fun deactivateCarMode(speak: Boolean = true) {
         window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         window.attributes = window.attributes.apply { screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE }
+        NexoModeManager.set(this, NexoMode.NORMAL)
         NexoActionLog.add(this, "Modo carro", "Desactivado")
         if (speak) respond("Modo carro desactivado.")
     }
