@@ -223,6 +223,13 @@
             android:id="@+id/historyButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Actividad de NEXO" />
+            android:text="Actividad de NEXO"
+            android:layout_marginBottom="9dp" />
+
+        <Button
+            android:id="@+id/diagnosticsButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="System Health" />
     </LinearLayout>
 </ScrollView>
