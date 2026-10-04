@@ -678,12 +678,17 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         Thread {
             val result = planner.plan(raw)
             runOnUiThread {
-                result.onSuccess { executeAgentPlan(it) }
-                    .onFailure {
-                        NexoActionLog.add(this, "Plan IA", it.message ?: "Error desconocido", false)
-                        setOrbError()
-                        respond("No pude procesar esa orden con mi inteligencia en este momento.")
-                    }
+                result.onSuccess {
+                    NexoRuntimeState.clearIssue(this, "Agent Brain")
+                    executeAgentPlan(it)
+                }.onFailure {
+                    val guidance = NexoRecoveryPolicy.fromThrowable("Agent Brain", it)
+                    NexoRuntimeState.markIssue(this, "Agent Brain", guidance.logMessage)
+                    NexoActionLog.add(this, "Plan IA", guidance.logMessage, false)
+                    setOrbError()
+                    refreshSystemOverview()
+                    respond(guidance.userMessage)
+                }
             }
         }.start()
     }
