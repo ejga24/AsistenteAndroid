@@ -22,25 +22,29 @@ object NexoSkillRegistry {
         "disney+" to "com.disney.disneyplus"
     )
 
-    fun resolveLaunchIntent(context: Context, requestedName: String): Intent? {
+    fun resolvePackageName(context: Context, requestedName: String): String? {
         val clean = normalize(requestedName)
+        if (clean.isBlank()) return null
+
+        appAliases[clean]?.let { return it }
+
         val packageManager = context.packageManager
-
-        appAliases[clean]?.let { packageName ->
-            packageManager.getLaunchIntentForPackage(packageName)?.let { return it }
-        }
-
         val installed = packageManager.getInstalledApplications(PackageManager.GET_META_DATA)
+
         val exact = installed.firstOrNull {
             normalize(packageManager.getApplicationLabel(it).toString()) == clean
         }
-        if (exact != null) return packageManager.getLaunchIntentForPackage(exact.packageName)
+        if (exact != null) return exact.packageName
 
-        val partial = installed.firstOrNull {
+        return installed.firstOrNull {
             val label = normalize(packageManager.getApplicationLabel(it).toString())
             label.contains(clean) || clean.contains(label)
-        }
-        return partial?.let { packageManager.getLaunchIntentForPackage(it.packageName) }
+        }?.packageName
+    }
+
+    fun resolveLaunchIntent(context: Context, requestedName: String): Intent? {
+        val packageName = resolvePackageName(context, requestedName) ?: return null
+        return context.packageManager.getLaunchIntentForPackage(packageName)
     }
 
     fun knownSkills(): List<String> = listOf(
