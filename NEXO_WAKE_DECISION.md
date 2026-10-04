@@ -58,3 +58,22 @@ If local KWS initialization fails:
 
 ## Status
 **Decision:** candidate selected for evaluation; integration not enabled yet.
+
+
+## Verified research notes
+- sherpa-onnx provides Android support and keyword spotting with an open-vocabulary/custom-keyword decoder.
+- Its current Android AAR project metadata identifies the library as Apache-2.0 and the published project version observed during evaluation as 1.13.8.
+- The official Android documentation supports prebuilt native Android libraries/AAR workflows and on-device processing.
+- Current official KWS pretrained-model listings include Chinese, English, and a Chinese+English model. A Spanish-specific KWS model was not present in the evaluated official list.
+- Therefore, **framework compatibility is promising but Spanish pronunciation of “NEXO” is a mandatory device test** before this engine can become the default.
+- No pretrained KWS model will be committed into this repository until that individual model's license and redistribution terms are verified separately.
+
+## Candidate status
+**sherpa-onnx remains Candidate A, not yet selected as the production engine.**
+
+Reason:
+- architecture/platform fit: strong;
+- local/offline operation: strong;
+- custom keyword support: strong;
+- Spanish wake-phrase confidence: unverified;
+- model redistribution: must be verified per model.
