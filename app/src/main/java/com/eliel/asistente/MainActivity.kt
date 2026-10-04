@@ -50,7 +50,6 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private val handler = Handler(Looper.getMainLooper())
     private val planHandler = Handler(Looper.getMainLooper())
     private var planGeneration = 0
-    private val preferences by lazy { getSharedPreferences("assistant_places", MODE_PRIVATE) }
 
     private var speechReady = false
     private var assistantActive = true
@@ -1390,7 +1389,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     }
 
     private fun savePlace(key: String, address: String) {
-        preferences.edit().putString(key, address).apply()
+        NexoPlaces.save(this, key, address)
         val name = if (key == "work") "trabajo" else "casa"
         respond("Listo. Guardé $address como tu $name.")
     }
@@ -1398,8 +1397,8 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private fun resolveDestination(destination: String): String {
         val clean = destination.trim()
         return when (clean) {
-            "mi trabajo", "trabajo" -> preferences.getString("work", null) ?: clean
-            "mi casa", "casa" -> preferences.getString("home", null) ?: clean
+            "mi trabajo", "trabajo" -> NexoPlaces.get(this, "work") ?: clean
+            "mi casa", "casa" -> NexoPlaces.get(this, "home") ?: clean
             "aeropuerto", "el aeropuerto", "aeropuerto de tocumen", "tocumen",
             "aeropuerto internacional de tocumen" -> "Aeropuerto Internacional de Tocumen, Panamá"
             else -> clean
@@ -1504,11 +1503,11 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
     private fun openWazeDestination(destination: String) {
         if (!requireSkill("navigation")) return
-        if ((destination == "mi trabajo" || destination == "trabajo") && !preferences.contains("work")) {
+        if ((destination == "mi trabajo" || destination == "trabajo") && !NexoPlaces.contains(this, "work")) {
             respond("Todavía no sé dónde queda tu trabajo. Dime: guarda mi trabajo como, y luego la dirección.")
             return
         }
-        if ((destination == "mi casa" || destination == "casa") && !preferences.contains("home")) {
+        if ((destination == "mi casa" || destination == "casa") && !NexoPlaces.contains(this, "home")) {
             respond("Todavía no sé dónde queda tu casa. Dime: guarda mi casa como, y luego la dirección.")
             return
         }
