@@ -48,6 +48,7 @@ class AssistantWakeService : Service() {
     private var waitingForCommand = false
     private var pendingCommand: String? = null
     private var awaitingCommandAck = false
+    private var recognitionErrorStreak = 0
     private val wakeWord = NexoWakeConfig.WAKE_WORD
 
     override fun onCreate() {
@@ -177,6 +178,8 @@ class AssistantWakeService : Service() {
             recognizer.setRecognitionListener(object : RecognitionListener {
                 override fun onReadyForSpeech(params: Bundle?) {
                     isListening = true
+                    recognitionErrorStreak = 0
+                    NexoRuntimeState.clearIssue(this@AssistantWakeService, "Voice Core")
                 }
 
                 override fun onBeginningOfSpeech() = Unit
@@ -187,12 +190,54 @@ class AssistantWakeService : Service() {
                 override fun onError(error: Int) {
                     isListening = false
                     if (!shouldListen) return
-                    val delay = if (error == SpeechRecognizer.ERROR_RECOGNIZER_BUSY) 900L else 500L
+
+                    recognitionErrorStreak = (recognitionErrorStreak + 1).coerceAtMost(6)
+
+                    if (error == SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS) {
+                        NexoRuntimeState.markIssue(
+                            this@AssistantWakeService,
+                            "Voice Core",
+                            "El permiso de micrófono dejó de estar disponible"
+                        )
+                        shouldListen = false
+                        stopSelf()
+                        return
+                    }
+
+                    val delay = when (error) {
+                        SpeechRecognizer.ERROR_NO_MATCH,
+                        SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> 500L
+
+                        SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> 1200L
+
+                        SpeechRecognizer.ERROR_NETWORK,
+                        SpeechRecognizer.ERROR_NETWORK_TIMEOUT,
+                        SpeechRecognizer.ERROR_SERVER,
+                        SpeechRecognizer.ERROR_SERVER_DISCONNECTED ->
+                            (1500L * recognitionErrorStreak).coerceAtMost(9000L)
+
+                        else -> (700L * recognitionErrorStreak).coerceAtMost(4200L)
+                    }
+
+                    if (recognitionErrorStreak >= 4 &&
+                        error !in setOf(
+                            SpeechRecognizer.ERROR_NO_MATCH,
+                            SpeechRecognizer.ERROR_SPEECH_TIMEOUT
+                        )
+                    ) {
+                        NexoRuntimeState.markIssue(
+                            this@AssistantWakeService,
+                            "Voice Core",
+                            "Reconocimiento de voz inestable · reintento automático"
+                        )
+                    }
+
                     scheduleListening(delay)
                 }
 
                 override fun onResults(results: Bundle?) {
                     isListening = false
+                    recognitionErrorStreak = 0
                     val spoken = results
                         ?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                         ?.firstOrNull()
