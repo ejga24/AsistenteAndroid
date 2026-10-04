@@ -18,6 +18,7 @@ class SetupCenterActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_setup_center)
+        NexoOnboardingState.markPresented(this)
 
         progressText = findViewById(R.id.setupProgressText)
         checklistText = findViewById(R.id.setupChecklistText)
