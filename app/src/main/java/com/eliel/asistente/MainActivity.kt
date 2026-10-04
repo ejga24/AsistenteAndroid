@@ -119,6 +119,9 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         findViewById<Button>(R.id.visionButton).setOnClickListener {
             startActivity(Intent(this, VisionActivity::class.java))
         }
+        findViewById<Button>(R.id.setupButton).setOnClickListener {
+            startActivity(Intent(this, SetupCenterActivity::class.java))
+        }
         findViewById<Button>(R.id.cancelPlanButton).setOnClickListener {
             cancelCurrentPlan()
         }
@@ -474,6 +477,11 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         when {
             containsAny(command, "modo carro", "activa modo carro", "activar modo carro") -> activateCarMode()
             containsAny(command, "modo normal", "desactiva modo carro", "salir de modo carro") -> deactivateCarMode()
+            containsAny(command, "configurar nexo", "setup", "setup center", "preparar nexo") -> {
+                respondAndThen("Abriendo Setup Center.") {
+                    startActivity(Intent(this, SetupCenterActivity::class.java))
+                }
+            }
             containsAny(command, "abre vision", "vision", "abre la camara", "camara de nexo", "que ves") -> {
                 respondAndThen("Abriendo Vision.") {
                     startActivity(Intent(this, VisionActivity::class.java))
