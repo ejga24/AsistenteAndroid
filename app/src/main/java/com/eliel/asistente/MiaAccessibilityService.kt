@@ -47,14 +47,19 @@ class MiaAccessibilityService : AccessibilityService() {
             return id
         }
 
-        fun queueGenericAction(context: Context, action: String, value: String = ""): String {
+        fun queueGenericAction(
+            context: Context,
+            action: String,
+            value: String = "",
+            targetPackage: String = "*"
+        ): String {
             val id = UUID.randomUUID().toString()
             enqueue(
                 context,
                 JSONObject().apply {
                     put("id", id)
                     put("type", TYPE_GENERIC)
-                    put("package", "*")
+                    put("package", targetPackage.ifBlank { "*" })
                     put("action", action)
                     put("value", value)
                     put("created", System.currentTimeMillis())
