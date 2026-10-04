@@ -26,7 +26,6 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import java.util.Locale
 
@@ -887,28 +886,21 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             NexoRiskLevel.CONFIRM -> {
                 NexoActionLog.add(this, "Confirmación requerida", actionLabel(decision))
                 stopListening()
-                AlertDialog.Builder(this)
-                    .setTitle("Confirmar acción")
-                    .setMessage(
-                        actionLabel(decision) + "\n\n" +
-                        safety.reason + "\n\n" +
-                        "NEXO solo continuará si la autorizas."
-                    )
-                    .setNegativeButton("Cancelar") { _, _ ->
+                NexoConfirmationDialog.show(
+                    context = this,
+                    actionLabel = actionLabel(decision),
+                    reason = safety.reason,
+                    onApproved = {
+                        NexoActionLog.add(this, "Acción autorizada", actionLabel(decision))
+                        onApproved()
+                    },
+                    onRejected = {
                         NexoActionLog.add(this, "Acción cancelada", actionLabel(decision), false)
                         setOrbIdle()
                         onRejected()
                         scheduleListening(350)
                     }
-                    .setPositiveButton("Autorizar") { _, _ ->
-                        NexoActionLog.add(this, "Acción autorizada", actionLabel(decision))
-                        onApproved()
-                    }
-                    .setOnCancelListener {
-                        onRejected()
-                        scheduleListening(350)
-                    }
-                    .show()
+                )
             }
         }
     }
