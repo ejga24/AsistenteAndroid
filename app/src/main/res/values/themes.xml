@@ -1,6 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.Asistente" parent="Theme.Material3.DayNight.NoActionBar">
-        <item name="android:windowLightStatusBar">true</item>
+    <style name="Theme.Asistente" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:windowBackground">@color/nexo_bg</item>
+        <item name="android:navigationBarColor">@color/nexo_bg</item>
+        <item name="android:statusBarColor">@color/nexo_bg</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        <item name="colorPrimary">@color/nexo_accent</item>
+        <item name="colorOnPrimary">@color/nexo_bg</item>
+        <item name="colorSurface">@color/nexo_surface</item>
+        <item name="colorOnSurface">@color/nexo_text</item>
+        <item name="colorOutline">@color/nexo_outline</item>
     </style>
 </resources>
