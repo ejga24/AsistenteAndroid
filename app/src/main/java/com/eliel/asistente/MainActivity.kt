@@ -38,6 +38,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private lateinit var skillsText: TextView
     private lateinit var systemStateText: TextView
     private lateinit var versionText: TextView
+    private lateinit var voiceToggleButton: Button
     private lateinit var nowRunningCard: android.view.View
     private lateinit var planTitleText: TextView
     private lateinit var planProgressText: TextView
@@ -105,6 +106,9 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         planProgressText = findViewById(R.id.planProgressText)
         planStepsText = findViewById(R.id.planStepsText)
         orbView = findViewById(R.id.orbView)
+        voiceToggleButton = findViewById(R.id.voiceToggleButton)
+        assistantActive = NexoVoiceState.isEnabled(this)
+        updateVoiceControl()
         setOrbIdle()
         findViewById<Button>(R.id.aiSettingsButton).setOnClickListener {
             startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
@@ -114,6 +118,9 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         }
         findViewById<Button>(R.id.carModeButton).setOnClickListener {
             activateCarMode()
+        }
+        voiceToggleButton.setOnClickListener {
+            setVoiceActive(!assistantActive, speak = false)
         }
         findViewById<Button>(R.id.historyButton).setOnClickListener {
             startActivity(Intent(this, ActionHistoryActivity::class.java))
@@ -165,7 +172,9 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         setupSpeechRecognizer()
         textToSpeech = TextToSpeech(this, this)
 
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+        if (assistantActive &&
+            ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+        ) {
             safeStartWakeService()
         }
 
@@ -329,7 +338,9 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
         refreshSystemOverview()
 
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+        if (assistantActive &&
+            ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+        ) {
             safeSendWakeServiceAction(AssistantWakeService.ACTION_PAUSE_LISTENING)
         }
 
@@ -368,12 +379,53 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     override fun onPause() {
         super.onPause()
         stopListening()
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+        if (assistantActive &&
+            ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+        ) {
             safeSendWakeServiceAction(AssistantWakeService.ACTION_RESUME_LISTENING)
         }
     }
 
+    private fun updateVoiceControl() {
+        if (!::voiceToggleButton.isInitialized) return
+        voiceToggleButton.text = if (assistantActive) {
+            "Pausar escucha"
+        } else {
+            "Reanudar escucha"
+        }
+    }
+
+    private fun setVoiceActive(enabled: Boolean, speak: Boolean) {
+        assistantActive = enabled
+        NexoVoiceState.setEnabled(this, enabled)
+        updateVoiceControl()
+
+        if (enabled) {
+            statusText.text = "NEXO listo. Di “NEXO” para activarme."
+            safeStartWakeService()
+            scheduleListening(180)
+            if (speak) respond("Escucha activada.")
+        } else {
+            waitingForCommand = false
+            stopListening()
+            stopService(Intent(this, AssistantWakeService::class.java))
+            statusText.text = "Escucha pausada."
+            setOrbIdle()
+            if (speak && speechReady) {
+                textToSpeech.speak(
+                    "De acuerdo. La escucha quedó pausada.",
+                    TextToSpeech.QUEUE_FLUSH,
+                    null,
+                    "voice_paused"
+                )
+            }
+        }
+
+        refreshSystemOverview()
+    }
+
     private fun safeStartWakeService() {
+        if (!assistantActive) return
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) return
 
         try {
@@ -559,9 +611,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                 }
             }
             containsAny(command, "deja de escuchar", "detente", "pausa asistente", "para de escuchar") -> {
-                assistantActive = false
-                stopListening()
-                respond("De acuerdo. La escucha quedó pausada.", listenAgain = false)
+                setVoiceActive(false, speak = true)
             }
             savedPlace != null -> savePlace(savedPlace.first, savedPlace.second)
             chatGptRequest != null -> automateChatGpt(chatGptRequest.first, chatGptRequest.second)
