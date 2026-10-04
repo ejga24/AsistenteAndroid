@@ -32,7 +32,7 @@ class AssistantWakeService : Service(), TextToSpeech.OnInitListener {
         const val ACTION_RESUME_LISTENING = "com.eliel.asistente.RESUME_LISTENING"
         const val EXTRA_VOICE_COMMAND = "voice_command"
 
-        private const val CHANNEL_ID = "mia_wake_channel"
+        private const val CHANNEL_ID = "nexo_wake_channel"
         private const val NOTIFICATION_ID = 2001
     }
 
@@ -46,7 +46,7 @@ class AssistantWakeService : Service(), TextToSpeech.OnInitListener {
     private var speechReady = false
     private var waitingForCommand = false
     private var pendingCommand: String? = null
-    private val wakeWord = "mia"
+    private val wakeWord = "nexo"
 
     override fun onCreate() {
         super.onCreate()
@@ -86,10 +86,10 @@ class AssistantWakeService : Service(), TextToSpeech.OnInitListener {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                "Mía en segundo plano",
+                "NEXO en segundo plano",
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
-                description = "Mantiene a Mía atenta a la palabra de activación."
+                description = "Mantiene a NEXO atento a la palabra de activación."
                 setSound(null, null)
             }
             getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
@@ -107,8 +107,8 @@ class AssistantWakeService : Service(), TextToSpeech.OnInitListener {
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_btn_speak_now)
-            .setContentTitle("Mía está atenta")
-            .setContentText("Di “Mía” para activarla.")
+            .setContentTitle("NEXO está atento")
+            .setContentText("Di “NEXO” para activarlo.")
             .setContentIntent(pendingIntent)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
