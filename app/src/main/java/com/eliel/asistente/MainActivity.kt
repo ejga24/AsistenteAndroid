@@ -33,6 +33,9 @@ import java.util.Locale
 class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
     private lateinit var statusText: TextView
+    private lateinit var healthText: TextView
+    private lateinit var skillsText: TextView
+    private lateinit var systemStateText: TextView
     private lateinit var orbView: android.view.View
     private lateinit var textToSpeech: TextToSpeech
     private var speechRecognizer: SpeechRecognizer? = null
@@ -80,6 +83,9 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         setContentView(R.layout.activity_main)
 
         statusText = findViewById(R.id.statusText)
+        healthText = findViewById(R.id.healthText)
+        skillsText = findViewById(R.id.skillsText)
+        systemStateText = findViewById(R.id.systemStateText)
         orbView = findViewById(R.id.orbView)
         setOrbIdle()
         findViewById<Button>(R.id.aiSettingsButton).setOnClickListener {
@@ -274,6 +280,9 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                 android.view.View.GONE else android.view.View.VISIBLE
         accessButton.text =
             if (isAccessibilityServiceEnabled()) "Control de apps activado" else "Activar control de apps"
+
+        refreshSystemOverview()
+
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
             safeSendWakeServiceAction(AssistantWakeService.ACTION_PAUSE_LISTENING)
         }
@@ -281,6 +290,44 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         if (assistantActive && !isListening && !isSpeaking && ::statusText.isInitialized) {
             scheduleListening(350)
         }
+    }
+
+    private fun refreshSystemOverview() {
+        val micGranted = ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.RECORD_AUDIO
+        ) == PackageManager.PERMISSION_GRANTED
+        val accessEnabled = isAccessibilityServiceEnabled()
+        val aiConfigured = MiaAgentPlanner(this).isConfigured()
+
+        val healthyCount = listOf(micGranted, accessEnabled, aiConfigured).count { it }
+        healthText.text = buildString {
+            append(if (micGranted) "Micrófono listo" else "Micrófono pendiente")
+            append(" · ")
+            append(if (accessEnabled) "Control listo" else "Control pendiente")
+            append(" · ")
+            append(if (aiConfigured) "IA lista" else "IA pendiente")
+        }
+
+        skillsText.text = NexoSkillRegistry.knownSkills()
+            .take(4)
+            .joinToString(" · ")
+
+        systemStateText.text = when (healthyCount) {
+            3 -> "●  Operativo"
+            2 -> "●  Casi listo"
+            else -> "●  Requiere atención"
+        }
+        systemStateText.setTextColor(
+            ContextCompat.getColor(
+                this,
+                when (healthyCount) {
+                    3 -> R.color.nexo_success
+                    2 -> R.color.nexo_warning
+                    else -> R.color.nexo_error
+                }
+            )
+        )
     }
 
     override fun onPause() {
