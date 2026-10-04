@@ -43,4 +43,40 @@ class NexoSafetyPolicyTest {
         assertEquals(NexoRiskLevel.BLOCK, result.level)
         assertEquals(NexoRiskCategory.DEVICE_RESET, result.category)
     }
+    @Test
+    fun destructiveUiActionRequiresConfirmation() {
+        val result = NexoSafetyPolicy.evaluate(
+            MiaAgentDecision(tool = "tap_text", target = "Eliminar archivo")
+        )
+        assertEquals(NexoRiskLevel.CONFIRM, result.level)
+        assertEquals(NexoRiskCategory.DESTRUCTIVE, result.category)
+    }
+
+    @Test
+    fun accountUiActionRequiresConfirmation() {
+        val result = NexoSafetyPolicy.evaluate(
+            MiaAgentDecision(tool = "tap_text", target = "Cambiar contraseña")
+        )
+        assertEquals(NexoRiskLevel.CONFIRM, result.level)
+        assertEquals(NexoRiskCategory.ACCOUNT, result.category)
+    }
+
+    @Test
+    fun installationUiActionRequiresConfirmation() {
+        val result = NexoSafetyPolicy.evaluate(
+            MiaAgentDecision(tool = "tap_text", target = "Instalar aplicación")
+        )
+        assertEquals(NexoRiskLevel.CONFIRM, result.level)
+        assertEquals(NexoRiskCategory.INSTALLATION, result.category)
+    }
+
+    @Test
+    fun bookingUiActionRequiresConfirmation() {
+        val result = NexoSafetyPolicy.evaluate(
+            MiaAgentDecision(tool = "tap_text", target = "Confirmar reserva")
+        )
+        assertEquals(NexoRiskLevel.CONFIRM, result.level)
+        assertEquals(NexoRiskCategory.BOOKING, result.category)
+    }
 }
+
