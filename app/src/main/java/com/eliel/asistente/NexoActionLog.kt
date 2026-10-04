@@ -12,11 +12,26 @@ object NexoActionLog {
     private const val KEY = "entries"
     private const val MAX = 80
 
-    private fun sanitizeDetail(value: String): String {
+    private fun sanitizeDetail(action: String, value: String): String {
         if (value.isBlank()) return ""
+
+        val normalizedAction = action.lowercase(Locale.ROOT)
+        if (
+            normalizedAction.contains("type_text") ||
+            normalizedAction.contains("escribir texto") ||
+            normalizedAction.contains("credencial") ||
+            normalizedAction.contains("api key")
+        ) {
+            return "[contenido oculto]"
+        }
+
         return value
             .replace(Regex("""sk-[A-Za-z0-9_-]{12,}"""), "[credencial oculta]")
             .replace(Regex("""(?i)bearer\s+[A-Za-z0-9._-]{12,}"""), "Bearer [oculto]")
+            .replace(
+                Regex("""(?i)(password|contraseña|contrasena|pin)\s*[:=]\s*\S+"""),
+                "$1=[oculto]"
+            )
             .take(280)
     }
 
@@ -27,7 +42,7 @@ object NexoActionLog {
         next.put(JSONObject().apply {
             put("time", System.currentTimeMillis())
             put("action", action)
-            put("detail", sanitizeDetail(detail))
+            put("detail", sanitizeDetail(action, detail))
             put("success", success)
         })
         for (i in 0 until minOf(current.length(), MAX - 1)) next.put(current.get(i))
