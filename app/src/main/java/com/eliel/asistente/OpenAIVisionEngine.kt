@@ -16,7 +16,7 @@ class OpenAIVisionEngine(private val context: Context) : NexoVisionEngine {
 
     override fun analyze(bitmap: Bitmap): Result<NexoVisionResult> {
         val prefs = context.getSharedPreferences(MiaAgentPlanner.PREFS, Context.MODE_PRIVATE)
-        val apiKey = prefs.getString(MiaAgentPlanner.KEY_API_KEY, "")?.trim().orEmpty()
+        val apiKey = NexoSecretStore.readApiKey(context).trim()
         if (apiKey.isBlank()) {
             return Result.failure(IllegalStateException("NEXO_VISION_NOT_CONFIGURED"))
         }
