@@ -357,7 +357,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         val health = NexoSystemHealth.snapshot(this)
 
         healthText.text = health.checks
-            .filter { it.id in setOf("microphone", "accessibility", "intelligence") }
+            .filter { it.id in setOf("voice", "microphone", "accessibility", "intelligence") }
             .joinToString(" · ") {
                 if (it.ready) it.label + " listo" else it.label + " pendiente"
             }
