@@ -93,6 +93,15 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        NexoPlanSessionStore.recoverInterruptedIfNeeded(this)?.let { interrupted ->
+            NexoActionLog.add(
+                this,
+                "Plan interrumpido",
+                if (interrupted.isBlank()) "La ejecución anterior no terminó." else interrupted,
+                false
+            )
+        }
+
         statusText = findViewById(R.id.statusText)
         healthText = findViewById(R.id.healthText)
         skillsText = findViewById(R.id.skillsText)
@@ -769,6 +778,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private fun cancelCurrentPlan() {
         planCancelled = true
         planActive = false
+        NexoPlanSessionStore.clear(this)
         planGeneration++
         planHandler.removeCallbacksAndMessages(null)
         nowRunningCard.visibility = android.view.View.GONE
@@ -817,6 +827,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
     private fun finishPlanSurface() {
         planActive = false
+        NexoPlanSessionStore.clear(this)
         setOrbSuccess()
         planProgressText.text = "Completado"
         planHandler.postDelayed({
@@ -858,7 +869,9 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             return
         }
 
-        NexoActionLog.add(this, "Plan IA", plan.actions.joinToString(" → ") { it.tool })
+        val planSummary = plan.actions.joinToString(" → ") { it.tool }
+        NexoActionLog.add(this, "Plan IA", planSummary)
+        NexoPlanSessionStore.markStarted(this, planSummary)
         planCancelled = false
         planActive = true
         val generation = ++planGeneration
@@ -909,6 +922,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private fun failPlanExecution(message: String, logDetail: String) {
         planCancelled = true
         planActive = false
+        NexoPlanSessionStore.clear(this)
         planGeneration++
         planHandler.removeCallbacksAndMessages(null)
         nowRunningCard.visibility = android.view.View.GONE
@@ -1223,12 +1237,14 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
             "answer" -> {
                 planActive = false
+                NexoPlanSessionStore.clear(this)
                 NexoActionLog.add(this, "Plan: respuesta", decision.text)
                 respond(decision.text.ifBlank { plan.speech.ifBlank { "Listo." } })
             }
 
             "clarify" -> {
                 planActive = false
+                NexoPlanSessionStore.clear(this)
                 NexoActionLog.add(this, "Plan: aclaración", decision.text)
                 respond(decision.text.ifBlank { "Necesito un dato más para continuar." })
             }
