@@ -17,6 +17,8 @@ class MiaAccessibilityService : AccessibilityService() {
         private const val PREFS = "mia_automation"
         private const val KEY_QUEUE = "action_queue"
         private const val MAX_QUEUE = 12
+        private const val GENERIC_TTL_MS = 45_000L
+        private const val CHATGPT_TTL_MS = 90_000L
         private val queueLock = Any()
 
         private const val TYPE_CHATGPT = "chatgpt"
@@ -64,10 +66,7 @@ class MiaAccessibilityService : AccessibilityService() {
                 }
                 next.put(item)
 
-                context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-                    .edit()
-                    .putString(KEY_QUEUE, next.toString())
-                    .apply()
+                writeQueue(context, next)
             }
         }
 
@@ -81,9 +80,54 @@ class MiaAccessibilityService : AccessibilityService() {
 
         private fun peek(context: Context): JSONObject? =
             synchronized(queueLock) {
-                val queue = readQueue(context)
-                if (queue.length() == 0) null else queue.optJSONObject(0)
+                var queue = readQueue(context)
+                var changed = false
+
+                while (queue.length() > 0) {
+                    val item = queue.optJSONObject(0)
+                    if (item == null) {
+                        queue = withoutHead(queue)
+                        changed = true
+                        continue
+                    }
+
+                    val created = item.optLong("created", 0L)
+                    val ttl = if (item.optString("type") == TYPE_CHATGPT) {
+                        CHATGPT_TTL_MS
+                    } else {
+                        GENERIC_TTL_MS
+                    }
+
+                    val expired = created <= 0L ||
+                        System.currentTimeMillis() - created > ttl
+
+                    if (!expired) {
+                        if (changed) writeQueue(context, queue)
+                        return@synchronized item
+                    }
+
+                    queue = withoutHead(queue)
+                    changed = true
+                }
+
+                if (changed) writeQueue(context, queue)
+                null
             }
+
+        private fun withoutHead(queue: JSONArray): JSONArray {
+            val next = JSONArray()
+            for (i in 1 until queue.length()) {
+                next.put(queue.getJSONObject(i))
+            }
+            return next
+        }
+
+        private fun writeQueue(context: Context, queue: JSONArray) {
+            context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+                .edit()
+                .putString(KEY_QUEUE, queue.toString())
+                .apply()
+        }
 
         private fun removeHead(context: Context) {
             synchronized(queueLock) {
