@@ -147,7 +147,7 @@ class MiaAgentPlanner(private val context: Context) {
                 .use { it.readText() }
 
             if (code !in 200..299) {
-                throw IllegalStateException("OpenAI HTTP $code: $responseText")
+                throw IllegalStateException("OpenAI HTTP $code")
             }
 
             val responseJson = JSONObject(responseText)
