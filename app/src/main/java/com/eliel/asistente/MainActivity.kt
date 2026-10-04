@@ -24,7 +24,6 @@ import android.speech.tts.UtteranceProgressListener
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
-import android.view.WindowManager
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AlertDialog
@@ -1635,9 +1634,8 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     }
 
     private fun deactivateCarMode(speak: Boolean = true) {
-        window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        window.attributes = window.attributes.apply { screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE }
         NexoModeManager.set(this, NexoMode.NORMAL)
+        NexoModeManager.applyWindowProfile(this, NexoMode.NORMAL)
         NexoActionLog.add(this, "Modo carro", "Desactivado")
         if (speak) respond("Modo carro desactivado.")
     }
@@ -1661,6 +1659,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
     override fun onDestroy() {
         handler.removeCallbacksAndMessages(null)
+        planHandler.removeCallbacksAndMessages(null)
         speechRecognizer?.destroy()
         speechRecognizer = null
 
