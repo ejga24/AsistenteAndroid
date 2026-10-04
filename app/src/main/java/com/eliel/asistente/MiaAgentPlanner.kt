@@ -45,7 +45,7 @@ class MiaAgentPlanner(private val context: Context) {
                 put(
                     "instructions",
                     """
-                    Eres el planificador de Mía, un asistente de voz que controla una tableta Android.
+                    Eres el planificador de NEXO, un agente de voz que controla una tableta Android.
                     Convierte la solicitud del usuario en UNA acción concreta y segura.
                     No inventes datos que no estén en la solicitud.
                     Usa:
