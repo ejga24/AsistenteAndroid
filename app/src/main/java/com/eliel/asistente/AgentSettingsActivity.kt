@@ -15,9 +15,15 @@ class AgentSettingsActivity : AppCompatActivity() {
         val apiKeyInput = findViewById<EditText>(R.id.apiKeyInput)
         val modelInput = findViewById<EditText>(R.id.modelInput)
         val saveButton = findViewById<Button>(R.id.saveAiButton)
+        val removeButton = findViewById<Button>(R.id.removeAiButton)
 
         val prefs = getSharedPreferences(MiaAgentPlanner.PREFS, MODE_PRIVATE)
-        apiKeyInput.setText(prefs.getString(MiaAgentPlanner.KEY_API_KEY, ""))
+        apiKeyInput.setText("")
+        apiKeyInput.hint = if (NexoSecretStore.hasApiKey(this)) {
+            "Credencial configurada · escribe una nueva para reemplazarla"
+        } else {
+            "OpenAI API key"
+        }
         modelInput.setText(
             prefs.getString(
                 MiaAgentPlanner.KEY_MODEL,
@@ -25,19 +31,33 @@ class AgentSettingsActivity : AppCompatActivity() {
             )
         )
 
+        removeButton.setOnClickListener {
+            NexoSecretStore.clearApiKey(this)
+            Toast.makeText(this, "Credencial desconectada.", Toast.LENGTH_SHORT).show()
+            finish()
+        }
+
         saveButton.setOnClickListener {
             val apiKey = apiKeyInput.text.toString().trim()
             val model = modelInput.text.toString().trim()
                 .ifBlank { MiaAgentPlanner.DEFAULT_MODEL }
 
+            if (apiKey.isNotBlank()) {
+                NexoSecretStore.saveApiKey(this, apiKey)
+            }
+
             prefs.edit()
-                .putString(MiaAgentPlanner.KEY_API_KEY, apiKey)
                 .putString(MiaAgentPlanner.KEY_MODEL, model)
+                .remove(MiaAgentPlanner.KEY_API_KEY)
                 .apply()
 
             Toast.makeText(
                 this,
-                if (apiKey.isBlank()) "IA desactivada." else "Inteligencia de Mía configurada.",
+                if (NexoSecretStore.hasApiKey(this)) {
+                    "Inteligencia de NEXO configurada de forma segura."
+                } else {
+                    "Agrega una credencial para activar la inteligencia."
+                },
                 Toast.LENGTH_SHORT
             ).show()
             finish()
