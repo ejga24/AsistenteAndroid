@@ -1,12 +1,10 @@
 package com.eliel.asistente
 
 import android.Manifest
-import android.content.ComponentName
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.PowerManager
-import android.provider.Settings
 import android.speech.SpeechRecognizer
 import androidx.core.content.ContextCompat
 
@@ -50,7 +48,7 @@ object NexoSystemHealth {
             permission(context, Manifest.permission.POST_NOTIFICATIONS)
         val powerManager = context.getSystemService(Context.POWER_SERVICE) as PowerManager
         val batteryExempt = powerManager.isIgnoringBatteryOptimizations(context.packageName)
-        val access = accessibilityEnabled(context)
+        val access = NexoAccessibilityStatus.isEnabled(context)
         val ai = MiaAgentPlanner(context).isConfigured()
         val wake = NexoWakeRuntime.status(context)
         val recognitionAvailable = SpeechRecognizer.isRecognitionAvailable(context)
@@ -172,19 +170,5 @@ object NexoSystemHealth {
     private fun permission(context: Context, permission: String): Boolean =
         ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
 
-    private fun accessibilityEnabled(context: Context): Boolean {
-        val enabled = Settings.Secure.getString(
-            context.contentResolver,
-            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
-        ).orEmpty()
 
-        val component = ComponentName(
-            context,
-            MiaAccessibilityService::class.java
-        ).flattenToString()
-
-        return enabled.split(':')
-            .map { it.trim() }
-            .any { it.equals(component, ignoreCase = true) }
-    }
 }
