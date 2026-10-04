@@ -318,38 +318,26 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     }
 
     private fun refreshSystemOverview() {
-        val micGranted = ContextCompat.checkSelfPermission(
-            this,
-            Manifest.permission.RECORD_AUDIO
-        ) == PackageManager.PERMISSION_GRANTED
-        val accessEnabled = isAccessibilityServiceEnabled()
-        val aiConfigured = MiaAgentPlanner(this).isConfigured()
+        val health = NexoSystemHealth.snapshot(this)
 
-        val healthyCount = listOf(micGranted, accessEnabled, aiConfigured).count { it }
-        healthText.text = buildString {
-            append(if (micGranted) "Micrófono listo" else "Micrófono pendiente")
-            append(" · ")
-            append(if (accessEnabled) "Control listo" else "Control pendiente")
-            append(" · ")
-            append(if (aiConfigured) "IA lista" else "IA pendiente")
-        }
+        healthText.text = health.checks
+            .filter { it.id in setOf("microphone", "accessibility", "intelligence") }
+            .joinToString(" · ") {
+                if (it.ready) it.label + " listo" else it.label + " pendiente"
+            }
 
         skillsText.text = NexoSkillRegistry.knownSkills()
             .take(4)
             .joinToString(" · ")
 
-        systemStateText.text = when (healthyCount) {
-            3 -> "●  Operativo"
-            2 -> "●  Casi listo"
-            else -> "●  Requiere atención"
-        }
+        systemStateText.text = "●  " + health.summary
         systemStateText.setTextColor(
             ContextCompat.getColor(
                 this,
-                when (healthyCount) {
-                    3 -> R.color.nexo_success
-                    2 -> R.color.nexo_warning
-                    else -> R.color.nexo_error
+                when (health.state) {
+                    NexoHealthState.READY -> R.color.nexo_success
+                    NexoHealthState.DEGRADED -> R.color.nexo_warning
+                    NexoHealthState.BLOCKED -> R.color.nexo_error
                 }
             )
         )
