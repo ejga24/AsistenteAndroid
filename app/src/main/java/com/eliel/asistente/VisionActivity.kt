@@ -1,6 +1,7 @@
 package com.eliel.asistente
 
 import android.Manifest
+import android.app.KeyguardManager
 import android.content.pm.PackageManager
 import android.graphics.BitmapFactory
 import android.os.Bundle
@@ -50,6 +51,19 @@ class VisionActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        val keyguard = getSystemService(KEYGUARD_SERVICE) as KeyguardManager
+        if (keyguard.isDeviceLocked) {
+            NexoActionLog.add(
+                this,
+                "Vision bloqueada",
+                "El dispositivo estaba bloqueado.",
+                false
+            )
+            finish()
+            return
+        }
+
         setContentView(R.layout.activity_vision)
         cleanupCapturedFile(latestCaptureFile())
         autoAnalyzeRequested = intent.getBooleanExtra(EXTRA_AUTO_ANALYZE, false)
