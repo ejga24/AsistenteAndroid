@@ -611,7 +611,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     }
 
     private fun handleCommand(raw: String) {
-        NexoActionLog.add(this, "Comando de voz", raw)
+        NexoActionLog.add(this, "Comando de voz", "Orden recibida")
         val command = normalize(raw)
         val savedPlace = extractSavedPlace(command)
         val youtubeQuery = extractYouTubeQuery(command)
@@ -663,6 +663,14 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                 respondAndThen("Abriendo la configuración de inteligencia.") {
                     startActivity(Intent(this, AgentSettingsActivity::class.java))
                 }
+            }
+            planActive && containsAny(
+                command,
+                "cancela plan", "cancelar plan", "deten plan", "detén plan",
+                "detener plan", "para el plan", "parar plan", "cancela eso"
+            ) -> {
+                cancelCurrentPlan()
+                respond("Plan detenido.")
             }
             containsAny(command, "deja de escuchar", "detente", "pausa asistente", "para de escuchar") -> {
                 setVoiceActive(false, speak = true)
