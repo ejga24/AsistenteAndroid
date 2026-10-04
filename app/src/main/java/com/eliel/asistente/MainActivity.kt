@@ -387,6 +387,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         ) {
             safeSendWakeServiceAction(AssistantWakeService.ACTION_RESUME_LISTENING)
         }
+        super.onPause()
     }
 
     private fun updateVoiceControl() {
