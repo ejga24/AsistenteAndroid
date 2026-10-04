@@ -189,6 +189,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         }
 
         intent.getStringExtra(AssistantWakeService.EXTRA_VOICE_COMMAND)?.let { command ->
+            acknowledgeWakeCommand()
             intent.removeExtra(AssistantWakeService.EXTRA_VOICE_COMMAND)
             handler.postDelayed({ handleCommand(command) }, 500)
         }
@@ -205,14 +206,25 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         super.onNewIntent(intent)
         setIntent(intent)
         intent.getStringExtra(AssistantWakeService.EXTRA_VOICE_COMMAND)?.let { command ->
+            acknowledgeWakeCommand()
             intent.removeExtra(AssistantWakeService.EXTRA_VOICE_COMMAND)
             handler.postDelayed({ handleCommand(command) }, 350)
         }
     }
 
+    private fun acknowledgeWakeCommand() {
+        runCatching {
+            startService(
+                Intent(this, AssistantWakeService::class.java).apply {
+                    action = AssistantWakeService.ACTION_COMMAND_ACCEPTED
+                }
+            )
+        }
+    }
+
     private fun setupSpeechRecognizer() {
         if (!SpeechRecognizer.isRecognitionAvailable(this)) {
-            statusText.text = "Este teléfono no tiene disponible el reconocimiento de voz."
+            statusText.text = "Este dispositivo no tiene disponible el reconocimiento de voz."
             assistantActive = false
             return
         }
