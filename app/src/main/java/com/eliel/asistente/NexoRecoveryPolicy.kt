@@ -29,6 +29,18 @@ object NexoRecoveryPolicy {
                 userMessage = "La inteligencia necesita revisar sus credenciales.",
                 logMessage = source + ": credenciales rechazadas"
             )
+            lower.contains("429") -> Guidance(
+                userMessage = "La inteligencia alcanzó temporalmente su límite de uso. Las funciones locales siguen disponibles.",
+                logMessage = source + ": límite temporal"
+            )
+            lower.contains("404") || lower.contains("model") && lower.contains("not") -> Guidance(
+                userMessage = "El modelo configurado no está disponible. Revisa Inteligencia de NEXO.",
+                logMessage = source + ": modelo no disponible"
+            )
+            Regex("""\b5\d\d\b""").containsMatchIn(lower) -> Guidance(
+                userMessage = "El servicio de inteligencia está temporalmente indisponible. NEXO mantiene activas sus funciones locales.",
+                logMessage = source + ": servicio remoto temporalmente indisponible"
+            )
             else -> Guidance(
                 userMessage = "No pude completar esa operación, pero NEXO sigue disponible.",
                 logMessage = source + ": " + raw.take(140)
