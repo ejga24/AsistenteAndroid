@@ -112,6 +112,9 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         findViewById<Button>(R.id.diagnosticsButton).setOnClickListener {
             startActivity(Intent(this, SystemDiagnosticsActivity::class.java))
         }
+        findViewById<Button>(R.id.securityButton).setOnClickListener {
+            startActivity(Intent(this, SecurityCenterActivity::class.java))
+        }
         findViewById<Button>(R.id.cancelPlanButton).setOnClickListener {
             cancelCurrentPlan()
         }
