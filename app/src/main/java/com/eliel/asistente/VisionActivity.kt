@@ -89,6 +89,12 @@ class VisionActivity : AppCompatActivity() {
         }, ContextCompat.getMainExecutor(this))
     }
 
+    private fun cleanupCapturedFile(file: File) {
+        runCatching {
+            if (file.exists()) file.delete()
+        }
+    }
+
     private fun analyzeCapturedFrame(file: File) {
         val bitmap = BitmapFactory.decodeFile(file.absolutePath)
         if (bitmap == null) {
@@ -103,9 +109,10 @@ class VisionActivity : AppCompatActivity() {
                 result.onSuccess {
                     resultCard.visibility = android.view.View.VISIBLE
                     resultText.text = it.summary
-                    stateText.text = "Análisis completado."
+                    stateText.text = "Análisis completado. La captura temporal fue eliminada."
                     captureButton.isEnabled = true
-                    NexoActionLog.add(this, "Vision", "Análisis completado")
+                    cleanupCapturedFile(file)
+                    NexoActionLog.add(this, "Vision", "Análisis completado y captura temporal eliminada")
                 }.onFailure {
                     resultCard.visibility = android.view.View.GONE
                     stateText.text = if (it.message == "NEXO_VISION_NOT_CONFIGURED") {
@@ -114,6 +121,7 @@ class VisionActivity : AppCompatActivity() {
                         "No pude analizar la imagen en este momento."
                     }
                     captureButton.isEnabled = true
+                    cleanupCapturedFile(file)
                     NexoActionLog.add(this, "Vision", it.message ?: "Error de análisis", false)
                 }
             }
