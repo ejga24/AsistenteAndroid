@@ -133,3 +133,7 @@ La primera instalación en la HONOR será tratada como **release candidate**, no
 - [x] Estilos compartidos de tipografía, botones, inputs, colores, radios y espaciado.
 - [x] Orb semántico con estados visuales para escucha, procesamiento, éxito y error.
 - [x] Security & Privacy Center con estado de permisos y reglas de confianza.
+- [x] Política central de seguridad con clasificación SAFE / CONFIRM / BLOCK.
+- [x] Confirmación explícita para acciones de pantalla potencialmente sensibles.
+- [x] Contrato desacoplado de wake engine para sustituir el fallback de Android por hotword local sin rehacer NEXO.
+- [ ] Implementación final del hotword local 'NEXO' sobre el contrato de wake engine.
