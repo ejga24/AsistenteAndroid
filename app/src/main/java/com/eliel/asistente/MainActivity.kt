@@ -165,6 +165,13 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             intent.removeExtra(AssistantWakeService.EXTRA_VOICE_COMMAND)
             handler.postDelayed({ handleCommand(command) }, 500)
         }
+
+        handler.postDelayed({
+            if (!isFinishing && NexoOnboardingState.shouldPresent(this)) {
+                NexoOnboardingState.markPresented(this)
+                startActivity(Intent(this, SetupCenterActivity::class.java))
+            }
+        }, 700)
     }
 
     override fun onNewIntent(intent: Intent) {
