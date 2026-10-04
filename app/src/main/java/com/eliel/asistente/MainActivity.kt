@@ -542,64 +542,192 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private fun runAgentPlanner(raw: String) {
         val planner = MiaAgentPlanner(this)
         if (!planner.isConfigured()) {
-            respond("Aún no tengo configurada mi inteligencia. Abre Configurar inteligencia y agrega tu clave de API.")
+            respond("Aún no tengo configurada mi inteligencia. Abre Inteligencia de NEXO y agrega tu clave de API.")
             return
         }
 
         statusText.text = "Pensando…"
+        setOrbProcessing()
         stopListening()
 
         Thread {
             val result = planner.plan(raw)
             runOnUiThread {
-                result.onSuccess { executeAgentDecision(it) }
+                result.onSuccess { executeAgentPlan(it) }
                     .onFailure {
+                        NexoActionLog.add(this, "Plan IA", it.message ?: "Error desconocido", false)
                         respond("No pude procesar esa orden con mi inteligencia en este momento.")
                     }
             }
         }.start()
     }
 
-    private fun executeAgentDecision(decision: MiaAgentDecision) {
-        val speech = decision.speech.ifBlank { "Listo." }
+    private fun executeAgentPlan(plan: NexoAgentPlan) {
+        if (plan.actions.isEmpty()) {
+            respond("No encontré acciones para ejecutar.")
+            return
+        }
+
+        NexoActionLog.add(this, "Plan IA", plan.actions.joinToString(" → ") { it.tool })
+        statusText.text = "Ejecutando plan…"
+        executePlanStep(plan, 0)
+    }
+
+    private fun executePlanStep(plan: NexoAgentPlan, index: Int) {
+        if (index >= plan.actions.size) {
+            respond(plan.speech.ifBlank { "Listo. Terminé el plan." })
+            return
+        }
+
+        val decision = plan.actions[index]
+        val continuePlan = {
+            handler.postDelayed({ executePlanStep(plan, index + 1) }, 650)
+        }
 
         when (decision.tool) {
             "open_app" -> {
                 val target = decision.app.ifBlank { decision.text }
                 val launch = packageManager.getInstalledApplications(PackageManager.GET_META_DATA)
                     .firstOrNull {
-                        packageManager.getApplicationLabel(it).toString()
-                            .equals(target, ignoreCase = true)
+                        packageManager.getApplicationLabel(it).toString().equals(target, ignoreCase = true)
                     }
                     ?.let { packageManager.getLaunchIntentForPackage(it.packageName) }
 
-                if (launch != null) respondAndThen(speech) { startActivity(launch) }
-                else respond("No encontré la aplicación $target.")
+                if (launch != null) {
+                    NexoActionLog.add(this, "Plan: abrir app", target)
+                    startActivity(launch)
+                } else {
+                    NexoActionLog.add(this, "Plan: abrir app", "No encontré " + target, false)
+                }
+                continuePlan()
             }
 
-            "waze" -> openWazeDestination(resolveDestination(decision.target.ifBlank { decision.text }))
-            "spotify" -> playMediaSearch("com.spotify.music", "Spotify", decision.text.ifBlank { decision.target })
-            "youtube" -> playMediaSearch("com.google.android.youtube", "YouTube", decision.text.ifBlank { decision.target })
-            "chatgpt" -> automateChatGpt(decision.text, decision.newChat)
+            "waze" -> {
+                val destination = resolveDestination(decision.target.ifBlank { decision.text })
+                val intent = Intent(
+                    Intent.ACTION_VIEW,
+                    Uri.parse("https://waze.com/ul?q=" + Uri.encode(destination) + "&navigate=yes")
+                ).apply { setPackage("com.waze") }
+                if (intent.resolveActivity(packageManager) != null) {
+                    NexoActionLog.add(this, "Plan: Waze", destination)
+                    startActivity(intent)
+                } else {
+                    NexoActionLog.add(this, "Plan: Waze", "Waze no disponible", false)
+                }
+                continuePlan()
+            }
 
-            "tap_text", "type_text", "back", "home" -> {
+            "spotify", "youtube" -> {
+                val query = decision.text.ifBlank { decision.target }
+                val packageName = if (decision.tool == "spotify") "com.spotify.music" else "com.google.android.youtube"
+                val displayName = if (decision.tool == "spotify") "Spotify" else "YouTube"
+
+                val direct = Intent(MediaStore.INTENT_ACTION_MEDIA_PLAY_FROM_SEARCH).apply {
+                    setPackage(packageName)
+                    putExtra(SearchManager.QUERY, query)
+                    putExtra(MediaStore.EXTRA_MEDIA_FOCUS, "vnd.android.cursor.item/*")
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+
+                val fallback = if (decision.tool == "spotify") {
+                    Intent(Intent.ACTION_VIEW, Uri.parse("spotify:search:" + Uri.encode(query))).apply {
+                        setPackage(packageName)
+                    }
+                } else {
+                    Intent(
+                        Intent.ACTION_VIEW,
+                        Uri.parse("https://www.youtube.com/results?search_query=" + Uri.encode(query))
+                    ).apply { setPackage(packageName) }
+                }
+
+                val chosen = if (direct.resolveActivity(packageManager) != null) direct else fallback
+                if (chosen.resolveActivity(packageManager) != null) {
+                    NexoActionLog.add(this, "Plan: " + displayName, query)
+                    startActivity(chosen)
+                } else {
+                    NexoActionLog.add(this, "Plan: " + displayName, "Aplicación no disponible", false)
+                }
+                continuePlan()
+            }
+
+            "chatgpt" -> {
                 if (!isAccessibilityServiceEnabled()) {
-                    respondAndThen("Necesito que actives el acceso de NEXO para controlar la pantalla.") {
+                    NexoActionLog.add(this, "Plan: ChatGPT", "Control de apps desactivado", false)
+                    respondAndThen("Para continuar necesito que actives el control de aplicaciones de NEXO.") {
                         startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
                     }
                     return
                 }
+                val launch = packageManager.getLaunchIntentForPackage("com.openai.chatgpt")
+                if (launch != null) {
+                    MiaAccessibilityService.queueChatGptRequest(this, decision.text, decision.newChat)
+                    NexoActionLog.add(this, "Plan: ChatGPT", decision.text)
+                    startActivity(launch)
+                } else {
+                    NexoActionLog.add(this, "Plan: ChatGPT", "ChatGPT no está instalado", false)
+                }
+                continuePlan()
+            }
 
+            "tap_text", "type_text", "back", "home" -> {
+                if (!isAccessibilityServiceEnabled()) {
+                    NexoActionLog.add(this, "Plan: " + decision.tool, "Control de apps desactivado", false)
+                    respondAndThen("Para continuar necesito que actives el control de aplicaciones de NEXO.") {
+                        startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+                    }
+                    return
+                }
                 MiaAccessibilityService.queueGenericAction(
                     this,
                     decision.tool,
                     decision.target.ifBlank { decision.text }
                 )
-                respond(speech)
+                NexoActionLog.add(this, "Plan: " + decision.tool, decision.target.ifBlank { decision.text })
+                continuePlan()
             }
 
-            "answer", "clarify" -> respond(decision.speech.ifBlank { decision.text })
-            else -> respond("No pude decidir cómo ejecutar esa orden.")
+            "set_volume" -> {
+                val percent = decision.target.toIntOrNull()?.coerceIn(0, 100) ?: 50
+                val audio = getSystemService(AUDIO_SERVICE) as AudioManager
+                val max = audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+                val value = ((percent / 100f) * max).toInt().coerceIn(0, max)
+                audio.setStreamVolume(AudioManager.STREAM_MUSIC, value, 0)
+                NexoActionLog.add(this, "Plan: volumen", percent.toString() + "%")
+                continuePlan()
+            }
+
+            "set_brightness" -> {
+                val percent = decision.target.toIntOrNull()?.coerceIn(0, 100) ?: 50
+                window.attributes = window.attributes.apply {
+                    screenBrightness = (percent / 100f).coerceIn(0.01f, 1f)
+                }
+                NexoActionLog.add(this, "Plan: brillo", percent.toString() + "%")
+                continuePlan()
+            }
+
+            "car_mode" -> {
+                if (decision.target.equals("off", ignoreCase = true)) {
+                    deactivateCarMode(false)
+                } else {
+                    activateCarMode(false)
+                }
+                continuePlan()
+            }
+
+            "answer" -> {
+                NexoActionLog.add(this, "Plan: respuesta", decision.text)
+                respond(decision.text.ifBlank { plan.speech.ifBlank { "Listo." } })
+            }
+
+            "clarify" -> {
+                NexoActionLog.add(this, "Plan: aclaración", decision.text)
+                respond(decision.text.ifBlank { "Necesito un dato más para continuar." })
+            }
+
+            else -> {
+                NexoActionLog.add(this, "Plan", "Herramienta desconocida: " + decision.tool, false)
+                continuePlan()
+            }
         }
     }
 
@@ -968,7 +1096,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         }
     }
 
-    private fun activateCarMode() {
+    private fun activateCarMode(speak: Boolean = true) {
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         window.attributes = window.attributes.apply { screenBrightness = 0.85f }
         val audio = getSystemService(AUDIO_SERVICE) as AudioManager
@@ -976,14 +1104,14 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         val target = (max * 0.65f).toInt().coerceAtLeast(1)
         audio.setStreamVolume(AudioManager.STREAM_MUSIC, target, 0)
         NexoActionLog.add(this, "Modo carro", "Pantalla activa, brillo alto y audio preparado")
-        respond("Modo carro activado. Mantendré la pantalla encendida y el audio preparado.")
+        if (speak) respond("Modo carro activado. Mantendré la pantalla encendida y el audio preparado.")
     }
 
-    private fun deactivateCarMode() {
+    private fun deactivateCarMode(speak: Boolean = true) {
         window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         window.attributes = window.attributes.apply { screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE }
         NexoActionLog.add(this, "Modo carro", "Desactivado")
-        respond("Modo carro desactivado.")
+        if (speak) respond("Modo carro desactivado.")
     }
 
     private fun openCalculator() {
