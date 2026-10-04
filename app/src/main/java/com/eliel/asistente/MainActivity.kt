@@ -125,6 +125,9 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         findViewById<Button>(R.id.modesButton).setOnClickListener {
             startActivity(Intent(this, ModesActivity::class.java))
         }
+        findViewById<Button>(R.id.skillsButton).setOnClickListener {
+            startActivity(Intent(this, SkillsActivity::class.java))
+        }
         findViewById<Button>(R.id.cancelPlanButton).setOnClickListener {
             cancelCurrentPlan()
         }
@@ -330,8 +333,9 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             }
 
         val mode = NexoModeManager.current(this)
+        val enabledSkills = NexoSkillPolicy.enabledNames(this)
         skillsText.text = "Modo actual: " + mode.displayName + " · " +
-            NexoSkillRegistry.knownSkills().take(3).joinToString(" · ")
+            enabledSkills.take(3).joinToString(" · ")
 
         systemStateText.text = "●  " + health.summary
         systemStateText.setTextColor(
@@ -503,6 +507,11 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         when {
             containsAny(command, "modo carro", "activa modo carro", "activar modo carro") -> activateCarMode()
             containsAny(command, "modo normal", "desactiva modo carro", "salir de modo carro") -> deactivateCarMode()
+            containsAny(command, "abre skills", "skills de nexo", "capacidades de nexo", "habilidades de nexo") -> {
+                respondAndThen("Abriendo Skills.") {
+                    startActivity(Intent(this, SkillsActivity::class.java))
+                }
+            }
             containsAny(command, "abre modos", "modos de nexo", "modes", "perfiles de nexo") -> {
                 respondAndThen("Abriendo Modes.") {
                     startActivity(Intent(this, ModesActivity::class.java))
@@ -806,6 +815,17 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
         renderPlan(plan, index)
         val decision = plan.actions[index]
+
+        if (!NexoSkillPolicy.isToolEnabled(this, decision.tool)) {
+            val skill = NexoSkillPolicy.skillForTool(decision.tool)
+            val skillName = skill?.name ?: decision.tool
+            planCancelled = true
+            nowRunningCard.visibility = android.view.View.GONE
+            NexoActionLog.add(this, "Skill bloqueada", skillName, false)
+            setOrbError()
+            respond("La capacidad " + skillName + " está desactivada. Puedes habilitarla desde Skills.")
+            return
+        }
         val continuePlan = {
             if (!planCancelled) {
                 handler.postDelayed({ executePlanStep(plan, index + 1) }, 650)
