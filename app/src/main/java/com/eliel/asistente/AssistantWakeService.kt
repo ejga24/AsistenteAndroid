@@ -46,7 +46,7 @@ class AssistantWakeService : Service(), TextToSpeech.OnInitListener {
     private var speechReady = false
     private var waitingForCommand = false
     private var pendingCommand: String? = null
-    private val wakeWord = "nexo"
+    private val wakeWord = NexoWakeConfig.WAKE_WORD
 
     override fun onCreate() {
         super.onCreate()
@@ -108,7 +108,7 @@ class AssistantWakeService : Service(), TextToSpeech.OnInitListener {
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_btn_speak_now)
             .setContentTitle("NEXO está atento")
-            .setContentText("Di “NEXO” para activarlo.")
+            .setContentText("Di “NEXO” para activarlo. · motor compatible")
             .setContentIntent(pendingIntent)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
