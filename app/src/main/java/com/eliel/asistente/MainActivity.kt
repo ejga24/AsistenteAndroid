@@ -36,6 +36,10 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private lateinit var healthText: TextView
     private lateinit var skillsText: TextView
     private lateinit var systemStateText: TextView
+    private lateinit var nowRunningCard: android.view.View
+    private lateinit var planTitleText: TextView
+    private lateinit var planProgressText: TextView
+    private lateinit var planStepsText: TextView
     private lateinit var orbView: android.view.View
     private lateinit var textToSpeech: TextToSpeech
     private var speechRecognizer: SpeechRecognizer? = null
@@ -51,6 +55,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private var pendingAction: (() -> Unit)? = null
     private var pendingContactName: String? = null
     private var waitingForCommand = false
+    private var planCancelled = false
     private val wakeWord = "nexo"
 
     private val micPermissionLauncher = registerForActivityResult(
@@ -86,6 +91,10 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         healthText = findViewById(R.id.healthText)
         skillsText = findViewById(R.id.skillsText)
         systemStateText = findViewById(R.id.systemStateText)
+        nowRunningCard = findViewById(R.id.nowRunningCard)
+        planTitleText = findViewById(R.id.planTitleText)
+        planProgressText = findViewById(R.id.planProgressText)
+        planStepsText = findViewById(R.id.planStepsText)
         orbView = findViewById(R.id.orbView)
         setOrbIdle()
         findViewById<Button>(R.id.aiSettingsButton).setOnClickListener {
@@ -102,6 +111,9 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         }
         findViewById<Button>(R.id.diagnosticsButton).setOnClickListener {
             startActivity(Intent(this, SystemDiagnosticsActivity::class.java))
+        }
+        findViewById<Button>(R.id.cancelPlanButton).setOnClickListener {
+            cancelCurrentPlan()
         }
 
         findViewById<Button>(R.id.micPermissionButton).setOnClickListener {
@@ -589,6 +601,59 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         }
     }
 
+    private fun cancelCurrentPlan() {
+        planCancelled = true
+        handler.removeCallbacksAndMessages(null)
+        nowRunningCard.visibility = android.view.View.GONE
+        NexoActionLog.add(this, "Plan detenido", "El usuario detuvo la ejecución")
+        statusText.text = "Plan detenido."
+        setOrbIdle()
+        scheduleListening(400)
+    }
+
+    private fun actionLabel(decision: MiaAgentDecision): String =
+        when (decision.tool) {
+            "open_app" -> "Abrir " + decision.app.ifBlank { decision.text }
+            "waze" -> "Navegar a " + decision.target.ifBlank { decision.text }
+            "spotify" -> "Spotify · " + decision.text.ifBlank { decision.target }
+            "youtube" -> "YouTube · " + decision.text.ifBlank { decision.target }
+            "chatgpt" -> "Consultar ChatGPT"
+            "tap_text" -> "Tocar " + decision.target.ifBlank { decision.text }
+            "type_text" -> "Escribir texto"
+            "back" -> "Volver"
+            "home" -> "Ir al inicio"
+            "set_volume" -> "Volumen " + decision.target + "%"
+            "set_brightness" -> "Brillo " + decision.target + "%"
+            "car_mode" -> if (decision.target.equals("off", true)) "Desactivar modo carro" else "Activar modo carro"
+            "answer" -> "Responder"
+            "clarify" -> "Pedir aclaración"
+            else -> decision.tool
+        }
+
+    private fun renderPlan(plan: NexoAgentPlan, currentIndex: Int) {
+        nowRunningCard.visibility = android.view.View.VISIBLE
+        planTitleText.text = if (plan.actions.size == 1) "Ejecutando acción" else "Ejecutando " + plan.actions.size + " acciones"
+        planProgressText.text = ((currentIndex + 1).coerceAtMost(plan.actions.size)).toString() + " / " + plan.actions.size
+        planStepsText.text = buildString {
+            plan.actions.forEachIndexed { index, action ->
+                val marker = when {
+                    index < currentIndex -> "✓"
+                    index == currentIndex -> "→"
+                    else -> "•"
+                }
+                append(marker).append("  ").append(actionLabel(action))
+                if (index < plan.actions.lastIndex) append("\n")
+            }
+        }
+    }
+
+    private fun finishPlanSurface() {
+        planProgressText.text = "Completado"
+        handler.postDelayed({
+            if (::nowRunningCard.isInitialized) nowRunningCard.visibility = android.view.View.GONE
+        }, 1600)
+    }
+
     private fun runAgentPlanner(raw: String) {
         val planner = MiaAgentPlanner(this)
         if (!planner.isConfigured()) {
@@ -619,19 +684,27 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         }
 
         NexoActionLog.add(this, "Plan IA", plan.actions.joinToString(" → ") { it.tool })
+        planCancelled = false
         statusText.text = "Ejecutando plan…"
+        renderPlan(plan, 0)
         executePlanStep(plan, 0)
     }
 
     private fun executePlanStep(plan: NexoAgentPlan, index: Int) {
+        if (planCancelled) return
+
         if (index >= plan.actions.size) {
+            finishPlanSurface()
             respond(plan.speech.ifBlank { "Listo. Terminé el plan." })
             return
         }
 
+        renderPlan(plan, index)
         val decision = plan.actions[index]
         val continuePlan = {
-            handler.postDelayed({ executePlanStep(plan, index + 1) }, 650)
+            if (!planCancelled) {
+                handler.postDelayed({ executePlanStep(plan, index + 1) }, 650)
+            }
         }
 
         when (decision.tool) {
