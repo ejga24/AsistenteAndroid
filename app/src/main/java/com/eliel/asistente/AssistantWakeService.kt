@@ -29,6 +29,7 @@ class AssistantWakeService : Service() {
         const val ACTION_PAUSE_LISTENING = "com.eliel.asistente.PAUSE_LISTENING"
         const val ACTION_RESUME_LISTENING = "com.eliel.asistente.RESUME_LISTENING"
         const val ACTION_STOP_VOICE = "com.eliel.asistente.STOP_VOICE"
+        const val ACTION_COMMAND_ACCEPTED = "com.eliel.asistente.COMMAND_ACCEPTED"
         const val EXTRA_VOICE_COMMAND = "voice_command"
 
         private const val CHANNEL_ID = "nexo_wake_channel"
@@ -38,6 +39,7 @@ class AssistantWakeService : Service() {
     private val handler = Handler(Looper.getMainLooper())
     private val listenHandler = Handler(Looper.getMainLooper())
     private val commandWindowHandler = Handler(Looper.getMainLooper())
+    private val ackHandler = Handler(Looper.getMainLooper())
     private var speechRecognizer: SpeechRecognizer? = null
     private lateinit var speechIntent: Intent
 
@@ -45,6 +47,7 @@ class AssistantWakeService : Service() {
     private var isListening = false
     private var waitingForCommand = false
     private var pendingCommand: String? = null
+    private var awaitingCommandAck = false
     private val wakeWord = NexoWakeConfig.WAKE_WORD
 
     override fun onCreate() {
@@ -83,6 +86,12 @@ class AssistantWakeService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
+            ACTION_COMMAND_ACCEPTED -> {
+                awaitingCommandAck = false
+                ackHandler.removeCallbacksAndMessages(null)
+                shouldListen = false
+                cancelRecognition()
+            }
             ACTION_STOP_VOICE -> {
                 NexoVoiceState.setEnabled(this, false)
                 shouldListen = false
@@ -262,9 +271,29 @@ class AssistantWakeService : Service() {
             putExtra(EXTRA_VOICE_COMMAND, command)
         }
 
+        awaitingCommandAck = true
         try {
             startActivity(intent)
+            ackHandler.removeCallbacksAndMessages(null)
+            ackHandler.postDelayed({
+                if (awaitingCommandAck && NexoVoiceState.isEnabled(this)) {
+                    awaitingCommandAck = false
+                    NexoRuntimeState.markIssue(
+                        this,
+                        "Voice Core",
+                        "No se confirmó la entrega del comando al panel principal"
+                    )
+                    shouldListen = true
+                    scheduleListening(350)
+                }
+            }, 5000)
         } catch (_: Exception) {
+            awaitingCommandAck = false
+            NexoRuntimeState.markIssue(
+                this,
+                "Voice Core",
+                "No pude abrir NEXO para ejecutar el comando"
+            )
             shouldListen = true
             scheduleListening(700)
         }
@@ -320,6 +349,7 @@ class AssistantWakeService : Service() {
         handler.removeCallbacksAndMessages(null)
         listenHandler.removeCallbacksAndMessages(null)
         commandWindowHandler.removeCallbacksAndMessages(null)
+        ackHandler.removeCallbacksAndMessages(null)
         speechRecognizer?.destroy()
         super.onDestroy()
     }
