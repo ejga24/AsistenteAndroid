@@ -47,6 +47,8 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private lateinit var speechIntent: Intent
 
     private val handler = Handler(Looper.getMainLooper())
+    private val planHandler = Handler(Looper.getMainLooper())
+    private var planGeneration = 0
     private val preferences by lazy { getSharedPreferences("assistant_places", MODE_PRIVATE) }
 
     private var speechReady = false
@@ -667,7 +669,8 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
     private fun cancelCurrentPlan() {
         planCancelled = true
-        handler.removeCallbacksAndMessages(null)
+        planGeneration++
+        planHandler.removeCallbacksAndMessages(null)
         nowRunningCard.visibility = android.view.View.GONE
         NexoActionLog.add(this, "Plan detenido", "El usuario detuvo la ejecución")
         statusText.text = "Plan detenido."
@@ -715,7 +718,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private fun finishPlanSurface() {
         setOrbSuccess()
         planProgressText.text = "Completado"
-        handler.postDelayed({
+        planHandler.postDelayed({
             if (::nowRunningCard.isInitialized) nowRunningCard.visibility = android.view.View.GONE
         }, 1600)
     }
@@ -757,9 +760,11 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
         NexoActionLog.add(this, "Plan IA", plan.actions.joinToString(" → ") { it.tool })
         planCancelled = false
+        val generation = ++planGeneration
+        planHandler.removeCallbacksAndMessages(null)
         statusText.text = "Ejecutando plan…"
         renderPlan(plan, 0)
-        executePlanStep(plan, 0)
+        executePlanStep(plan, 0, generation)
     }
 
 
@@ -808,8 +813,8 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         }
     }
 
-    private fun executePlanStep(plan: NexoAgentPlan, index: Int) {
-        if (planCancelled) return
+    private fun executePlanStep(plan: NexoAgentPlan, index: Int, generation: Int = planGeneration) {
+        if (planCancelled || generation != planGeneration) return
 
         if (index >= plan.actions.size) {
             finishPlanSurface()
