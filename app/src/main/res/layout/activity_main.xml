@@ -302,6 +302,14 @@
             android:id="@+id/diagnosticsButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="System Health" />
+            android:text="System Health"
+            android:layout_marginBottom="9dp" />
+
+        <com.google.android.material.button.MaterialButton
+            style="@style/Nexo.Button.Secondary"
+            android:id="@+id/securityButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Security &amp; Privacy" />
     </LinearLayout>
 </ScrollView>
