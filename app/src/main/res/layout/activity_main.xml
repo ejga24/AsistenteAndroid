@@ -318,6 +318,14 @@
             android:id="@+id/visionButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Vision" />
+            android:text="Vision"
+            android:layout_marginBottom="9dp" />
+
+        <com.google.android.material.button.MaterialButton
+            style="@style/Nexo.Button.Secondary"
+            android:id="@+id/setupButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Setup Center" />
     </LinearLayout>
 </ScrollView>
