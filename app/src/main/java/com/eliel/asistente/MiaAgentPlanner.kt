@@ -48,7 +48,6 @@ class MiaAgentPlanner(private val context: Context) {
         }
     }
 
-    private val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
     fun isConfigured(): Boolean =
         NexoSecretStore.hasApiKey(context)
