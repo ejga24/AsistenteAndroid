@@ -37,8 +37,18 @@ class AgentSettingsActivity : AppCompatActivity() {
             val model = modelInput.text.toString().trim()
                 .ifBlank { MiaAgentPlanner.DEFAULT_MODEL }
 
-            if (apiKey.isNotBlank()) {
-                NexoSecretStore.saveApiKey(this, apiKey)
+            if (apiKey.isNotBlank() && !NexoSecretStore.saveApiKey(this, apiKey)) {
+                NexoRuntimeState.markIssue(
+                    this,
+                    "Privacidad",
+                    "No pude cifrar la credencial de inteligencia"
+                )
+                Toast.makeText(
+                    this,
+                    "No pude guardar la credencial de forma segura.",
+                    Toast.LENGTH_LONG
+                ).show()
+                return@setOnClickListener
             }
 
             prefs.edit()
