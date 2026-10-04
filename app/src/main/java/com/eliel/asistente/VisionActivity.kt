@@ -2,6 +2,7 @@ package com.eliel.asistente
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.widget.Button
 import android.widget.TextView
@@ -20,6 +21,8 @@ class VisionActivity : AppCompatActivity() {
 
     private lateinit var previewView: PreviewView
     private lateinit var stateText: TextView
+    private lateinit var resultText: TextView
+    private lateinit var resultCard: android.view.View
     private lateinit var captureButton: Button
     private var imageCapture: ImageCapture? = null
 
@@ -40,6 +43,8 @@ class VisionActivity : AppCompatActivity() {
 
         previewView = findViewById(R.id.visionPreview)
         stateText = findViewById(R.id.visionStateText)
+        resultText = findViewById(R.id.visionResultText)
+        resultCard = findViewById(R.id.visionResultCard)
         captureButton = findViewById(R.id.visionCaptureButton)
 
         captureButton.setOnClickListener { captureFrame() }
@@ -84,6 +89,37 @@ class VisionActivity : AppCompatActivity() {
         }, ContextCompat.getMainExecutor(this))
     }
 
+    private fun analyzeCapturedFrame(file: File) {
+        val bitmap = BitmapFactory.decodeFile(file.absolutePath)
+        if (bitmap == null) {
+            stateText.text = "No pude preparar la imagen para análisis."
+            captureButton.isEnabled = true
+            return
+        }
+
+        Thread {
+            val result = OpenAIVisionEngine(this).analyze(bitmap)
+            runOnUiThread {
+                result.onSuccess {
+                    resultCard.visibility = android.view.View.VISIBLE
+                    resultText.text = it.summary
+                    stateText.text = "Análisis completado."
+                    captureButton.isEnabled = true
+                    NexoActionLog.add(this, "Vision", "Análisis completado")
+                }.onFailure {
+                    resultCard.visibility = android.view.View.GONE
+                    stateText.text = if (it.message == "NEXO_VISION_NOT_CONFIGURED") {
+                        "Vision necesita que configures la inteligencia de NEXO."
+                    } else {
+                        "No pude analizar la imagen en este momento."
+                    }
+                    captureButton.isEnabled = true
+                    NexoActionLog.add(this, "Vision", it.message ?: "Error de análisis", false)
+                }
+            }
+        }.start()
+    }
+
     private fun captureFrame() {
         val capture = imageCapture ?: run {
             stateText.text = "La cámara todavía no está lista."
@@ -101,9 +137,9 @@ class VisionActivity : AppCompatActivity() {
             ContextCompat.getMainExecutor(this),
             object : ImageCapture.OnImageSavedCallback {
                 override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
-                    stateText.text = "Imagen capturada. El motor de análisis se conectará en el siguiente bloque."
-                    captureButton.isEnabled = true
+                    stateText.text = "Imagen capturada. Analizando…"
                     NexoActionLog.add(this@VisionActivity, "Vision", "Fotograma capturado localmente")
+                    analyzeCapturedFrame(file)
                 }
 
                 override fun onError(exception: ImageCaptureException) {
