@@ -1736,6 +1736,17 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     }
 
     override fun onDestroy() {
+        if (planActive) {
+            NexoActionLog.add(
+                this,
+                "Plan interrumpido",
+                "La actividad de NEXO se cerró durante la ejecución.",
+                false
+            )
+            NexoPlanSessionStore.clear(this)
+            planActive = false
+        }
+
         handler.removeCallbacksAndMessages(null)
         planHandler.removeCallbacksAndMessages(null)
         speechRecognizer?.destroy()
