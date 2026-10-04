@@ -526,7 +526,17 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                     startActivity(Intent(this, SetupCenterActivity::class.java))
                 }
             }
-            containsAny(command, "abre vision", "vision", "abre la camara", "camara de nexo", "que ves") -> {
+            containsAny(command, "que ves", "qué ves", "mira esto", "analiza esto", "usa vision") -> {
+                if (!requireSkill("vision")) return
+                respondAndThen("Voy a mirar.") {
+                    startActivity(
+                        Intent(this, VisionActivity::class.java).apply {
+                            putExtra(VisionActivity.EXTRA_AUTO_ANALYZE, true)
+                        }
+                    )
+                }
+            }
+            containsAny(command, "abre vision", "vision", "abre la camara", "camara de nexo") -> {
                 if (!requireSkill("vision")) return
                 respondAndThen("Abriendo Vision.") {
                     startActivity(Intent(this, VisionActivity::class.java))
@@ -955,9 +965,21 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             }
 
             "vision" -> {
-                NexoActionLog.add(this, "Plan: Vision", "Abrir cámara")
-                startActivity(Intent(this, VisionActivity::class.java))
-                continuePlan()
+                if (index != plan.actions.lastIndex) {
+                    failPlanExecution(
+                        "Vision debe cerrar este plan antes de usar su resultado en otra acción. Detuve los pasos siguientes para mantener el control.",
+                        "Vision no es todavía una fuente encadenable dentro del mismo plan"
+                    )
+                    return
+                }
+
+                NexoActionLog.add(this, "Plan: Vision", "Capturar y analizar")
+                finishPlanSurface()
+                startActivity(
+                    Intent(this, VisionActivity::class.java).apply {
+                        putExtra(VisionActivity.EXTRA_AUTO_ANALYZE, true)
+                    }
+                )
             }
 
             "chatgpt" -> {
