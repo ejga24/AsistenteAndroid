@@ -1,5 +1,7 @@
 # NEXO Agent v3 — HONOR Pad X9a
 
+> **Nota:** el estado vigente del proyecto se mantiene en `NEXO_MASTER.md`. Este documento amplía la arquitectura y no debe usarse como única fuente de estado.
+
 NEXO es la evolución del proyecto Mía/AsistenteAndroid hacia un agente Android de nivel avanzado, pensado para operar la HONOR Pad X9a como dispositivo dedicado.
 
 ## Base existente que se conserva
