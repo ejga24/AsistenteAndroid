@@ -44,54 +44,37 @@ class SystemDiagnosticsActivity : AppCompatActivity() {
     }
 
     private fun refresh() {
-        val mic = ContextCompat.checkSelfPermission(
-            this,
-            Manifest.permission.RECORD_AUDIO
-        ) == PackageManager.PERMISSION_GRANTED
-
-        val enabledServices = Settings.Secure.getString(
-            contentResolver,
-            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
-        ).orEmpty()
-
-        val component = packageName + "/" + MiaAccessibilityService::class.java.name
-        val accessibility = enabledServices.split(':')
-            .any { it.equals(component, ignoreCase = true) }
-
-        val ai = MiaAgentPlanner(this).isConfigured()
-        val wake = NexoWakeRuntime.status(this)
+        val health = NexoSystemHealth.snapshot(this)
         val battery = (getSystemService(BATTERY_SERVICE) as BatteryManager)
             .getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
-
-        val checks = listOf(mic, accessibility, ai)
-        val ready = checks.count { it }
+        val wake = NexoWakeRuntime.status(this)
 
         reportText.text = buildString {
             append("ESTADO GENERAL\n")
-            append(
-                when (ready) {
-                    3 -> "Operativo"
-                    2 -> "Casi listo"
-                    else -> "Requiere configuración"
-                }
-            )
-            append("\n\nPERMISOS Y SERVICIOS\n")
-            append(if (mic) "✓ Micrófono autorizado" else "• Micrófono pendiente")
-            append("\n")
-            append(if (accessibility) "✓ Control de aplicaciones activo" else "• Control de aplicaciones pendiente")
-            append("\n")
-            append(if (ai) "✓ Inteligencia configurada" else "• Inteligencia pendiente")
+            append(health.summary)
+            append("\n").append(health.recommendation)
+
+            append("\n\nCAPACIDADES\n")
+            health.checks.forEachIndexed { index, check ->
+                append(if (check.ready) "✓ " else "• ")
+                append(check.label).append(" — ").append(check.detail)
+                if (index < health.checks.lastIndex) append("\n")
+            }
+
             append("\n\nDISPOSITIVO\n")
             append(Build.MANUFACTURER).append(" ").append(Build.MODEL)
             append("\nAndroid ").append(Build.VERSION.RELEASE)
             append(" · API ").append(Build.VERSION.SDK_INT)
             append("\nBatería ").append(battery).append("%")
+
             append("\n\nVOICE CORE\n")
             append("Wake word: NEXO")
             append("\nMotor: ").append(wake.displayName)
             append("\nModo: ").append(if (wake.local) "Local" else "Compatibilidad")
+
             append("\n\nNEXO\n")
             append("3.0 alpha · ").append(NexoSkillRegistry.knownSkills().size).append(" skills base")
         }
     }
+
 }
