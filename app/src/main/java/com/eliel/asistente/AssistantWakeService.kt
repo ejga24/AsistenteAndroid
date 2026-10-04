@@ -37,6 +37,8 @@ class AssistantWakeService : Service(), TextToSpeech.OnInitListener {
     }
 
     private val handler = Handler(Looper.getMainLooper())
+    private val listenHandler = Handler(Looper.getMainLooper())
+    private val commandWindowHandler = Handler(Looper.getMainLooper())
     private var speechRecognizer: SpeechRecognizer? = null
     private lateinit var speechIntent: Intent
     private lateinit var tts: TextToSpeech
@@ -168,29 +170,43 @@ class AssistantWakeService : Service(), TextToSpeech.OnInitListener {
 
         if (waitingForCommand) {
             waitingForCommand = false
-            pendingCommand = raw
+            commandWindowHandler.removeCallbacksAndMessages(null)
+
+            val command = normalized.trim()
+            if (command.isBlank()) {
+                pendingCommand = null
+                scheduleListening(250)
+                return
+            }
+
+            pendingCommand = command
             handler.postDelayed({ launchPendingCommand() }, 80)
             return
         }
 
-        val wakeIndex = normalized.indexOf(wakeWord)
-        if (wakeIndex < 0) {
+        val wake = NexoWakePhrase.extract(normalized)
+        if (!wake.found) {
             scheduleListening(250)
             return
         }
 
-        val afterWake = normalized.substring(wakeIndex + wakeWord.length)
-            .trim()
-            .trimStart(',', '.', ':', ';', '-', ' ')
-
         playWakeTone()
 
-        if (afterWake.isBlank()) {
+        if (wake.command.isBlank()) {
             waitingForCommand = true
             pendingCommand = null
             scheduleListening(120)
+
+            commandWindowHandler.removeCallbacksAndMessages(null)
+            commandWindowHandler.postDelayed({
+                if (waitingForCommand) {
+                    waitingForCommand = false
+                    pendingCommand = null
+                    scheduleListening(250)
+                }
+            }, 6500)
         } else {
-            pendingCommand = afterWake
+            pendingCommand = wake.command
             handler.postDelayed({ launchPendingCommand() }, 120)
         }
     }
@@ -304,8 +320,8 @@ class AssistantWakeService : Service(), TextToSpeech.OnInitListener {
 
     private fun scheduleListening(delayMs: Long) {
         if (!shouldListen) return
-        handler.removeCallbacksAndMessages(null)
-        handler.postDelayed({ startListening() }, delayMs)
+        listenHandler.removeCallbacksAndMessages(null)
+        listenHandler.postDelayed({ startListening() }, delayMs)
     }
 
     private fun startListening() {
@@ -340,6 +356,8 @@ class AssistantWakeService : Service(), TextToSpeech.OnInitListener {
 
     override fun onDestroy() {
         handler.removeCallbacksAndMessages(null)
+        listenHandler.removeCallbacksAndMessages(null)
+        commandWindowHandler.removeCallbacksAndMessages(null)
         speechRecognizer?.destroy()
         if (::tts.isInitialized) {
             tts.stop()
