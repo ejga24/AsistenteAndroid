@@ -45,3 +45,18 @@ Las claves API no se guardan en el repositorio. Se introducen en la app y perman
 
 ## Repositorio
 Este branch parte de la versión funcional existente v2.4 y evita destruir el historial anterior mientras se desarrolla NEXO.
+
+
+## Avance actual
+- [x] Rama NEXO separada de producción.
+- [x] Identidad y wake word migrados a NEXO.
+- [x] Dashboard inicial para tablet.
+- [x] Botón de configuración de inteligencia.
+- [x] Historial local de acciones.
+- [x] Modo carro inicial.
+- [x] Fallback al planificador IA cuando un comando no coincide con reglas directas.
+- [ ] Motor de planes multiacción.
+- [ ] Wake word local dedicado.
+- [ ] Visión.
+- [ ] Automatizaciones externas.
+- [ ] Hardening de credenciales.
