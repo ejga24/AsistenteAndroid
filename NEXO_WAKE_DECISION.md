@@ -77,3 +77,20 @@ Reason:
 - custom keyword support: strong;
 - Spanish wake-phrase confidence: unverified;
 - model redistribution: must be verified per model.
+
+
+## RC1 decision
+
+For the first HONOR Pad release candidate, the **Android Speech compatibility engine remains the default wake path**.
+
+Reason:
+- the foreground and background wake gates now require an exact standalone "NEXO" token;
+- both paths have bounded post-wake command windows;
+- the compatibility path compiles and can be validated immediately on the physical HONOR;
+- the sherpa-onnx candidate still lacks a Spanish-specific KWS model in the official model set evaluated for this project;
+- shipping an unvalidated local model would create a higher risk of false negatives/positives than the known fallback.
+
+This is not abandonment of the local hotword goal. It is a staged release decision:
+1. RC1 validates real microphone/background behavior on MagicOS using the safer fallback.
+2. Local KWS remains behind the `NexoWakeEngine` contract.
+3. A local engine becomes default only after pronunciation, battery, false-positive and license gates pass on-device.
