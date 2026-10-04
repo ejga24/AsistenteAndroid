@@ -1389,9 +1389,17 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     }
 
     private fun savePlace(key: String, address: String) {
-        NexoPlaces.save(this, key, address)
         val name = if (key == "work") "trabajo" else "casa"
-        respond("Listo. Guardé $address como tu $name.")
+        if (NexoPlaces.save(this, key, address)) {
+            respond("Listo. Guardé esa dirección como tu $name.")
+        } else {
+            NexoRuntimeState.markIssue(
+                this,
+                "Privacidad",
+                "No pude cifrar la ubicación guardada"
+            )
+            respondError("No pude guardar esa ubicación de forma segura. Inténtalo nuevamente.")
+        }
     }
 
     private fun resolveDestination(destination: String): String {
