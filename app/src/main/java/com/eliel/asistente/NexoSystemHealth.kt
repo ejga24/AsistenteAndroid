@@ -3,6 +3,8 @@ package com.eliel.asistente
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
+import android.os.Build
+import android.os.PowerManager
 import android.provider.Settings
 import androidx.core.content.ContextCompat
 
@@ -42,6 +44,10 @@ object NexoSystemHealth {
         val mic = permission(context, Manifest.permission.RECORD_AUDIO)
         val camera = permission(context, Manifest.permission.CAMERA)
         val contacts = permission(context, Manifest.permission.READ_CONTACTS)
+        val notificationReady = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+            permission(context, Manifest.permission.POST_NOTIFICATIONS)
+        val powerManager = context.getSystemService(Context.POWER_SERVICE) as PowerManager
+        val batteryExempt = powerManager.isIgnoringBatteryOptimizations(context.packageName)
         val access = accessibilityEnabled(context)
         val ai = MiaAgentPlanner(context).isConfigured()
         val wake = NexoWakeRuntime.status(context)
@@ -89,6 +95,28 @@ object NexoSystemHealth {
                 ready = contacts,
                 required = false,
                 detail = if (contacts) "WhatsApp por contacto disponible" else "Opcional"
+            ),
+            NexoHealthCheck(
+                id = "notifications",
+                label = "Notificaciones",
+                ready = notificationReady,
+                required = false,
+                detail = if (notificationReady) {
+                    "Estado de segundo plano visible"
+                } else {
+                    "Recomendado para mostrar el servicio de voz"
+                }
+            ),
+            NexoHealthCheck(
+                id = "battery",
+                label = "Batería / MagicOS",
+                ready = batteryExempt,
+                required = false,
+                detail = if (batteryExempt) {
+                    "NEXO está exento de optimización"
+                } else {
+                    "Revisar optimización si MagicOS detiene NEXO"
+                }
             )
         )
 
@@ -110,6 +138,7 @@ object NexoSystemHealth {
             !access -> "Activa Control de aplicaciones para automatizaciones de pantalla."
             !ai -> "Configura Inteligencia para planes complejos y Vision."
             runtimeIssue != null -> "Último incidente: " + runtimeIssue.source + ". " + runtimeIssue.message
+            !notificationReady -> "Autoriza notificaciones para ver claramente el estado de escucha en segundo plano."
             !camera -> "Vision está disponible cuando autorices la cámara."
             else -> "Todos los núcleos principales están listos."
         }
