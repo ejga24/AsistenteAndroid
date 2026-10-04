@@ -25,8 +25,27 @@ class MiaAgentPlanner(private val context: Context) {
         const val PREFS = "mia_ai"
         const val KEY_API_KEY = "openai_api_key"
         const val KEY_MODEL = "openai_model"
-        const val DEFAULT_MODEL = "gpt-5.6-luna"
+        const val DEFAULT_MODEL = "gpt-6-luna"
+        private const val LEGACY_MODEL = "gpt-5.6-luna"
         private const val MAX_ACTIONS = 6
+
+        fun resolveConfiguredModel(context: Context): String {
+            val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            val saved = prefs.getString(KEY_MODEL, DEFAULT_MODEL)
+                ?.trim()
+                .orEmpty()
+
+            val resolved = when {
+                saved.isBlank() -> DEFAULT_MODEL
+                saved.equals(LEGACY_MODEL, ignoreCase = true) -> DEFAULT_MODEL
+                else -> saved
+            }
+
+            if (resolved != saved) {
+                prefs.edit().putString(KEY_MODEL, resolved).apply()
+            }
+            return resolved
+        }
     }
 
     private val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -40,8 +59,7 @@ class MiaAgentPlanner(private val context: Context) {
             return Result.failure(IllegalStateException("NEXO_AI_NOT_CONFIGURED"))
         }
 
-        val model = prefs.getString(KEY_MODEL, DEFAULT_MODEL)?.trim()
-            .takeUnless { it.isNullOrBlank() } ?: DEFAULT_MODEL
+        val model = resolveConfiguredModel(context)
 
         return runCatching {
             val actionSchema = JSONObject().apply {
