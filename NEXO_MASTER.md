@@ -117,7 +117,11 @@ Estado:
 
 ### Device / Modes
 Estado:
-- Modo carro inicial.
+- `NexoModeManager` centraliza el modo activo.
+- Modos definidos: Normal, Carro, Casa, Trabajo y Kiosco.
+- Producción habilitada actualmente: Normal y Carro.
+- Modo carro persiste el perfil activo.
+- Dashboard muestra el modo vigente.
 - Volumen y brillo desde planes.
 - Información de batería/sistema en diagnóstico.
 
@@ -197,7 +201,7 @@ Reglas principales:
 - [ ] Confirmaciones sensibles más completas por categoría de acción.
 - [x] Vision/cámara — base CameraX, captura local y módulo desacoplado; análisis IA pendiente.
 - [ ] Skills configurables desde UI.
-- [ ] Modes: casa / trabajo / kiosco.
+- [ ] Modes: base central creada; casa / trabajo / kiosco pendientes de comportamiento final.
 - [ ] Automation Hub.
 - [ ] Integraciones externas / webhooks / Home Assistant.
 - [ ] Persistencia de contexto de agente.
