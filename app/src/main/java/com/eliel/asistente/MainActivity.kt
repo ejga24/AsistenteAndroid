@@ -61,6 +61,8 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private var pendingContactName: String? = null
     private var waitingForCommand = false
     private var planCancelled = false
+    private var planActive = false
+    private var activityResumed = false
     private val wakeWord = NexoWakeConfig.WAKE_WORD
 
     private val micPermissionLauncher = registerForActivityResult(
@@ -327,6 +329,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
     override fun onResume() {
         super.onResume()
+        activityResumed = true
 
         val micButton = findViewById<Button>(R.id.micPermissionButton)
         val accessButton = findViewById<Button>(R.id.aiSettingsButton)
@@ -377,9 +380,9 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     }
 
     override fun onPause() {
-        super.onPause()
+        activityResumed = false
         stopListening()
-        if (assistantActive &&
+        if (assistantActive && !planActive &&
             ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
         ) {
             safeSendWakeServiceAction(AssistantWakeService.ACTION_RESUME_LISTENING)
@@ -462,7 +465,19 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
     private fun scheduleListening(delayMs: Long = 450) {
         if (!assistantActive || isFinishing || isDestroyed) return
-        handler.postDelayed({ ensureMicPermissionAndListen() }, delayMs)
+
+        if (!activityResumed) {
+            if (!planActive) {
+                safeSendWakeServiceAction(AssistantWakeService.ACTION_RESUME_LISTENING)
+            }
+            return
+        }
+
+        handler.postDelayed({
+            if (activityResumed && !planActive) {
+                ensureMicPermissionAndListen()
+            }
+        }, delayMs)
     }
 
     private fun startVoiceRecognition() {
@@ -735,6 +750,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
     private fun cancelCurrentPlan() {
         planCancelled = true
+        planActive = false
         planGeneration++
         planHandler.removeCallbacksAndMessages(null)
         nowRunningCard.visibility = android.view.View.GONE
@@ -782,6 +798,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     }
 
     private fun finishPlanSurface() {
+        planActive = false
         setOrbSuccess()
         planProgressText.text = "Completado"
         planHandler.postDelayed({
@@ -826,6 +843,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
         NexoActionLog.add(this, "Plan IA", plan.actions.joinToString(" → ") { it.tool })
         planCancelled = false
+        planActive = true
         val generation = ++planGeneration
         planHandler.removeCallbacksAndMessages(null)
         statusText.text = "Ejecutando plan…"
@@ -881,6 +899,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
     private fun failPlanExecution(message: String, logDetail: String) {
         planCancelled = true
+        planActive = false
         planGeneration++
         planHandler.removeCallbacksAndMessages(null)
         nowRunningCard.visibility = android.view.View.GONE
@@ -966,11 +985,10 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         if (!NexoSkillPolicy.isToolEnabled(this, decision.tool)) {
             val skill = NexoSkillPolicy.skillForTool(decision.tool)
             val skillName = skill?.name ?: decision.tool
-            planCancelled = true
-            nowRunningCard.visibility = android.view.View.GONE
-            NexoActionLog.add(this, "Skill bloqueada", skillName, false)
-            setOrbError()
-            respond("La capacidad " + skillName + " está desactivada. Puedes habilitarla desde Skills.")
+            failPlanExecution(
+                "La capacidad " + skillName + " está desactivada. Puedes habilitarla desde Skills.",
+                "Skill bloqueada: " + skillName
+            )
             return
         }
         val continuePlan = {
@@ -1124,6 +1142,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                     },
                     onRejected = {
                         planCancelled = true
+                        planActive = false
                         nowRunningCard.visibility = android.view.View.GONE
                     }
                 )
@@ -1158,11 +1177,13 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             }
 
             "answer" -> {
+                planActive = false
                 NexoActionLog.add(this, "Plan: respuesta", decision.text)
                 respond(decision.text.ifBlank { plan.speech.ifBlank { "Listo." } })
             }
 
             "clarify" -> {
+                planActive = false
                 NexoActionLog.add(this, "Plan: aclaración", decision.text)
                 respond(decision.text.ifBlank { "Necesito un dato más para continuar." })
             }
