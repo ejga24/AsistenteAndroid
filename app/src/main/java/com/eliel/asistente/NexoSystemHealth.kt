@@ -156,6 +156,7 @@ object NexoSystemHealth {
             !ai -> "Configura Inteligencia para planes complejos y Vision."
             runtimeIssue != null -> "Último incidente: " + runtimeIssue.source + ". " + runtimeIssue.message
             !notificationReady -> "Autoriza notificaciones para ver claramente el estado de escucha en segundo plano."
+            !batteryExempt -> "Si MagicOS detiene NEXO en segundo plano, revisa la optimización de batería desde Setup Center."
             !camera -> "Vision está disponible cuando autorices la cámara."
             else -> "Todos los núcleos principales están listos."
         }
