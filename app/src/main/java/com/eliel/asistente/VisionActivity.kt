@@ -51,6 +51,7 @@ class VisionActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_vision)
+        cleanupCapturedFile(latestCaptureFile())
         autoAnalyzeRequested = intent.getBooleanExtra(EXTRA_AUTO_ANALYZE, false)
 
         tts = TextToSpeech(this) { status ->
@@ -140,6 +141,9 @@ class VisionActivity : AppCompatActivity() {
         }
     }
 
+    private fun latestCaptureFile(): File =
+        File(cacheDir, "nexo_vision_latest.jpg")
+
     private fun cleanupCapturedFile(file: File) {
         runCatching {
             if (file.exists()) file.delete()
@@ -193,7 +197,7 @@ class VisionActivity : AppCompatActivity() {
         captureButton.isEnabled = false
         stateText.text = "Capturando…"
 
-        val file = File(cacheDir, "nexo_vision_latest.jpg")
+        val file = latestCaptureFile()
         val options = ImageCapture.OutputFileOptions.Builder(file).build()
 
         capture.takePicture(
@@ -223,6 +227,7 @@ class VisionActivity : AppCompatActivity() {
         )
     }
     override fun onDestroy() {
+        cleanupCapturedFile(latestCaptureFile())
         tts?.stop()
         tts?.shutdown()
         tts = null
