@@ -72,6 +72,7 @@ class SecurityCenterActivity : AppCompatActivity() {
             append("• NEXO exige la palabra de activación antes de ejecutar órdenes de voz.\n")
             append("• Los planes se pueden detener desde Now Running.\n")
             append("• Las acciones sensibles requieren confirmación explícita según su categoría.\n")
+            append("• Vision y la automatización sensible de pantalla requieren que la tablet esté desbloqueada.\n")
             append("• Los permisos se solicitan solo cuando una capacidad los necesita.\n")
             append("• Vision envía únicamente la captura solicitada al motor configurado para analizarla.\n")
             append("• La captura temporal de Vision se elimina después del análisis o de un error.")
