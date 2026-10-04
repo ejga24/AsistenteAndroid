@@ -11,6 +11,10 @@ import java.net.URL
 
 class OpenAIVisionEngine(private val context: Context) : NexoVisionEngine {
 
+    companion object {
+        private const val MAX_IMAGE_EDGE = 1280
+    }
+
     override val engineName: String = "OpenAI Vision"
     override val requiresNetwork: Boolean = true
 
@@ -27,9 +31,13 @@ class OpenAIVisionEngine(private val context: Context) : NexoVisionEngine {
         )?.trim().takeUnless { it.isNullOrBlank() } ?: MiaAgentPlanner.DEFAULT_MODEL
 
         return runCatching {
+            val prepared = prepareBitmap(bitmap)
             val bytes = ByteArrayOutputStream().use { stream ->
-                bitmap.compress(Bitmap.CompressFormat.JPEG, 82, stream)
+                prepared.compress(Bitmap.CompressFormat.JPEG, 80, stream)
                 stream.toByteArray()
+            }
+            if (prepared !== bitmap) {
+                prepared.recycle()
             }
             val dataUrl = "data:image/jpeg;base64," +
                 Base64.encodeToString(bytes, Base64.NO_WRAP)
@@ -88,6 +96,18 @@ class OpenAIVisionEngine(private val context: Context) : NexoVisionEngine {
             val summary = extractOutputText(response)
             NexoVisionResult(summary = summary)
         }
+    }
+
+    private fun prepareBitmap(bitmap: Bitmap): Bitmap {
+        val width = bitmap.width
+        val height = bitmap.height
+        val maxEdge = maxOf(width, height)
+        if (maxEdge <= MAX_IMAGE_EDGE) return bitmap
+
+        val scale = MAX_IMAGE_EDGE.toFloat() / maxEdge.toFloat()
+        val targetWidth = (width * scale).toInt().coerceAtLeast(1)
+        val targetHeight = (height * scale).toInt().coerceAtLeast(1)
+        return Bitmap.createScaledBitmap(bitmap, targetWidth, targetHeight, true)
     }
 
     private fun extractOutputText(response: JSONObject): String {
