@@ -337,8 +337,16 @@ class MiaAccessibilityService : AccessibilityService() {
     }
 
     private fun triggerNext() {
-        if (peek(this) != null) {
+        val next = peek(this) ?: return
+        val targetPackage = next.optString("package")
+        val activePackage = rootInActiveWindow?.packageName?.toString()
+
+        if (targetPackage == "*" || targetPackage == activePackage) {
+            busy = true
             handler.postDelayed({ executePendingRequest() }, 350)
+        } else {
+            busy = false
+            // Espera un AccessibilityEvent de la aplicación objetivo.
         }
     }
 
