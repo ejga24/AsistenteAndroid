@@ -52,6 +52,10 @@
             android:exported="false" />
 
         <activity
+            android:name=".ActionHistoryActivity"
+            android:exported="false" />
+
+        <activity
             android:name=".MainActivity"
             android:exported="true"
             android:showWhenLocked="true"
