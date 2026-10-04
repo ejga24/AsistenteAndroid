@@ -21,22 +21,24 @@ object NexoSecretStore {
     fun hasApiKey(context: Context): Boolean =
         readApiKey(context).isNotBlank()
 
-    fun saveApiKey(context: Context, value: String) {
+    fun saveApiKey(context: Context, value: String): Boolean {
         val clean = value.trim()
         if (clean.isBlank()) {
             clearApiKey(context)
-            return
+            return true
         }
 
-        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
-        cipher.init(Cipher.ENCRYPT_MODE, getOrCreateKey())
+        return runCatching {
+            val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+            cipher.init(Cipher.ENCRYPT_MODE, getOrCreateKey())
 
-        val encrypted = cipher.doFinal(clean.toByteArray(Charsets.UTF_8))
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .edit()
-            .putString(KEY_API_CIPHER, Base64.encodeToString(encrypted, Base64.NO_WRAP))
-            .putString(KEY_API_IV, Base64.encodeToString(cipher.iv, Base64.NO_WRAP))
-            .apply()
+            val encrypted = cipher.doFinal(clean.toByteArray(Charsets.UTF_8))
+            context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+                .edit()
+                .putString(KEY_API_CIPHER, Base64.encodeToString(encrypted, Base64.NO_WRAP))
+                .putString(KEY_API_IV, Base64.encodeToString(cipher.iv, Base64.NO_WRAP))
+                .commit()
+        }.getOrDefault(false)
     }
 
     fun readApiKey(context: Context): String {
@@ -90,8 +92,7 @@ object NexoSecretStore {
 
         if (oldKey.isBlank()) return
 
-        runCatching {
-            saveApiKey(context, oldKey)
+        if (saveApiKey(context, oldKey)) {
             legacy.edit().remove(MiaAgentPlanner.KEY_API_KEY).apply()
         }
     }
