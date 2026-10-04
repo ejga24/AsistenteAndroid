@@ -659,6 +659,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             }
             containsAny(command, "que ves", "qué ves", "mira esto", "analiza esto", "usa vision") -> {
                 if (!requireSkill("vision")) return
+                if (!requireUnlockedForDirectSensitiveAction()) return
                 respondAndThen("Voy a mirar.") {
                     startActivity(
                         Intent(this, VisionActivity::class.java).apply {
@@ -669,6 +670,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             }
             containsAny(command, "abre vision", "vision", "abre la camara", "camara de nexo") -> {
                 if (!requireSkill("vision")) return
+                if (!requireUnlockedForDirectSensitiveAction()) return
                 respondAndThen("Abriendo Vision.") {
                     startActivity(Intent(this, VisionActivity::class.java))
                 }
@@ -762,6 +764,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
     private fun automateChatGpt(text: String, newChat: Boolean) {
         if (!requireSkill("chatgpt")) return
+        if (!requireUnlockedForDirectSensitiveAction()) return
         if (!isAccessibilityServiceEnabled()) {
             respondAndThen(
                 "Para controlar aplicaciones necesito que actives el acceso de NEXO una sola vez. Te llevo a la pantalla para habilitarlo."
@@ -995,6 +998,14 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         }
 
         poll()
+    }
+
+    private fun requireUnlockedForDirectSensitiveAction(): Boolean {
+        val keyguard = getSystemService(KEYGUARD_SERVICE) as KeyguardManager
+        if (!keyguard.isDeviceLocked) return true
+
+        respondError("Desbloquea la tablet para usar esta capacidad de NEXO.")
+        return false
     }
 
     private fun requireUnlockedForSensitiveUi(): Boolean {
