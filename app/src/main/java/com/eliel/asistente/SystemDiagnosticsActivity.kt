@@ -49,6 +49,7 @@ class SystemDiagnosticsActivity : AppCompatActivity() {
             packageManager.getPackageInfo(packageName, 0).versionName
         }.getOrNull().orEmpty()
         val enabledSkills = NexoSkillPolicy.enabledNames(this)
+        val rc = NexoReleaseGate.evaluate(this)
 
         reportText.text = buildString {
             append("ESTADO GENERAL\n")
