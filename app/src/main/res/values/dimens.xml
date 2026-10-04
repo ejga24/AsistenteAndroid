@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="nexo_space_xs">6dp</dimen>
+    <dimen name="nexo_space_sm">10dp</dimen>
+    <dimen name="nexo_space_md">16dp</dimen>
+    <dimen name="nexo_space_lg">24dp</dimen>
+    <dimen name="nexo_space_xl">32dp</dimen>
+    <dimen name="nexo_card_radius">22dp</dimen>
+</resources>
