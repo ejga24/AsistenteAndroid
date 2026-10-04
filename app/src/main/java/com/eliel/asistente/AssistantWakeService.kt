@@ -18,13 +18,11 @@ import android.os.Looper
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
-import android.speech.tts.TextToSpeech
-import android.speech.tts.UtteranceProgressListener
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import java.util.Locale
 
-class AssistantWakeService : Service(), TextToSpeech.OnInitListener {
+class AssistantWakeService : Service() {
 
     companion object {
         const val ACTION_START = "com.eliel.asistente.START"
@@ -41,11 +39,9 @@ class AssistantWakeService : Service(), TextToSpeech.OnInitListener {
     private val commandWindowHandler = Handler(Looper.getMainLooper())
     private var speechRecognizer: SpeechRecognizer? = null
     private lateinit var speechIntent: Intent
-    private lateinit var tts: TextToSpeech
 
     private var shouldListen = false
     private var isListening = false
-    private var speechReady = false
     private var waitingForCommand = false
     private var pendingCommand: String? = null
     private val wakeWord = NexoWakeConfig.WAKE_WORD
@@ -82,7 +78,6 @@ class AssistantWakeService : Service(), TextToSpeech.OnInitListener {
         }
 
         setupRecognizer()
-        tts = TextToSpeech(this, this)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -229,24 +224,6 @@ class AssistantWakeService : Service(), TextToSpeech.OnInitListener {
         }
     }
 
-    private fun sayYesTellMe() {
-        cancelRecognition()
-        if (speechReady) {
-            tts.speak("Sí, dime.", TextToSpeech.QUEUE_FLUSH, null, "wake_only")
-        } else {
-            scheduleListening(250)
-        }
-    }
-
-    private fun sayYesTellMeAndThenLaunch() {
-        cancelRecognition()
-        if (speechReady) {
-            tts.speak("Sí, dime.", TextToSpeech.QUEUE_FLUSH, null, "wake_command")
-        } else {
-            launchPendingCommand()
-        }
-    }
-
     private fun launchPendingCommand() {
         val command = pendingCommand ?: run {
             scheduleListening(250)
@@ -277,63 +254,6 @@ class AssistantWakeService : Service(), TextToSpeech.OnInitListener {
             }
         } catch (_: Exception) {
         }
-    }
-
-    override fun onInit(status: Int) {
-        if (status != TextToSpeech.SUCCESS) return
-
-        var result = tts.setLanguage(Locale("es", "PA"))
-        if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-            result = tts.setLanguage(Locale("es"))
-        }
-
-        speechReady = result != TextToSpeech.LANG_MISSING_DATA &&
-            result != TextToSpeech.LANG_NOT_SUPPORTED
-
-        selectPreferredVoice()
-        tts.setSpeechRate(1.02f)
-        tts.setPitch(1.05f)
-
-        tts.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
-            override fun onStart(utteranceId: String?) = Unit
-
-            override fun onDone(utteranceId: String?) {
-                handler.post {
-                    when (utteranceId) {
-                        "wake_command" -> launchPendingCommand()
-                        "wake_only" -> scheduleListening(180)
-                        else -> scheduleListening(250)
-                    }
-                }
-            }
-
-            @Deprecated("Deprecated in Java")
-            override fun onError(utteranceId: String?) {
-                handler.post {
-                    if (utteranceId == "wake_command") launchPendingCommand()
-                    else scheduleListening(250)
-                }
-            }
-        })
-    }
-
-    private fun selectPreferredVoice() {
-        val voices = tts.voices ?: return
-        val spanishVoices = voices.filter { it.locale.language == "es" }
-        if (spanishVoices.isEmpty()) return
-
-        val preferred = spanishVoices.maxByOrNull { voice ->
-            var score = voice.quality
-            val name = voice.name.lowercase(Locale.getDefault())
-            if (voice.locale.country == "PA") score += 500
-            if (voice.locale.country == "US") score += 250
-            if (voice.locale.country == "MX") score += 200
-            if (voice.isNetworkConnectionRequired) score += 150
-            if (listOf("female", "fem", "mujer", "esf", "neural", "natural", "wavenet")
-                    .any { name.contains(it) }) score += 400
-            score
-        }
-        if (preferred != null) tts.voice = preferred
     }
 
     private fun scheduleListening(delayMs: Long) {
@@ -377,10 +297,6 @@ class AssistantWakeService : Service(), TextToSpeech.OnInitListener {
         listenHandler.removeCallbacksAndMessages(null)
         commandWindowHandler.removeCallbacksAndMessages(null)
         speechRecognizer?.destroy()
-        if (::tts.isInitialized) {
-            tts.stop()
-            tts.shutdown()
-        }
         super.onDestroy()
     }
 
