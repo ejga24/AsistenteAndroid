@@ -1,0 +1,79 @@
+package com.eliel.asistente
+
+import android.Manifest
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Bundle
+import android.provider.Settings
+import android.widget.Button
+import android.widget.TextView
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
+
+class SecurityCenterActivity : AppCompatActivity() {
+
+    private lateinit var statusText: TextView
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_security_center)
+
+        statusText = findViewById(R.id.securityStatusText)
+
+        findViewById<Button>(R.id.securityAccessibilityButton).setOnClickListener {
+            startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+        }
+        findViewById<Button>(R.id.securityPermissionsButton).setOnClickListener {
+            startActivity(
+                Intent(
+                    Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                    android.net.Uri.parse("package:" + packageName)
+                )
+            )
+        }
+        findViewById<Button>(R.id.securityIntelligenceButton).setOnClickListener {
+            startActivity(Intent(this, AgentSettingsActivity::class.java))
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        refresh()
+    }
+
+    private fun refresh() {
+        val mic = permissionGranted(Manifest.permission.RECORD_AUDIO)
+        val contacts = permissionGranted(Manifest.permission.READ_CONTACTS)
+
+        val enabledServices = Settings.Secure.getString(
+            contentResolver,
+            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
+        ).orEmpty()
+        val component = packageName + "/" + MiaAccessibilityService::class.java.name
+        val accessibility = enabledServices.split(':')
+            .any { it.equals(component, ignoreCase = true) }
+
+        val ai = MiaAgentPlanner(this).isConfigured()
+
+        statusText.text = buildString {
+            append("PRIVACIDAD Y PERMISOS\n\n")
+            append(if (mic) "✓ Micrófono autorizado" else "• Micrófono pendiente")
+            append("\n")
+            append(if (contacts) "✓ Contactos autorizados" else "• Contactos solo cuando los necesites")
+            append("\n")
+            append(if (accessibility) "✓ Control de aplicaciones activo" else "• Control de aplicaciones desactivado")
+            append("\n")
+            append(if (ai) "✓ Motor de inteligencia configurado" else "• Motor de inteligencia pendiente")
+
+            append("\n\nPOLÍTICA DE NEXO\n")
+            append("• Las credenciales no se incluyen en GitHub.\n")
+            append("• NEXO registra localmente las acciones ejecutadas.\n")
+            append("• Los planes se pueden detener desde Now Running.\n")
+            append("• Las futuras acciones sensibles requerirán confirmación explícita.\n")
+            append("• Los permisos se solicitan solo cuando una capacidad los necesita.")
+        }
+    }
+
+    private fun permissionGranted(permission: String): Boolean =
+        ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
+}
