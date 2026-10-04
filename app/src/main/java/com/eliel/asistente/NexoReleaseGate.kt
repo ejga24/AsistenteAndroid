@@ -1,9 +1,10 @@
 package com.eliel.asistente
 
 import android.content.Context
+import android.content.pm.ApplicationInfo
 
 enum class NexoRcState {
-    CODE_READY,
+    DEBUG_BUILD,
     NEEDS_SETUP,
     DEVICE_VALIDATION
 }
@@ -17,8 +18,18 @@ data class NexoReleaseReadiness(
 object NexoReleaseGate {
 
     fun evaluate(context: Context): NexoReleaseReadiness {
+        val debugBuild = context.applicationInfo.flags and
+            ApplicationInfo.FLAG_DEBUGGABLE != 0
         val health = NexoSystemHealth.snapshot(context)
         val missingRequired = health.checks.filter { it.required && !it.ready }
+
+        if (debugBuild) {
+            return NexoReleaseReadiness(
+                state = NexoRcState.DEBUG_BUILD,
+                headline = "Build de validación",
+                detail = "Las funciones pueden probarse, pero el APK final RC debe usar firma estable de release."
+            )
+        }
 
         if (missingRequired.isNotEmpty()) {
             return NexoReleaseReadiness(
