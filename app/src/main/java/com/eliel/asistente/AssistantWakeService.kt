@@ -118,7 +118,7 @@ class AssistantWakeService : Service(), TextToSpeech.OnInitListener {
         )
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.ic_btn_speak_now)
+            .setSmallIcon(R.drawable.ic_nexo_notification)
             .setContentTitle("NEXO está atento")
             .setContentText("Di “NEXO” para activarlo. · motor compatible")
             .setContentIntent(pendingIntent)
