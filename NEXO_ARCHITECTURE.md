@@ -62,3 +62,63 @@ Este branch parte de la versión funcional existente v2.4 y evita destruir el hi
 - [ ] Hardening de credenciales.
 
 - [x] Skill Registry inicial para resolver apps conocidas y futuras habilidades.
+
+
+## Estándar de producto y diseño
+
+NEXO se desarrollará con una barra de calidad de producto tipo producción, no como demo ni prototipo visual.
+
+### Principios de experiencia
+- Interfaz diseñada primero para tablet HONOR en horizontal y vertical.
+- Jerarquía visual limpia, superficies con profundidad sutil y sin exceso de bordes.
+- Animaciones con propósito: escuchar, pensar, ejecutar, confirmar, error y espera.
+- Estados claramente distinguibles sin depender solo del color.
+- Tipografía legible a distancia y controles cómodos para uso táctil.
+- Transiciones fluidas entre panel principal, actividad, inteligencia, permisos y modos.
+- Modo oscuro de alta calidad desde el inicio.
+- Diseño consistente en todos los módulos; nada de pantallas “pegadas” con estilos distintos.
+- Feedback inmediato en cada acción: qué entendió NEXO, qué está haciendo y qué terminó.
+- El usuario siempre debe poder detener una acción en curso.
+- Nada sensible debe ejecutarse sin confirmación cuando corresponda.
+
+### Lenguaje visual
+- Apariencia tecnológica premium, sobria y de dispositivo dedicado.
+- Orb central dinámico como identidad viva del agente.
+- Dashboard modular con tarjetas limpias, sombras suaves y estados.
+- Microinteracciones para escucha, conexión, error, éxito y ejecución.
+- Iconografía consistente y minimalista.
+- Espaciado y tamaños definidos por un sistema de diseño, no valores improvisados por pantalla.
+- Evitar apariencia de “app de prueba”, launcher genérico o panel administrativo.
+
+### Arquitectura visual prevista
+1. **Home / Orb** — estado del agente, escucha y respuesta.
+2. **Now Running** — plan actual y pasos en ejecución.
+3. **Skills** — capacidades disponibles y su estado.
+4. **Activity** — historial legible de acciones y resultados.
+5. **Modes** — carro, casa, trabajo, kiosco y perfiles futuros.
+6. **Connections** — servicios, dispositivos e integraciones.
+7. **Permissions & Security** — permisos, accesibilidad, claves y autorizaciones.
+8. **Intelligence** — modelo, comportamiento y configuración avanzada.
+9. **Device** — batería, red, audio, brillo y estado del sistema.
+
+## Criterio para primer APK de pruebas
+
+No se entregará NEXO para instalar hasta alcanzar una build candidata que cumpla, como mínimo:
+
+- Compilación limpia en GitHub Actions.
+- Sin cierres inesperados en los flujos principales.
+- Identidad NEXO completa en UI, notificaciones y voz.
+- Diseño coherente en todas las pantallas principales.
+- Wake word estable.
+- Planificador multiacción estable.
+- Motor de habilidades integrado.
+- Control de apps funcional.
+- Modo carro funcional.
+- Historial y registro de acciones.
+- Configuración de IA clara y segura.
+- Pantalla de permisos y diagnóstico.
+- Manejo visible de errores y recuperación.
+- Prueba de instalación limpia y actualización sobre versión previa.
+- Checklist de pruebas documentado antes de entregar el APK.
+
+La primera instalación en la HONOR será tratada como **release candidate**, no como experimento.
