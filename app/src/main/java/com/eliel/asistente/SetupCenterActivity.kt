@@ -9,6 +9,7 @@ import android.provider.Settings
 import android.widget.Button
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 
 class SetupCenterActivity : AppCompatActivity() {
 
@@ -21,6 +22,21 @@ class SetupCenterActivity : AppCompatActivity() {
         refresh()
     }
 
+    private val micPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            NexoVoiceState.setEnabled(this, true)
+            ContextCompat.startForegroundService(
+                this,
+                Intent(this, AssistantWakeService::class.java).apply {
+                    action = AssistantWakeService.ACTION_START
+                }
+            )
+        }
+        refresh()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_setup_center)
@@ -30,12 +46,22 @@ class SetupCenterActivity : AppCompatActivity() {
         checklistText = findViewById(R.id.setupChecklistText)
 
         findViewById<Button>(R.id.setupMicButton).setOnClickListener {
-            startActivity(
-                Intent(
-                    Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                    android.net.Uri.parse("package:" + packageName)
+            if (ContextCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.RECORD_AUDIO
+                ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+            ) {
+                NexoVoiceState.setEnabled(this, true)
+                ContextCompat.startForegroundService(
+                    this,
+                    Intent(this, AssistantWakeService::class.java).apply {
+                        action = AssistantWakeService.ACTION_START
+                    }
                 )
-            )
+                refresh()
+            } else {
+                micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+            }
         }
 
         findViewById<Button>(R.id.setupAccessibilityButton).setOnClickListener {
