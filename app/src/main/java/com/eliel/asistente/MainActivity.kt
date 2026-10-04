@@ -813,6 +813,54 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         }
     }
 
+    private fun failPlanExecution(message: String, logDetail: String) {
+        planCancelled = true
+        planGeneration++
+        planHandler.removeCallbacksAndMessages(null)
+        nowRunningCard.visibility = android.view.View.GONE
+        NexoActionLog.add(this, "Plan interrumpido", logDetail, false)
+        setOrbError()
+        respond(message)
+    }
+
+    private fun awaitAccessibilityResult(
+        actionId: String,
+        generation: Int,
+        timeoutMs: Long = 12_000L,
+        onSuccess: () -> Unit
+    ) {
+        val startedAt = System.currentTimeMillis()
+
+        fun poll() {
+            if (planCancelled || generation != planGeneration) return
+
+            val result = MiaAccessibilityService.consumeResult(this, actionId)
+            if (result != null) {
+                if (result.success) {
+                    onSuccess()
+                } else {
+                    failPlanExecution(
+                        "No pude completar una acción de pantalla. NEXO detuvo el plan para no continuar con un estado incierto.",
+                        result.detail
+                    )
+                }
+                return
+            }
+
+            if (System.currentTimeMillis() - startedAt >= timeoutMs) {
+                failPlanExecution(
+                    "La acción de pantalla tardó demasiado. Detuve el plan para evitar ejecutar pasos fuera de orden.",
+                    "Timeout esperando Accessibility"
+                )
+                return
+            }
+
+            planHandler.postDelayed({ poll() }, 220)
+        }
+
+        poll()
+    }
+
     private fun executePlanStep(plan: NexoAgentPlan, index: Int, generation: Int = planGeneration) {
         if (planCancelled || generation != planGeneration) return
 
@@ -836,8 +884,11 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             return
         }
         val continuePlan = {
-            if (!planCancelled) {
-                handler.postDelayed({ executePlanStep(plan, index + 1) }, 650)
+            if (!planCancelled && generation == planGeneration) {
+                planHandler.postDelayed(
+                    { executePlanStep(plan, index + 1, generation) },
+                    650
+                )
             }
         }
 
@@ -919,13 +970,22 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                 }
                 val launch = packageManager.getLaunchIntentForPackage("com.openai.chatgpt")
                 if (launch != null) {
-                    MiaAccessibilityService.queueChatGptRequest(this, decision.text, decision.newChat)
+                    val actionId = MiaAccessibilityService.queueChatGptRequest(
+                        this,
+                        decision.text,
+                        decision.newChat
+                    )
                     NexoActionLog.add(this, "Plan: ChatGPT", decision.text)
                     startActivity(launch)
+                    awaitAccessibilityResult(actionId, generation, 18_000L) {
+                        continuePlan()
+                    }
                 } else {
-                    NexoActionLog.add(this, "Plan: ChatGPT", "ChatGPT no está instalado", false)
+                    failPlanExecution(
+                        "ChatGPT no está instalado, así que detuve el plan.",
+                        "ChatGPT no está instalado"
+                    )
                 }
-                continuePlan()
             }
 
             "tap_text", "type_text", "back", "home" -> {
@@ -940,13 +1000,19 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                 requestSafetyConfirmation(
                     decision = decision,
                     onApproved = {
-                        MiaAccessibilityService.queueGenericAction(
+                        val actionId = MiaAccessibilityService.queueGenericAction(
                             this,
                             decision.tool,
                             decision.target.ifBlank { decision.text }
                         )
-                        NexoActionLog.add(this, "Plan: " + decision.tool, decision.target.ifBlank { decision.text })
-                        continuePlan()
+                        NexoActionLog.add(
+                            this,
+                            "Plan: " + decision.tool,
+                            decision.target.ifBlank { decision.text }
+                        )
+                        awaitAccessibilityResult(actionId, generation) {
+                            continuePlan()
+                        }
                     },
                     onRejected = {
                         planCancelled = true
