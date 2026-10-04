@@ -877,6 +877,30 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         poll()
     }
 
+    private fun expectedPackageForPlanAction(
+        plan: NexoAgentPlan,
+        index: Int,
+        decision: MiaAgentDecision
+    ): String? {
+        if (decision.app.isNotBlank()) {
+            NexoSkillRegistry.resolvePackageName(this, decision.app)?.let { return it }
+        }
+
+        if (index <= 0) return null
+        val previous = plan.actions[index - 1]
+
+        return when (previous.tool) {
+            "open_app" -> NexoSkillRegistry.resolvePackageName(
+                this,
+                previous.app.ifBlank { previous.text }
+            )
+            "chatgpt" -> "com.openai.chatgpt"
+            "spotify" -> "com.spotify.music"
+            "youtube" -> "com.google.android.youtube"
+            else -> null
+        }
+    }
+
     private fun executePlanStep(plan: NexoAgentPlan, index: Int, generation: Int = planGeneration) {
         if (planCancelled || generation != planGeneration) return
 
@@ -1028,10 +1052,16 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                 requestSafetyConfirmation(
                     decision = decision,
                     onApproved = {
+                        val expectedPackage = expectedPackageForPlanAction(
+                            plan,
+                            index,
+                            decision
+                        )
                         val actionId = MiaAccessibilityService.queueGenericAction(
                             this,
                             decision.tool,
-                            decision.target.ifBlank { decision.text }
+                            decision.target.ifBlank { decision.text },
+                            expectedPackage ?: "*"
                         )
                         NexoActionLog.add(
                             this,
