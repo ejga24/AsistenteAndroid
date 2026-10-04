@@ -57,7 +57,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private var pendingContactName: String? = null
     private var waitingForCommand = false
     private var planCancelled = false
-    private val wakeWord = "nexo"
+    private val wakeWord = NexoWakeConfig.WAKE_WORD
 
     private val micPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
