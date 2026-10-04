@@ -102,6 +102,83 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/nowRunningCard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="gone"
+            app:cardBackgroundColor="@color/nexo_accent_soft"
+            app:cardCornerRadius="@dimen/nexo_card_radius"
+            app:cardElevation="0dp"
+            app:strokeColor="@color/nexo_accent"
+            app:strokeWidth="1dp"
+            android:layout_marginBottom="18dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="NOW RUNNING"
+                            android:textColor="@color/nexo_accent"
+                            android:textSize="10sp"
+                            android:letterSpacing="0.14" />
+
+                        <TextView
+                            android:id="@+id/planTitleText"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Ejecutando plan"
+                            android:textColor="@color/nexo_text"
+                            android:textStyle="bold"
+                            android:textSize="18sp"
+                            android:layout_marginTop="5dp" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/planProgressText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="1 / 1"
+                        android:textColor="@color/nexo_text_muted"
+                        android:textSize="12sp" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/planStepsText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Preparando acciones…"
+                    android:textColor="@color/nexo_text"
+                    android:textSize="14sp"
+                    android:lineSpacingExtra="5dp"
+                    android:layout_marginTop="14dp"
+                    android:layout_marginBottom="14dp" />
+
+                <Button
+                    android:id="@+id/cancelPlanButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Detener plan" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
