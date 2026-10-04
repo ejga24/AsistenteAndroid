@@ -791,28 +791,6 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private fun isAccessibilityServiceEnabled(): Boolean =
         NexoAccessibilityStatus.isEnabled(this)
 
-    private fun delegateToChatGpt(raw: String) {
-        if (!isAccessibilityServiceEnabled()) {
-            respondAndThen(
-                "Para usar ChatGPT como mi inteligencia necesito que actives el acceso de NEXO una sola vez."
-            ) {
-                startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
-            }
-            return
-        }
-
-        val launchIntent = packageManager.getLaunchIntentForPackage("com.openai.chatgpt")
-        if (launchIntent == null) {
-            respond("ChatGPT no está instalado.")
-            return
-        }
-
-        MiaAccessibilityService.queueChatGptRequest(this, raw, true)
-        respondAndThen("Voy a consultarlo en ChatGPT.") {
-            startActivity(launchIntent)
-        }
-    }
-
     private fun cancelCurrentPlan() {
         planCancelled = true
         planActive = false
