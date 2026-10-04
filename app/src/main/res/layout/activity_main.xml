@@ -334,6 +334,14 @@
             android:id="@+id/modesButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Modes" />
+            android:text="Modes"
+            android:layout_marginBottom="9dp" />
+
+        <com.google.android.material.button.MaterialButton
+            style="@style/Nexo.Button.Secondary"
+            android:id="@+id/skillsButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Skills" />
     </LinearLayout>
 </ScrollView>
