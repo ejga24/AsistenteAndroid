@@ -4,7 +4,7 @@
 > Antes de continuar desarrollo, cambios de arquitectura, diseño, seguridad o releases, consultar este documento primero.
 > Los documentos especializados (`NEXO_ARCHITECTURE.md`, `NEXO_DESIGN_SYSTEM.md`) amplían esta información, pero este archivo conserva el estado vigente, decisiones, reglas, pendientes y criterio de release.
 
-**Última actualización:** 04-10-2026 12:27 p. m. · Panamá  
+**Última actualización:** 04-10-2026 12:40 p. m. · Panamá  
 **Repositorio:** `ejga24/AsistenteAndroid`  
 **Rama de desarrollo:** `nexo-agent-v3`  
 **Versión en desarrollo:** `3.0-alpha1`  
@@ -58,6 +58,8 @@ Responsable de wake word, escucha, STT, TTS y estados de voz.
 
 Estado:
 - Wake word lógico: **NEXO**.
+- Foreground exige wake word antes de ejecutar órdenes; conversación ambiental sin “NEXO” se ignora.
+- Ventana corta de comando después de decir únicamente “NEXO”.
 - Fallback actual: reconocimiento de voz Android.
 - Contrato `NexoWakeEngine` creado para sustituir el fallback sin reescribir el agente.
 - Próximo objetivo: hotword local dedicado.
@@ -83,6 +85,7 @@ Estado:
 Estado:
 - Intents nativos.
 - AccessibilityService para acciones autorizadas sobre interfaces.
+- AccessibilityService usa cola persistente de acciones para evitar sobrescritura en planes multiacción.
 - Control global de home/back.
 - Integración ChatGPT existente.
 
@@ -205,7 +208,7 @@ Reglas principales:
 - [ ] Automation Hub.
 - [ ] Integraciones externas / webhooks / Home Assistant.
 - [ ] Persistencia de contexto de agente.
-- [ ] Hardening de credenciales con Android Keystore / backend según necesidad.
+- [x] Hardening inicial de credenciales con Android Keystore y migración automática desde almacenamiento legado.
 - [x] Recuperación centralizada ante errores con estado degradado temporal.
 - [ ] QA responsive vertical/horizontal.
 - [ ] Accesibilidad visual y font scaling.
@@ -255,7 +258,10 @@ Futuro: confirmación por voz con ventana temporal y protección contra confirma
 ## 8. Política de credenciales
 
 Actual:
-- API key guardada en almacenamiento privado de la aplicación.
+- API key cifrada con AES/GCM y clave protegida por Android Keystore.
+- Migración automática de la credencial legacy si existe.
+- La UI no vuelve a mostrar la clave almacenada.
+- La credencial puede desconectarse explícitamente.
 - Nunca versionada en GitHub.
 
 Antes de release final:
