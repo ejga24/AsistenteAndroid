@@ -55,8 +55,10 @@ Este branch parte de la versión funcional existente v2.4 y evita destruir el hi
 - [x] Historial local de acciones.
 - [x] Modo carro inicial.
 - [x] Fallback al planificador IA cuando un comando no coincide con reglas directas.
-- [ ] Motor de planes multiacción.
+- [x] Motor de planes multiacción (hasta 6 acciones por orden).
 - [ ] Wake word local dedicado.
 - [ ] Visión.
 - [ ] Automatizaciones externas.
 - [ ] Hardening de credenciales.
+
+- [x] Skill Registry inicial para resolver apps conocidas y futuras habilidades.
