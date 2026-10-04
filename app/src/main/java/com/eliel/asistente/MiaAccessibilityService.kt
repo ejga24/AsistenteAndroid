@@ -20,8 +20,9 @@ data class NexoAccessibilityActionResult(
 class MiaAccessibilityService : AccessibilityService() {
 
     companion object {
-        private const val PREFS = "mia_automation"
+        private const val LEGACY_PREFS = "mia_automation"
         private const val KEY_QUEUE = "action_queue"
+        private const val PRIVATE_QUEUE_KEY = "accessibility_action_queue"
         private const val RESULT_PREFS = "nexo_accessibility_results"
         private const val MAX_QUEUE = 12
         private const val GENERIC_TTL_MS = 45_000L
@@ -33,9 +34,7 @@ class MiaAccessibilityService : AccessibilityService() {
 
         fun queueChatGptRequest(context: Context, text: String, newChat: Boolean): String {
             val id = UUID.randomUUID().toString()
-            enqueue(
-                context,
-                JSONObject().apply {
+            val item = JSONObject().apply {
                     put("id", id)
                     put("type", TYPE_CHATGPT)
                     put("package", "com.openai.chatgpt")
@@ -43,7 +42,14 @@ class MiaAccessibilityService : AccessibilityService() {
                     put("new_chat", newChat)
                     put("created", System.currentTimeMillis())
                 }
-            )
+            if (!enqueue(context, item)) {
+                recordResult(
+                    context,
+                    item,
+                    false,
+                    "No pude proteger la cola de acciones de pantalla."
+                )
+            }
             return id
         }
 
@@ -54,9 +60,7 @@ class MiaAccessibilityService : AccessibilityService() {
             targetPackage: String = "*"
         ): String {
             val id = UUID.randomUUID().toString()
-            enqueue(
-                context,
-                JSONObject().apply {
+            val item = JSONObject().apply {
                     put("id", id)
                     put("type", TYPE_GENERIC)
                     put("package", targetPackage.ifBlank { "*" })
@@ -64,7 +68,14 @@ class MiaAccessibilityService : AccessibilityService() {
                     put("value", value)
                     put("created", System.currentTimeMillis())
                 }
-            )
+            if (!enqueue(context, item)) {
+                recordResult(
+                    context,
+                    item,
+                    false,
+                    "No pude proteger la cola de acciones de pantalla."
+                )
+            }
             return id
         }
 
@@ -85,7 +96,7 @@ class MiaAccessibilityService : AccessibilityService() {
             }.getOrNull()
         }
 
-        private fun enqueue(context: Context, item: JSONObject) {
+        private fun enqueue(context: Context, item: JSONObject): Boolean =
             synchronized(queueLock) {
                 val current = readQueue(context)
                 val next = JSONArray()
@@ -97,14 +108,24 @@ class MiaAccessibilityService : AccessibilityService() {
                 next.put(item)
                 writeQueue(context, next)
             }
-        }
 
         private fun readQueue(context: Context): JSONArray {
-            val raw = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-                .getString(KEY_QUEUE, "[]")
-                .orEmpty()
+            NexoPrivateStore.getString(context, PRIVATE_QUEUE_KEY)?.let { raw ->
+                return runCatching { JSONArray(raw) }.getOrElse { JSONArray() }
+            }
 
-            return runCatching { JSONArray(raw) }.getOrElse { JSONArray() }
+            val legacyPrefs = context.getSharedPreferences(
+                LEGACY_PREFS,
+                Context.MODE_PRIVATE
+            )
+            val legacyRaw = legacyPrefs.getString(KEY_QUEUE, null).orEmpty()
+            if (legacyRaw.isBlank()) return JSONArray()
+
+            val parsed = runCatching { JSONArray(legacyRaw) }.getOrElse { JSONArray() }
+            if (NexoPrivateStore.putString(context, PRIVATE_QUEUE_KEY, parsed.toString())) {
+                legacyPrefs.edit().remove(KEY_QUEUE).apply()
+            }
+            return parsed
         }
 
         private fun peek(context: Context): JSONObject? =
@@ -157,11 +178,19 @@ class MiaAccessibilityService : AccessibilityService() {
             return next
         }
 
-        private fun writeQueue(context: Context, queue: JSONArray) {
-            context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-                .edit()
-                .putString(KEY_QUEUE, queue.toString())
-                .apply()
+        private fun writeQueue(context: Context, queue: JSONArray): Boolean {
+            val saved = NexoPrivateStore.putString(
+                context,
+                PRIVATE_QUEUE_KEY,
+                queue.toString()
+            )
+            if (saved) {
+                context.getSharedPreferences(LEGACY_PREFS, Context.MODE_PRIVATE)
+                    .edit()
+                    .remove(KEY_QUEUE)
+                    .apply()
+            }
+            return saved
         }
 
         private fun removeHead(context: Context) {
