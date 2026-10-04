@@ -666,7 +666,8 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             planActive && containsAny(
                 command,
                 "cancela plan", "cancelar plan", "deten plan", "detén plan",
-                "detener plan", "para el plan", "parar plan", "cancela eso"
+                "detener plan", "para el plan", "parar plan", "cancela eso",
+                "detente", "deten eso", "detén eso"
             ) -> {
                 cancelCurrentPlan()
                 respond("Plan detenido.")
