@@ -50,37 +50,32 @@ class SetupCenterActivity : AppCompatActivity() {
     }
 
     private fun refresh() {
-        val mic = permissionGranted(Manifest.permission.RECORD_AUDIO)
-        val camera = permissionGranted(Manifest.permission.CAMERA)
-        val contacts = permissionGranted(Manifest.permission.READ_CONTACTS)
-        val accessibility = isAccessibilityEnabled()
-        val ai = MiaAgentPlanner(this).isConfigured()
-
-        val checks = listOf(mic, accessibility, ai, camera)
-        val completed = checks.count { it }
-        val percent = (completed * 100) / checks.size
+        val health = NexoSystemHealth.snapshot(this)
+        val primaryChecks = health.checks.filter {
+            it.id in setOf("microphone", "accessibility", "intelligence", "vision")
+        }
+        val completed = primaryChecks.count { it.ready }
+        val percent = (completed * 100) / primaryChecks.size
 
         progressText.text = percent.toString() + "% listo"
 
         checklistText.text = buildString {
-            append(if (mic) "✓ " else "• ")
-            append("Micrófono para voz y wake word")
-            append("\n\n")
+            primaryChecks.forEachIndexed { index, check ->
+                append(if (check.ready) "✓ " else "• ")
+                append(check.label)
+                append("\n")
+                append(check.detail)
+                if (index < primaryChecks.lastIndex) append("\n\n")
+            }
 
-            append(if (accessibility) "✓ " else "• ")
-            append("Control de aplicaciones")
+            val contacts = health.checks.first { it.id == "contacts" }
             append("\n\n")
+            append(if (contacts.ready) "✓ " else "• ")
+            append("Contactos · opcional\n")
+            append(contacts.detail)
 
-            append(if (ai) "✓ " else "• ")
-            append("Inteligencia de NEXO")
             append("\n\n")
-
-            append(if (camera) "✓ " else "• ")
-            append("Vision / cámara")
-            append("\n\n")
-
-            append(if (contacts) "✓ " else "• ")
-            append("Contactos · opcional para WhatsApp")
+            append(health.recommendation)
         }
     }
 
