@@ -4,7 +4,7 @@
 > Antes de continuar desarrollo, cambios de arquitectura, diseño, seguridad o releases, consultar este documento primero.
 > Los documentos especializados (`NEXO_ARCHITECTURE.md`, `NEXO_DESIGN_SYSTEM.md`) amplían esta información, pero este archivo conserva el estado vigente, decisiones, reglas, pendientes y criterio de release.
 
-**Última actualización:** 04-10-2026 12:42 p. m. · Panamá  
+**Última actualización:** 04-10-2026 12:45 p. m. · Panamá  
 **Repositorio:** `ejga24/AsistenteAndroid`  
 **Rama de desarrollo:** `nexo-agent-v3`  
 **Versión en desarrollo:** `3.0-alpha1`  
@@ -98,6 +98,12 @@ Estado:
 - Registro local de acciones.
 - Acciones de alto riesgo preparadas para bloqueo.
 
+### Onboarding
+Estado:
+- `NexoOnboardingState` controla la presentación inicial.
+- Si faltan capacidades esenciales en primer arranque, NEXO abre Setup Center una sola vez.
+- Setup Center permanece disponible manualmente después.
+
 ### Runtime Health / Recovery
 Estado:
 - `NexoSystemHealth` centraliza READY / DEGRADED / BLOCKED.
@@ -183,6 +189,7 @@ Reglas principales:
 - [x] Now Running con progreso.
 - [x] Cancelación de plan.
 - [x] Skill Registry.
+- [x] Skills Center para activar/desactivar capacidades.
 - [x] Abrir apps.
 - [x] Waze.
 - [x] Spotify.
@@ -198,22 +205,23 @@ Reglas principales:
 - [x] Security & Privacy Center.
 - [x] Política SAFE / CONFIRM / BLOCK.
 - [x] Design System Contract.
+- [x] Layout landscape dedicado para dashboard de tablet.
 - [x] GitHub Actions compilando la rama NEXO.
 
 ### En desarrollo / siguiente cola
 - [ ] Hotword local dedicado **NEXO**.
 - [ ] Confirmaciones sensibles más completas por categoría de acción.
 - [x] Vision/cámara — CameraX, captura local temporal, análisis IA, UI de resultados y limpieza segura.
-- [ ] Skills configurables desde UI.
+- [x] Skills configurables desde UI con enforcement en planes y comandos directos principales.
 - [ ] Modes: centro premium creado; Normal/Carro funcionales; Casa/Trabajo/Kiosco pendientes de comportamiento final.
 - [ ] Automation Hub.
 - [ ] Integraciones externas / webhooks / Home Assistant.
 - [ ] Persistencia de contexto de agente.
 - [x] Hardening inicial de credenciales con Android Keystore y migración automática desde almacenamiento legado.
 - [x] Recuperación centralizada ante errores con estado degradado temporal.
-- [ ] QA responsive vertical/horizontal.
+- [ ] QA responsive vertical/horizontal — layout landscape dedicado ya implementado; validación en dispositivo pendiente.
 - [ ] Accesibilidad visual y font scaling.
-- [x] Setup Center inicial para preparación de permisos y capacidades.
+- [x] Setup Center inicial + presentación guiada en primer arranque.
 - [x] Checklist formal de Release Candidate creado.
 - [x] Foreground wake-word gating para evitar comandos por conversación ambiental.
 - [x] Cola de Accessibility para preservar acciones multi-step.
