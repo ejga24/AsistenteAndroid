@@ -48,6 +48,7 @@ class AssistantWakeService : Service() {
     private var waitingForCommand = false
     private var pendingCommand: String? = null
     private var awaitingCommandAck = false
+    private var fallbackCommand: String? = null
     private var recognitionErrorStreak = 0
     private val wakeWord = NexoWakeConfig.WAKE_WORD
 
@@ -89,11 +90,14 @@ class AssistantWakeService : Service() {
         when (intent?.action) {
             ACTION_COMMAND_ACCEPTED -> {
                 awaitingCommandAck = false
+                fallbackCommand = null
                 ackHandler.removeCallbacksAndMessages(null)
                 shouldListen = false
                 cancelRecognition()
+                refreshNotification()
             }
             ACTION_STOP_VOICE -> {
+                fallbackCommand = null
                 NexoVoiceState.setEnabled(this, false)
                 shouldListen = false
                 cancelRecognition()
@@ -132,8 +136,15 @@ class AssistantWakeService : Service() {
         }
     }
 
-    private fun buildNotification(): android.app.Notification {
-        val openIntent = Intent(this, MainActivity::class.java)
+    private fun buildNotification(
+        pendingVoiceCommand: String? = fallbackCommand
+    ): android.app.Notification {
+        val openIntent = Intent(this, MainActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            if (!pendingVoiceCommand.isNullOrBlank()) {
+                putExtra(EXTRA_VOICE_COMMAND, pendingVoiceCommand)
+            }
+        }
         val pendingIntent = PendingIntent.getActivity(
             this,
             0,
@@ -151,10 +162,22 @@ class AssistantWakeService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        return NotificationCompat.Builder(this, CHANNEL_ID)
+        val builder = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_nexo_notification)
-            .setContentTitle("NEXO está atento")
-            .setContentText("Di “NEXO” para activarlo. · motor compatible")
+            .setContentTitle(
+                if (pendingVoiceCommand.isNullOrBlank()) {
+                    "NEXO está atento"
+                } else {
+                    "NEXO te escuchó"
+                }
+            )
+            .setContentText(
+                if (pendingVoiceCommand.isNullOrBlank()) {
+                    "Di “NEXO” para activarlo. · motor compatible"
+                } else {
+                    "Toca para continuar la orden de forma segura."
+                }
+            )
             .setContentIntent(pendingIntent)
             .addAction(
                 R.drawable.ic_nexo_notification,
@@ -163,7 +186,25 @@ class AssistantWakeService : Service() {
             )
             .setOngoing(true)
             .setOnlyAlertOnce(true)
-            .build()
+
+        if (!pendingVoiceCommand.isNullOrBlank()) {
+            builder.addAction(
+                R.drawable.ic_nexo_notification,
+                "Continuar",
+                pendingIntent
+            )
+        }
+
+        return builder.build()
+    }
+
+    private fun refreshNotification() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O ||
+            NexoVoiceState.isEnabled(this)
+        ) {
+            getSystemService(NotificationManager::class.java)
+                .notify(NOTIFICATION_ID, buildNotification())
+        }
     }
 
     private fun setupRecognizer() {
@@ -323,22 +364,26 @@ class AssistantWakeService : Service() {
             ackHandler.postDelayed({
                 if (awaitingCommandAck && NexoVoiceState.isEnabled(this)) {
                     awaitingCommandAck = false
+                    fallbackCommand = command
                     NexoRuntimeState.markIssue(
                         this,
                         "Voice Core",
-                        "No se confirmó la entrega del comando al panel principal"
+                        "Android no confirmó la apertura automática; orden disponible desde la notificación"
                     )
+                    refreshNotification()
                     shouldListen = true
                     scheduleListening(350)
                 }
             }, 5000)
         } catch (_: Exception) {
             awaitingCommandAck = false
+            fallbackCommand = command
             NexoRuntimeState.markIssue(
                 this,
                 "Voice Core",
-                "No pude abrir NEXO para ejecutar el comando"
+                "Android bloqueó la apertura automática; orden disponible desde la notificación"
             )
+            refreshNotification()
             shouldListen = true
             scheduleListening(700)
         }
