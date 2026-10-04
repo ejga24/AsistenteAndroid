@@ -52,7 +52,7 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="La clave se guarda en el almacenamiento privado de NEXO y nunca se incluye en GitHub."
+                    android:text="La clave se cifra con Android Keystore y nunca se incluye en GitHub."
                     android:textColor="@color/nexo_text_muted"
                     android:textSize="13sp"
                     android:layout_marginBottom="16dp" />
