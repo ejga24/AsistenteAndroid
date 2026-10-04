@@ -206,6 +206,7 @@ Reglas principales:
 - [x] Política SAFE / CONFIRM / BLOCK.
 - [x] Premium authorization surface para acciones sensibles.
 - [x] Planes se detienen ante paso desconocido/fallido en vez de continuar en estado incierto.
+- [x] Vision y automatización sensible requieren dispositivo desbloqueado.
 - [x] Design System Contract.
 - [x] Layout landscape dedicado para dashboard de tablet.
 - [x] GitHub Actions compilando la rama NEXO.
