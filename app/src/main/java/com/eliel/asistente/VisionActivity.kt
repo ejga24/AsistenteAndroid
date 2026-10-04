@@ -55,7 +55,8 @@ class VisionActivity : AppCompatActivity() {
 
         tts = TextToSpeech(this) { status ->
             if (status == TextToSpeech.SUCCESS) {
-                val engine = tts ?: return@TextToSpeech
+                val engine = tts
+                if (engine == null) return@TextToSpeech
                 var languageResult = engine.setLanguage(Locale("es", "PA"))
                 if (languageResult == TextToSpeech.LANG_MISSING_DATA ||
                     languageResult == TextToSpeech.LANG_NOT_SUPPORTED
