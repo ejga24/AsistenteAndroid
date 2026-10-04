@@ -7,6 +7,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.CAMERA" />
 
     <queries>
         <package android:name="com.whatsapp" />
@@ -61,6 +62,10 @@
 
         <activity
             android:name=".SecurityCenterActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".VisionActivity"
             android:exported="false" />
 
         <activity
