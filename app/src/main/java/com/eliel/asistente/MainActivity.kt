@@ -1096,7 +1096,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                     Uri.parse("https://waze.com/ul?q=" + Uri.encode(destination) + "&navigate=yes")
                 ).apply { setPackage("com.waze") }
                 if (intent.resolveActivity(packageManager) != null) {
-                    NexoActionLog.add(this, "Plan: Waze", destination)
+                    NexoActionLog.add(this, "Plan: Waze", "Destino enviado")
                     startActivity(intent)
                     continuePlan()
                 } else {
@@ -1132,7 +1132,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
                 val chosen = if (direct.resolveActivity(packageManager) != null) direct else fallback
                 if (chosen.resolveActivity(packageManager) != null) {
-                    NexoActionLog.add(this, "Plan: " + displayName, query)
+                    NexoActionLog.add(this, "Plan: " + displayName, "Búsqueda enviada")
                     startActivity(chosen)
                     continuePlan()
                 } else {
