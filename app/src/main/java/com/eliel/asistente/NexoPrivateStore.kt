@@ -15,17 +15,18 @@ object NexoPrivateStore {
     private const val KEY_ALIAS = "nexo_private_data_v1"
     private const val PREFS = "nexo_private_data"
 
-    fun putString(context: Context, key: String, value: String) {
-        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
-        cipher.init(Cipher.ENCRYPT_MODE, getOrCreateKey())
+    fun putString(context: Context, key: String, value: String): Boolean =
+        runCatching {
+            val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+            cipher.init(Cipher.ENCRYPT_MODE, getOrCreateKey())
 
-        val encrypted = cipher.doFinal(value.toByteArray(Charsets.UTF_8))
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .edit()
-            .putString(cipherKey(key), Base64.encodeToString(encrypted, Base64.NO_WRAP))
-            .putString(ivKey(key), Base64.encodeToString(cipher.iv, Base64.NO_WRAP))
-            .apply()
-    }
+            val encrypted = cipher.doFinal(value.toByteArray(Charsets.UTF_8))
+            context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+                .edit()
+                .putString(cipherKey(key), Base64.encodeToString(encrypted, Base64.NO_WRAP))
+                .putString(ivKey(key), Base64.encodeToString(cipher.iv, Base64.NO_WRAP))
+                .commit()
+        }.getOrDefault(false)
 
     fun getString(context: Context, key: String): String? {
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
