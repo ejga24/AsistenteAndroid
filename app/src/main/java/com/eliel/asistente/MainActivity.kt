@@ -1026,10 +1026,13 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                 if (launch != null) {
                     NexoActionLog.add(this, "Plan: abrir app", target)
                     startActivity(launch)
+                    continuePlan()
                 } else {
-                    NexoActionLog.add(this, "Plan: abrir app", "No encontré " + target, false)
+                    failPlanExecution(
+                        "No encontré " + target + ", así que detuve el plan.",
+                        "Aplicación no disponible: " + target
+                    )
                 }
-                continuePlan()
             }
 
             "waze" -> {
@@ -1041,10 +1044,13 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                 if (intent.resolveActivity(packageManager) != null) {
                     NexoActionLog.add(this, "Plan: Waze", destination)
                     startActivity(intent)
+                    continuePlan()
                 } else {
-                    NexoActionLog.add(this, "Plan: Waze", "Waze no disponible", false)
+                    failPlanExecution(
+                        "Waze no está disponible, así que detuve el plan.",
+                        "Waze no disponible"
+                    )
                 }
-                continuePlan()
             }
 
             "spotify", "youtube" -> {
@@ -1074,10 +1080,13 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                 if (chosen.resolveActivity(packageManager) != null) {
                     NexoActionLog.add(this, "Plan: " + displayName, query)
                     startActivity(chosen)
+                    continuePlan()
                 } else {
-                    NexoActionLog.add(this, "Plan: " + displayName, "Aplicación no disponible", false)
+                    failPlanExecution(
+                        displayName + " no está disponible, así que detuve el plan.",
+                        displayName + " no disponible"
+                    )
                 }
-                continuePlan()
             }
 
             "vision" -> {
@@ -1207,8 +1216,10 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             }
 
             else -> {
-                NexoActionLog.add(this, "Plan", "Herramienta desconocida: " + decision.tool, false)
-                continuePlan()
+                failPlanExecution(
+                    "Encontré una acción que NEXO no reconoce. Detuve el plan para mantener el control.",
+                    "Herramienta desconocida: " + decision.tool
+                )
             }
         }
     }
