@@ -28,6 +28,7 @@ class AssistantWakeService : Service() {
         const val ACTION_START = "com.eliel.asistente.START"
         const val ACTION_PAUSE_LISTENING = "com.eliel.asistente.PAUSE_LISTENING"
         const val ACTION_RESUME_LISTENING = "com.eliel.asistente.RESUME_LISTENING"
+        const val ACTION_STOP_VOICE = "com.eliel.asistente.STOP_VOICE"
         const val EXTRA_VOICE_COMMAND = "voice_command"
 
         private const val CHANNEL_ID = "nexo_wake_channel"
@@ -82,6 +83,14 @@ class AssistantWakeService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
+            ACTION_STOP_VOICE -> {
+                NexoVoiceState.setEnabled(this, false)
+                shouldListen = false
+                cancelRecognition()
+                stopForeground(STOP_FOREGROUND_REMOVE)
+                stopSelf()
+                return START_NOT_STICKY
+            }
             ACTION_PAUSE_LISTENING -> {
                 shouldListen = false
                 cancelRecognition()
@@ -122,11 +131,26 @@ class AssistantWakeService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        val pauseVoiceIntent = Intent(this, AssistantWakeService::class.java).apply {
+            action = ACTION_STOP_VOICE
+        }
+        val pauseVoicePendingIntent = PendingIntent.getService(
+            this,
+            1,
+            pauseVoiceIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_nexo_notification)
             .setContentTitle("NEXO está atento")
             .setContentText("Di “NEXO” para activarlo. · motor compatible")
             .setContentIntent(pendingIntent)
+            .addAction(
+                R.drawable.ic_nexo_notification,
+                "Pausar escucha",
+                pauseVoicePendingIntent
+            )
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .build()
