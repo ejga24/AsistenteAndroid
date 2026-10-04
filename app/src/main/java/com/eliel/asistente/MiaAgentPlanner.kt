@@ -51,7 +51,7 @@ class MiaAgentPlanner(private val context: Context) {
                     put("tool", JSONObject().apply {
                         put("type", "string")
                         put("enum", JSONArray(listOf(
-                            "open_app", "waze", "spotify", "youtube", "chatgpt",
+                            "open_app", "waze", "spotify", "youtube", "chatgpt", "vision",
                             "tap_text", "type_text", "back", "home",
                             "set_volume", "set_brightness", "car_mode",
                             "answer", "clarify"
@@ -80,6 +80,7 @@ class MiaAgentPlanner(private val context: Context) {
                     - spotify: buscar/reproducir; text = búsqueda.
                     - youtube: buscar/reproducir; text = búsqueda.
                     - chatgpt: abrir ChatGPT y escribir/enviar; text = consulta; new_chat según corresponda.
+                    - vision: abrir el módulo de cámara/visión bajo demanda.
                     - tap_text: tocar un control visible; target = texto.
                     - type_text: escribir en el campo editable visible; text = contenido.
                     - back: volver.
