@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="nexo_page_padding">32dp</dimen>
+    <dimen name="nexo_page_padding_top">26dp</dimen>
+    <dimen name="nexo_orb_size">144dp</dimen>
+    <dimen name="nexo_touch_min">52dp</dimen>
+</resources>
