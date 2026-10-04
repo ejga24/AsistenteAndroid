@@ -1,6 +1,7 @@
 package com.eliel.asistente
 
 import android.Manifest
+import android.app.KeyguardManager
 import android.content.Intent
 import android.app.SearchManager
 import android.content.pm.PackageManager
@@ -953,6 +954,17 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         poll()
     }
 
+    private fun requireUnlockedForSensitiveUi(): Boolean {
+        val keyguard = getSystemService(KEYGUARD_SERVICE) as KeyguardManager
+        if (!keyguard.isDeviceLocked) return true
+
+        failPlanExecution(
+            "Desbloquea la tablet para que NEXO pueda continuar con esta acción.",
+            "Acción de interfaz bloqueada mientras el dispositivo está bloqueado"
+        )
+        return false
+    }
+
     private fun expectedPackageForPlanAction(
         plan: NexoAgentPlan,
         index: Int,
@@ -1079,6 +1091,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             }
 
             "vision" -> {
+                if (!requireUnlockedForSensitiveUi()) return
                 if (index != plan.actions.lastIndex) {
                     failPlanExecution(
                         "Vision debe cerrar este plan antes de usar su resultado en otra acción. Detuve los pasos siguientes para mantener el control.",
@@ -1097,6 +1110,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             }
 
             "chatgpt" -> {
+                if (!requireUnlockedForSensitiveUi()) return
                 if (!isAccessibilityServiceEnabled()) {
                     NexoActionLog.add(this, "Plan: ChatGPT", "Control de apps desactivado", false)
                     respondAndThen("Para continuar necesito que actives el control de aplicaciones de NEXO.") {
@@ -1125,6 +1139,10 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             }
 
             "tap_text", "type_text", "back", "home" -> {
+                if (decision.tool in setOf("tap_text", "type_text") &&
+                    !requireUnlockedForSensitiveUi()
+                ) return
+
                 if (!isAccessibilityServiceEnabled()) {
                     NexoActionLog.add(this, "Plan: " + decision.tool, "Control de apps desactivado", false)
                     respondAndThen("Para continuar necesito que actives el control de aplicaciones de NEXO.") {
