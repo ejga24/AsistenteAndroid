@@ -1473,6 +1473,13 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         val action = pendingAction
         pendingAction = null
 
+        if (!assistantActive) {
+            waitingForCommand = false
+            statusText.text = "Escucha pausada."
+            setOrbIdle()
+            return
+        }
+
         if (action != null) {
             action()
             waitingForCommand = false
