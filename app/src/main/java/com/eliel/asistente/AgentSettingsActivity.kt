@@ -24,12 +24,7 @@ class AgentSettingsActivity : AppCompatActivity() {
         } else {
             "OpenAI API key"
         }
-        modelInput.setText(
-            prefs.getString(
-                MiaAgentPlanner.KEY_MODEL,
-                MiaAgentPlanner.DEFAULT_MODEL
-            )
-        )
+        modelInput.setText(MiaAgentPlanner.resolveConfiguredModel(this))
 
         removeButton.setOnClickListener {
             NexoSecretStore.clearApiKey(this)
