@@ -116,9 +116,13 @@ Estado:
 
 ### Vision
 Estado:
-- **Pendiente de implementación.**
-- Debe usar cámara solo bajo demanda/permiso.
-- Debe integrarse al mismo motor de skills y seguridad.
+- CameraX integrado.
+- Cámara activada solo bajo demanda y permiso.
+- Captura local temporal.
+- Motor de análisis desacoplado mediante `NexoVisionEngine`.
+- Resultado visual integrado al Design System.
+- Vision elimina la captura temporal después de analizar o fallar.
+- La captura solicitada se envía al motor de análisis configurado cuando corresponde.
 
 ### Automation Hub
 Estado:
@@ -194,7 +198,7 @@ Reglas principales:
 - [ ] Recuperación avanzada ante errores.
 - [ ] QA responsive vertical/horizontal.
 - [ ] Accesibilidad visual y font scaling.
-- [ ] Onboarding inicial de permisos.
+- [x] Setup Center inicial para preparación de permisos y capacidades.
 - [ ] Release checklist automatizable.
 
 ---
@@ -266,7 +270,7 @@ No entregar APK por cada commit.
 - [x] System Health.
 - [x] Security Center.
 - [x] Diseño coherente en pantallas principales.
-- [ ] Onboarding/configuración inicial terminado.
+- [x] Setup Center inicial implementado; onboarding guiado final pendiente de QA.
 - [ ] Pruebas de orientación.
 - [ ] Pruebas de permisos.
 - [ ] Pruebas de background/foreground en MagicOS.
