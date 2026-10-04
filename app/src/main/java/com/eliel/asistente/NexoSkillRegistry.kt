@@ -2,7 +2,6 @@ package com.eliel.asistente
 
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import java.util.Locale
 
 object NexoSkillRegistry {
@@ -29,17 +28,20 @@ object NexoSkillRegistry {
         appAliases[clean]?.let { return it }
 
         val packageManager = context.packageManager
-        val installed = packageManager.getInstalledApplications(PackageManager.GET_META_DATA)
-
-        val exact = installed.firstOrNull {
-            normalize(packageManager.getApplicationLabel(it).toString()) == clean
+        val launcherIntent = Intent(Intent.ACTION_MAIN).apply {
+            addCategory(Intent.CATEGORY_LAUNCHER)
         }
-        if (exact != null) return exact.packageName
+        val launchableApps = packageManager.queryIntentActivities(launcherIntent, 0)
 
-        return installed.firstOrNull {
-            val label = normalize(packageManager.getApplicationLabel(it).toString())
+        val exact = launchableApps.firstOrNull {
+            normalize(it.loadLabel(packageManager).toString()) == clean
+        }
+        if (exact != null) return exact.activityInfo.packageName
+
+        return launchableApps.firstOrNull {
+            val label = normalize(it.loadLabel(packageManager).toString())
             label.contains(clean) || clean.contains(label)
-        }?.packageName
+        }?.activityInfo?.packageName
     }
 
     fun resolveLaunchIntent(context: Context, requestedName: String): Intent? {
