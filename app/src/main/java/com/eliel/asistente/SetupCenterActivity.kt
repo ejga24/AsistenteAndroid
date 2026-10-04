@@ -90,7 +90,7 @@ class SetupCenterActivity : AppCompatActivity() {
         }
 
         findViewById<Button>(R.id.setupBatteryButton).setOnClickListener {
-            startActivity(Intent(Settings.ACTION_BATTERY_SAVER_SETTINGS))
+            startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
         }
     }
 
