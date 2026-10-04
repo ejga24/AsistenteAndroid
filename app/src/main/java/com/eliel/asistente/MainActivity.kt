@@ -27,6 +27,7 @@ import android.widget.Toast
 import android.view.WindowManager
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import java.util.Locale
 
@@ -695,6 +696,52 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         executePlanStep(plan, 0)
     }
 
+
+    private fun requestSafetyConfirmation(
+        decision: MiaAgentDecision,
+        onApproved: () -> Unit,
+        onRejected: () -> Unit = {}
+    ) {
+        val safety = NexoSafetyPolicy.evaluate(decision)
+        when (safety.level) {
+            NexoRiskLevel.SAFE -> onApproved()
+
+            NexoRiskLevel.BLOCK -> {
+                NexoActionLog.add(this, "Acción bloqueada", safety.reason, false)
+                setOrbError()
+                respond("No voy a ejecutar esa acción porque puede afectar de forma importante al dispositivo.")
+                onRejected()
+            }
+
+            NexoRiskLevel.CONFIRM -> {
+                NexoActionLog.add(this, "Confirmación requerida", actionLabel(decision))
+                stopListening()
+                AlertDialog.Builder(this)
+                    .setTitle("Confirmar acción")
+                    .setMessage(
+                        actionLabel(decision) + "\n\n" +
+                        safety.reason + "\n\n" +
+                        "NEXO solo continuará si la autorizas."
+                    )
+                    .setNegativeButton("Cancelar") { _, _ ->
+                        NexoActionLog.add(this, "Acción cancelada", actionLabel(decision), false)
+                        setOrbIdle()
+                        onRejected()
+                        scheduleListening(350)
+                    }
+                    .setPositiveButton("Autorizar") { _, _ ->
+                        NexoActionLog.add(this, "Acción autorizada", actionLabel(decision))
+                        onApproved()
+                    }
+                    .setOnCancelListener {
+                        onRejected()
+                        scheduleListening(350)
+                    }
+                    .show()
+            }
+        }
+    }
+
     private fun executePlanStep(plan: NexoAgentPlan, index: Int) {
         if (planCancelled) return
 
@@ -801,13 +848,23 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                     }
                     return
                 }
-                MiaAccessibilityService.queueGenericAction(
-                    this,
-                    decision.tool,
-                    decision.target.ifBlank { decision.text }
+
+                requestSafetyConfirmation(
+                    decision = decision,
+                    onApproved = {
+                        MiaAccessibilityService.queueGenericAction(
+                            this,
+                            decision.tool,
+                            decision.target.ifBlank { decision.text }
+                        )
+                        NexoActionLog.add(this, "Plan: " + decision.tool, decision.target.ifBlank { decision.text })
+                        continuePlan()
+                    },
+                    onRejected = {
+                        planCancelled = true
+                        nowRunningCard.visibility = android.view.View.GONE
+                    }
                 )
-                NexoActionLog.add(this, "Plan: " + decision.tool, decision.target.ifBlank { decision.text })
-                continuePlan()
             }
 
             "set_volume" -> {
