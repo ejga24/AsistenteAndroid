@@ -67,5 +67,30 @@ class NexoPlanValidatorTest {
         )
         assertFalse(NexoPlanValidator.validate(plan).valid)
     }
+
+    @Test
+    fun acceptsExactlySixActions() {
+        val plan = NexoAgentPlan(
+            actions = List(6) {
+                MiaAgentDecision(tool = "open_app", app = "Chrome")
+            }
+        )
+        assertTrue(NexoPlanValidator.validate(plan).valid)
+    }
+
+    @Test
+    fun rejectsUnknownTool() {
+        val plan = NexoAgentPlan(
+            actions = listOf(
+                MiaAgentDecision(tool = "execute_anything", text = "x")
+            )
+        )
+        assertFalse(NexoPlanValidator.validate(plan).valid)
+    }
+
+    @Test
+    fun rejectsEmptyPlan() {
+        assertFalse(NexoPlanValidator.validate(NexoAgentPlan(actions = emptyList())).valid)
+    }
 }
 
