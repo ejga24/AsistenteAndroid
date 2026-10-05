@@ -56,8 +56,10 @@ object NexoSafetyPolicy {
     )
 
     private val blockedWords = listOf(
-        "formatear dispositivo", "restablecer fabrica", "restablecer de fabrica",
-        "borrar todos los datos"
+        "formatear dispositivo", "formatear tablet", "formatear telefono",
+        "restablecer fabrica", "restablecer de fabrica", "restablecer dispositivo",
+        "restablecer tablet", "restablecer telefono", "borrar todos los datos",
+        "borrar datos del dispositivo", "wipe data", "factory reset"
     )
 
     fun evaluate(decision: MiaAgentDecision): NexoSafetyDecision {
