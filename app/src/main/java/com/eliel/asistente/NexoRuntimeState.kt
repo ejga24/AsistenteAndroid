@@ -14,10 +14,20 @@ object NexoRuntimeState {
     private const val PRIVATE_KEY = "runtime_issue"
     private const val MAX_AGE_MS = 15 * 60 * 1000L
 
+    private fun sanitizeMessage(message: String): String =
+        message
+            .replace(Regex("""sk-[A-Za-z0-9_-]{12,}"""), "[credencial oculta]")
+            .replace(Regex("""(?i)bearer\s+[A-Za-z0-9._-]{12,}"""), "Bearer [oculto]")
+            .replace(
+                Regex("""(?i)(password|contraseña|contrasena|pin|api[_ -]?key)\s*[:=]\s*\S+"""),
+                "$1=[oculto]"
+            )
+            .take(220)
+
     private fun payload(source: String, message: String, timestamp: Long): String =
         JSONObject().apply {
             put("source", source.take(80))
-            put("message", message.take(220))
+            put("message", sanitizeMessage(message))
             put("timestamp", timestamp)
         }.toString()
 
