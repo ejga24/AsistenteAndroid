@@ -74,6 +74,8 @@ class OpenAIVisionEngine(private val context: Context) : NexoVisionEngine {
                 doOutput = true
                 setRequestProperty("Authorization", "Bearer " + apiKey)
                 setRequestProperty("Content-Type", "application/json")
+                setRequestProperty("Cache-Control", "no-store")
+                setRequestProperty("Pragma", "no-cache")
             }
 
             try {
