@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
+import android.view.WindowManager
 import java.util.Locale
 import android.widget.Button
 import android.widget.TextView
@@ -51,6 +52,7 @@ class VisionActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
 
         val keyguard = getSystemService(KEYGUARD_SERVICE) as KeyguardManager
         if (keyguard.isDeviceLocked) {
