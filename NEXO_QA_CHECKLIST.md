@@ -105,7 +105,7 @@
 ## 12. Release decision
 - [ ] Critical defects: 0.
 - [ ] High defects: 0.
-- [ ] Known limitations documented.
+- [x] Known limitations documented in `NEXO_KNOWN_LIMITATIONS.md`.
 - [ ] NEXO_MASTER.md updated.
 - [ ] Release candidate build SHA recorded.
 - [ ] APK artifact retained.
