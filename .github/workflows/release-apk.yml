@@ -7,7 +7,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: nexo-release-${{ github.ref }}
+  group: nexo-release-candidate
   cancel-in-progress: false
 
 jobs:
@@ -15,15 +15,18 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     steps:
-      - name: Checkout
+      - name: Checkout NEXO release candidate
         uses: actions/checkout@v5
+        with:
+          ref: nexo-agent-v3
 
-      - name: Validate release branch
+      - name: Validate release candidate
         run: |
-          test "$GITHUB_REF_NAME" = "nexo-agent-v3" || {
-            echo "RC releases must run from nexo-agent-v3, got: $GITHUB_REF_NAME"
+          test "$(git branch --show-current)" = "nexo-agent-v3" || {
+            echo "RC checkout must be nexo-agent-v3"
             exit 1
           }
+          echo "NEXO_RC_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
 
       - name: Set up Java 17
         uses: actions/setup-java@v5
@@ -123,8 +126,8 @@ jobs:
           CERT_SHA256="$("$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --print-certs "$APK" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -n 1)"
           {
             echo "product=NEXO"
-            echo "commit=${GITHUB_SHA}"
-            echo "branch=${GITHUB_REF_NAME}"
+            echo "commit=${NEXO_RC_SHA}"
+            echo "branch=nexo-agent-v3"
             echo "workflowRun=${GITHUB_RUN_ID}"
             echo "builtAtUtc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
             echo "packageMetadata=$PACKAGE_LINE"
