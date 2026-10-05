@@ -84,6 +84,8 @@ class MiaAgentPlanner(private val context: Context) {
 
             val body = JSONObject().apply {
                 put("model", model)
+                put("store", false)
+                put("max_output_tokens", 900)
                 put("reasoning", JSONObject().put("effort", "low"))
                 put(
                     "instructions",
