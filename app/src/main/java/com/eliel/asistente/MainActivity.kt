@@ -942,8 +942,17 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     }
 
     private fun executeAgentPlan(plan: NexoAgentPlan) {
-        if (plan.actions.isEmpty()) {
-            respond("No encontré acciones para ejecutar.")
+        val validation = NexoPlanValidator.validate(plan)
+        if (!validation.valid) {
+            NexoActionLog.add(
+                this,
+                "Plan IA rechazado",
+                validation.reason,
+                false
+            )
+            respondError(
+                "El plan generado no pasó las reglas de seguridad de NEXO. No ejecuté ninguna acción."
+            )
             return
         }
 
