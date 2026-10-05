@@ -118,7 +118,11 @@ class MiaAgentPlanner(private val context: Context) {
 
                     6) Si usas vision, vision debe ser la última acción del plan. No inventes ni anticipes lo que la cámara verá.
                     7) No encadenes acciones que dependan del resultado de vision hasta que exista una herramienta explícita para ese resultado.
-                    8) speech es una confirmación breve del plan completo en español natural de Panamá.
+                    8) answer, clarify y vision solo pueden ser la última acción.
+                    9) set_volume y set_brightness siempre usan target entero entre 0 y 100.
+                    10) car_mode siempre usa target exactamente "on" u "off".
+                    11) No dejes vacíos los parámetros necesarios para ejecutar una herramienta.
+                    12) speech es una confirmación breve del plan completo en español natural de Panamá.
                     """.trimIndent()
                 )
                 put("input", userRequest)
