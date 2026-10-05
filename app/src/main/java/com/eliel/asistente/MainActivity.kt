@@ -1851,14 +1851,12 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         val max = audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
         val target = (max * 0.65f).toInt().coerceAtLeast(1)
         audio.setStreamVolume(AudioManager.STREAM_MUSIC, target, 0)
-        NexoActionLog.add(this, "Modo carro", "Pantalla activa, brillo alto y audio preparado")
         if (speak) respond("Modo carro activado. Mantendré la pantalla encendida y el audio preparado.")
     }
 
     private fun deactivateCarMode(speak: Boolean = true) {
         NexoModeManager.set(this, NexoMode.NORMAL)
         NexoModeManager.applyWindowProfile(this, NexoMode.NORMAL)
-        NexoActionLog.add(this, "Modo carro", "Desactivado")
         if (speak) respond("Modo carro desactivado.")
     }
 
