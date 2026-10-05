@@ -14,6 +14,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Validate release branch
+        run: |
+          test "$GITHUB_REF_NAME" = "nexo-agent-v3" || {
+            echo "RC releases must run from nexo-agent-v3, got: $GITHUB_REF_NAME"
+            exit 1
+          }
+
       - name: Set up Java 17
         uses: actions/setup-java@v5
         with:
@@ -81,14 +88,18 @@ jobs:
 
       - name: Generate release manifest
         run: |
+          APK="app/build/outputs/apk/release/app-release.apk"
           OUT="app/build/outputs/apk/release/NEXO-RC-MANIFEST.txt"
+          PACKAGE_LINE="$(aapt dump badging "$APK" | head -n 1)"
+          CERT_SHA256="$(apksigner verify --print-certs "$APK" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -n 1)"
           {
             echo "product=NEXO"
-            echo "version=3.0-rc1"
-            echo "versionCode=17"
             echo "commit=${GITHUB_SHA}"
+            echo "branch=${GITHUB_REF_NAME}"
             echo "workflowRun=${GITHUB_RUN_ID}"
             echo "builtAtUtc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "packageMetadata=$PACKAGE_LINE"
+            echo "signingCertSha256=$CERT_SHA256"
             cat app/build/outputs/apk/release/app-release.apk.sha256
           } > "$OUT"
 
