@@ -4,7 +4,7 @@
 > Antes de continuar desarrollo, cambios de arquitectura, diseño, seguridad o releases, consultar este documento primero.
 > Los documentos especializados (`NEXO_ARCHITECTURE.md`, `NEXO_DESIGN_SYSTEM.md`) amplían esta información, pero este archivo conserva el estado vigente, decisiones, reglas, pendientes y criterio de release.
 
-**Última actualización:** 04-10-2026 11:23 p. m. · Panamá
+**Última actualización:** 05-10-2026 · Panamá
 **Repositorio:** `ejga24/AsistenteAndroid`  
 **Rama de desarrollo:** `nexo-agent-v3`  
 **Versión en desarrollo:** `3.0-rc1` · Release Candidate en cierre técnico  
@@ -331,15 +331,16 @@ La primera versión entregada al usuario será una **Release Candidate**, no una
 
 ## 11. Próxima secuencia de trabajo
 
-1. Consolidar documento maestro y referencias.
-2. Completar arquitectura/selección del motor local de wake word.
-3. Implementar hotword local detrás de `NexoWakeEngine`.
-4. Ampliar confirmaciones sensibles.
-5. Conectar motor de análisis a Vision.
-6. Completar resultados y estados premium de Vision.
-7. Modes y Automation Hub.
-8. Hardening / onboarding / QA.
-9. Release Candidate para HONOR Pad X9a.
+**Avance verificable hacia el RC de repositorio: 91%.**
+
+1. Mantener CI verde en el SHA candidato.
+2. Cerrar revisión estática/final sin ampliar alcance.
+3. Configurar identidad estable de firma mediante GitHub Secrets.
+4. Generar APK firmado, verificar firma y SHA-256.
+5. Entregar únicamente ese RC para validación física en HONOR.
+6. Ejecutar QA MagicOS: permisos, foreground/background, wake real, orientación/font scaling, instalación/actualización y batería/térmica.
+
+El hotword local dedicado queda fuera de la ruta crítica de RC1: Android Speech + gating exacto es el fallback explícito y seguro del candidato.
 
 ---
 
@@ -355,10 +356,15 @@ No reconstruir el estado desde recuerdos sueltos si este documento está disponi
 
 ---
 
-## 13. Estimado de primera Release Candidate
+## 13. Estado de primera Release Candidate
 
-Estimado vigente de ingeniería antes de instalación física: **4–7 horas efectivas**.
+**RC de repositorio: 91%.**
 
-A ritmo actual, objetivo de calendario: **6–12 horas** para llegar al primer APK serio que valga la pena instalar, siempre que el hotword local o las restricciones de MagicOS no introduzcan un bloqueo inesperado.
+No se mantiene un estimado horario rodante. El porcentaje solo cambia cuando se cierra un gate verificable.
 
-La entrega no espera a tener todas las futuras integraciones del roadmap; espera a que el núcleo RC cumpla seguridad, build, fallback de voz, coherencia visual y estabilidad suficiente para que lo restante requiera prueba física en la HONOR.
+Pendiente para producir el APK RC firmado:
+- revisión final del SHA candidato;
+- identidad/secretos de firma estable;
+- workflow de release firmado + verificación de firma + checksum SHA-256.
+
+Después del artefacto, la validación física de MagicOS/HONOR es un gate separado y necesariamente requiere el dispositivo.
