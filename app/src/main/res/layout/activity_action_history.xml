@@ -5,15 +5,13 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="@color/nexo_bg"
-    android:padding="26dp">
+    android:padding="@dimen/nexo_page_padding">
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Activity"
-        android:textColor="@color/nexo_text"
-        android:textStyle="bold"
-        android:textSize="28sp" />
+        style="@style/Nexo.Text.H1" />
 
     <TextView
         android:layout_width="wrap_content"
