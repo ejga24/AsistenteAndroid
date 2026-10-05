@@ -1676,13 +1676,35 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         }
     }
 
+    private fun runUiActionSafely(action: () -> Unit): Boolean {
+        return runCatching {
+            action()
+            true
+        }.getOrElse {
+            NexoRuntimeState.markIssue(
+                this,
+                "Android Control",
+                "No pude abrir o completar una acción de interfaz"
+            )
+            NexoActionLog.add(
+                this,
+                "Android Control",
+                "Acción de interfaz no disponible",
+                false
+            )
+            respondError("Android no me permitió completar esa acción. Puedes intentarlo nuevamente.")
+            false
+        }
+    }
+
     private fun respondAndThen(message: String, action: () -> Unit) {
         stopListening()
         statusText.text = message
 
         if (!speechReady) {
-            action()
-            scheduleListening(900)
+            if (runUiActionSafely(action)) {
+                scheduleListening(900)
+            }
             return
         }
 
@@ -1702,9 +1724,10 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         }
 
         if (action != null) {
-            action()
             waitingForCommand = false
-            scheduleListening(900)
+            if (runUiActionSafely(action)) {
+                scheduleListening(900)
+            }
         } else {
             if (waitingForCommand) {
                 statusText.text = "Te escucho…"
