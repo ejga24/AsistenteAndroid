@@ -37,11 +37,10 @@
 
                 <TextView
                     android:id="@+id/versionText"
-                    style="@style/Nexo.Text.BodyMuted"
+                    style="@style/Nexo.Text.Section"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="AGENT OS"
-                    android:textSize="11sp"
                     android:letterSpacing="0.08" />
             </LinearLayout>
 
@@ -51,8 +50,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="●  Inicializando"
+                style="@style/Nexo.Text.Meta"
                 android:textColor="@color/nexo_warning"
-                android:textSize="12sp"
                 android:paddingHorizontal="12dp"
                 android:paddingVertical="8dp"
                 android:background="@color/nexo_surface_alt" />
@@ -90,18 +89,18 @@
 
                         <View
                             android:id="@+id/orbView"
+                            android:importantForAccessibility="no"
                             android:layout_width="@dimen/nexo_orb_size"
                             android:layout_height="@dimen/nexo_orb_size"
                             android:layout_marginBottom="18dp" />
 
                         <TextView
                             android:id="@+id/statusText"
+                            android:accessibilityLiveRegion="polite"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:text="Inicializando NEXO…"
-                            android:textColor="@color/nexo_text"
-                            android:textSize="20sp"
-                            android:textStyle="bold"
+                            style="@style/Nexo.Text.Status"
                             android:gravity="center"
                             android:layout_marginBottom="8dp" />
 
@@ -138,21 +137,18 @@
 
                             <TextView
                                 android:id="@+id/planTitleText"
-                                style="@style/Nexo.Text.Body"
+                                style="@style/Nexo.Text.PlanTitle"
                                 android:layout_width="0dp"
                                 android:layout_height="wrap_content"
                                 android:layout_weight="1"
-                                android:text="Ejecutando plan"
-                                android:textStyle="bold"
-                                android:textSize="18sp" />
+                                android:text="Ejecutando plan" />
 
                             <TextView
                                 android:id="@+id/planProgressText"
-                                style="@style/Nexo.Text.BodyMuted"
+                                style="@style/Nexo.Text.Meta"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="1 / 1"
-                                android:textSize="12sp" />
+                                android:text="1 / 1" />
                         </LinearLayout>
 
                         <TextView
@@ -218,7 +214,6 @@
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:text="Verificando permisos…"
-                                android:textSize="13sp"
                                 android:layout_marginTop="6dp" />
                         </LinearLayout>
                     </com.google.android.material.card.MaterialCardView>
@@ -252,7 +247,6 @@
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:text="Cargando skills…"
-                                android:textSize="13sp"
                                 android:layout_marginTop="6dp" />
                         </LinearLayout>
                     </com.google.android.material.card.MaterialCardView>
