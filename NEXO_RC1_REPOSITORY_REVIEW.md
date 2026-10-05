@@ -15,6 +15,7 @@
 - No source TODO/FIXME items remain in `app/src/main`.
 - No cleartext `http://` endpoint was found in application source.
 - No API key literal or `sk-` credential was found in application source.
+- No keystore, signing-properties file or `.env` secret file is tracked in the repository; `.gitignore` explicitly blocks common signing/secret material.
 - Android backup is disabled.
 - Cleartext traffic is disabled.
 - MainActivity stays behind the Android lock screen.
