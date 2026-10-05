@@ -180,7 +180,14 @@ class VisionActivity : AppCompatActivity() {
 
         Thread {
             val result = OpenAIVisionEngine(this).analyze(bitmap)
+            bitmap.recycle()
+
             runOnUiThread {
+                if (isFinishing || isDestroyed) {
+                    cleanupCapturedFile(file)
+                    return@runOnUiThread
+                }
+
                 result.onSuccess {
                     NexoRuntimeState.clearIssue(this, "Vision")
                     resultCard.visibility = android.view.View.VISIBLE
