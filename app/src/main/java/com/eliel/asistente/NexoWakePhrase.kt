@@ -7,7 +7,7 @@ data class NexoWakeMatch(
 
 object NexoWakePhrase {
     private val pattern = Regex(
-        """(^|[\s,.:;!?-])nexo(?=$|[\s,.:;!?-])""",
+        """(^|[\s,.:;!?¿¡-])nexo(?=$|[\s,.:;!?¿¡-])""",
         setOf(RegexOption.IGNORE_CASE)
     )
 
@@ -16,7 +16,7 @@ object NexoWakePhrase {
         val command = normalizedSpeech
             .substring(match.range.last + 1)
             .trim()
-            .trimStart(',', '.', ':', ';', '!', '?', '-', ' ')
+            .trimStart(',', '.', ':', ';', '!', '?', '¿', '¡', '-', ' ')
         return NexoWakeMatch(true, command)
     }
 }
