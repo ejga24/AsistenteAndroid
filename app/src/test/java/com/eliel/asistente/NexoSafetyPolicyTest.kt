@@ -78,5 +78,14 @@ class NexoSafetyPolicyTest {
         assertEquals(NexoRiskLevel.CONFIRM, result.level)
         assertEquals(NexoRiskCategory.BOOKING, result.category)
     }
+    @Test
+    fun blocksAccentedFactoryReset() {
+        val result = NexoSafetyPolicy.evaluate(
+            MiaAgentDecision(tool = "tap_text", target = "Restablecer de fábrica")
+        )
+        assertEquals(NexoRiskLevel.BLOCK, result.level)
+        assertEquals(NexoRiskCategory.DEVICE_RESET, result.category)
+    }
 }
+
 
