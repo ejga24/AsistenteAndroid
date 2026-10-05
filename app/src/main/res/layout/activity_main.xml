@@ -47,6 +47,7 @@
 
             <TextView
                 android:id="@+id/systemStateText"
+                android:accessibilityLiveRegion="polite"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="●  Inicializando"
@@ -76,12 +77,14 @@
 
                 <View
                     android:id="@+id/orbView"
+                    android:importantForAccessibility="no"
                     android:layout_width="@dimen/nexo_orb_size"
                             android:layout_height="@dimen/nexo_orb_size"
                     android:layout_marginBottom="20dp" />
 
                 <TextView
                     android:id="@+id/statusText"
+                    android:accessibilityLiveRegion="polite"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="Inicializando NEXO…"
