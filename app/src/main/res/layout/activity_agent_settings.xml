@@ -9,7 +9,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="26dp">
+        android:padding="@dimen/nexo_page_padding">
 
         <TextView
             android:layout_width="wrap_content"
@@ -53,8 +53,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="La clave se cifra con Android Keystore y nunca se incluye en GitHub."
-                    android:textColor="@color/nexo_text_muted"
-                    android:textSize="13sp"
+                    style="@style/Nexo.Text.BodyMuted"
                     android:layout_marginBottom="16dp" />
 
                 <com.google.android.material.textfield.TextInputEditText
@@ -73,9 +72,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="MODELO"
-                    android:textColor="@color/nexo_text_muted"
-                    android:textSize="10sp"
-                    android:letterSpacing="0.14" />
+                    style="@style/Nexo.Text.Section" />
 
                 <com.google.android.material.textfield.TextInputEditText
                     style="@style/Nexo.Input"
