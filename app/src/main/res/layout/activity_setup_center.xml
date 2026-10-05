@@ -9,7 +9,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="26dp">
+        android:padding="@dimen/nexo_page_padding">
 
         <TextView
             style="@style/Nexo.Text.H1"
