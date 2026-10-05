@@ -160,6 +160,8 @@ class MiaAgentPlanner(private val context: Context) {
                 doOutput = true
                 setRequestProperty("Authorization", "Bearer $apiKey")
                 setRequestProperty("Content-Type", "application/json")
+                setRequestProperty("Cache-Control", "no-store")
+                setRequestProperty("Pragma", "no-cache")
             }
 
             try {
