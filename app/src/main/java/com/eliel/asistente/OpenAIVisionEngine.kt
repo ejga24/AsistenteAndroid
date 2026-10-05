@@ -61,6 +61,8 @@ class OpenAIVisionEngine(private val context: Context) : NexoVisionEngine {
 
             val body = JSONObject().apply {
                 put("model", model)
+                put("store", false)
+                put("max_output_tokens", 700)
                 put("input", input)
             }
 
