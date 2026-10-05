@@ -4,7 +4,7 @@
 > Antes de continuar desarrollo, cambios de arquitectura, diseño, seguridad o releases, consultar este documento primero.
 > Los documentos especializados (`NEXO_ARCHITECTURE.md`, `NEXO_DESIGN_SYSTEM.md`) amplían esta información, pero este archivo conserva el estado vigente, decisiones, reglas, pendientes y criterio de release.
 
-**Última actualización:** 04-10-2026 5:08 p. m. · Panamá  
+**Última actualización:** 04-10-2026 11:23 p. m. · Panamá
 **Repositorio:** `ejga24/AsistenteAndroid`  
 **Rama de desarrollo:** `nexo-agent-v3`  
 **Versión en desarrollo:** `3.0-rc1` · Release Candidate en cierre técnico  
@@ -200,13 +200,15 @@ Reglas principales:
 - [x] Brillo.
 - [x] Modo carro inicial.
 - [x] Modes Center con estado actual y perfiles futuros claramente desactivados.
-- [x] Activity log.
+- [x] Activity log cifrado en reposo, con minimización/redacción de contenido sensible.
 - [x] System Health.
 - [x] Security & Privacy Center.
 - [x] Política SAFE / CONFIRM / BLOCK.
 - [x] Premium authorization surface para acciones sensibles.
 - [x] Planes se detienen ante paso desconocido/fallido en vez de continuar en estado incierto.
+- [x] Validador de planes IA antes de ejecución: máximo 6 pasos, parámetros obligatorios y acciones terminales.
 - [x] Vision y automatización sensible requieren dispositivo desbloqueado.
+- [x] Main UI permanece detrás del bloqueo normal de Android.
 - [x] Design System Contract.
 - [x] Layout landscape dedicado para dashboard de tablet.
 - [x] GitHub Actions compilando la rama NEXO.
@@ -214,7 +216,7 @@ Reglas principales:
 ### En desarrollo / siguiente cola
 - [ ] Hotword local dedicado **NEXO**.
 - [x] Confirmaciones sensibles categorizadas por dinero, destrucción, comunicación, cuenta, instalación y reservas; ampliación futura según nuevas skills.
-- [x] Vision/cámara — CameraX, captura local temporal, análisis IA, UI de resultados y limpieza segura.
+- [x] Vision/cámara — CameraX, captura local temporal, análisis IA, UI de resultados, limpieza segura y pantalla protegida contra capturas.
 - [x] Skills configurables desde UI con enforcement en planes y comandos directos principales.
 - [ ] Modes: centro premium creado; Normal/Carro funcionales; Casa/Trabajo/Kiosco pendientes de comportamiento final.
 - [ ] Automation Hub.
@@ -273,6 +275,7 @@ Futuro: confirmación por voz con ventana temporal y protección contra confirma
 
 Actual:
 - API key cifrada con AES/GCM y clave protegida por Android Keystore.
+- API remota con `store=false` para Planner/Vision y límites de salida para minimizar retención/costo.
 - Migración automática de la credencial legacy si existe.
 - La UI no vuelve a mostrar la clave almacenada.
 - La credencial puede desconectarse explícitamente.
@@ -354,8 +357,8 @@ No reconstruir el estado desde recuerdos sueltos si este documento está disponi
 
 ## 13. Estimado de primera Release Candidate
 
-Estimado vigente de ingeniería: **7–11 horas efectivas de desarrollo**.
+Estimado vigente de ingeniería antes de instalación física: **4–7 horas efectivas**.
 
-A ritmo actual, objetivo de calendario: **12–20 horas** para llegar al primer APK serio que valga la pena instalar, siempre que el hotword local o las restricciones de MagicOS no introduzcan un bloqueo inesperado.
+A ritmo actual, objetivo de calendario: **6–12 horas** para llegar al primer APK serio que valga la pena instalar, siempre que el hotword local o las restricciones de MagicOS no introduzcan un bloqueo inesperado.
 
 La entrega no espera a tener todas las futuras integraciones del roadmap; espera a que el núcleo RC cumpla seguridad, build, fallback de voz, coherencia visual y estabilidad suficiente para que lo restante requiera prueba física en la HONOR.
