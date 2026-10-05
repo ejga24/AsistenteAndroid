@@ -24,12 +24,16 @@ The release workflow validates that all four exist before building.
 `.github/workflows/release-apk.yml`
 
 The workflow:
-1. decodes the keystore only into the ephemeral GitHub runner;
-2. runs unit tests;
-3. runs Android lint for release;
-4. builds the release APK;
-5. verifies the APK signature with `apksigner`;
-6. uploads only the signed APK and lint report.
+1. only runs as an RC release from `nexo-agent-v3`;
+2. uses least-privilege `contents: read` permissions and a bounded timeout;
+3. validates all required signing secrets before materializing anything;
+4. decodes the keystore only into the ephemeral GitHub runner;
+5. runs unit tests and Android release lint;
+6. builds the release APK;
+7. verifies the APK signature with `apksigner`;
+8. generates a SHA-256 checksum;
+9. generates an RC provenance manifest with exact commit, branch, workflow run, package metadata and signing-certificate SHA-256 digest;
+10. uploads the signed APK, checksum, provenance manifest and lint report.
 
 The temporary keystore is destroyed with the runner.
 
