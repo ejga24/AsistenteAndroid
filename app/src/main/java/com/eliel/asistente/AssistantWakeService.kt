@@ -31,6 +31,7 @@ class AssistantWakeService : Service() {
         const val ACTION_STOP_VOICE = "com.eliel.asistente.STOP_VOICE"
         const val ACTION_COMMAND_ACCEPTED = "com.eliel.asistente.COMMAND_ACCEPTED"
         const val EXTRA_VOICE_COMMAND = "voice_command"
+        const val EXTRA_COMMAND_TOKEN = "voice_command_token"
 
         private const val CHANNEL_ID = "nexo_wake_channel"
         private const val NOTIFICATION_ID = 2001
@@ -49,6 +50,7 @@ class AssistantWakeService : Service() {
     private var pendingCommand: String? = null
     private var awaitingCommandAck = false
     private var fallbackCommand: String? = null
+    private var fallbackCommandToken: String? = null
     private var recognitionErrorStreak = 0
     private val wakeWord = NexoWakeConfig.WAKE_WORD
 
@@ -91,6 +93,8 @@ class AssistantWakeService : Service() {
             ACTION_COMMAND_ACCEPTED -> {
                 awaitingCommandAck = false
                 fallbackCommand = null
+                fallbackCommandToken = null
+                NexoCommandAuth.clear(this)
                 ackHandler.removeCallbacksAndMessages(null)
                 shouldListen = false
                 cancelRecognition()
@@ -98,6 +102,8 @@ class AssistantWakeService : Service() {
             }
             ACTION_STOP_VOICE -> {
                 fallbackCommand = null
+                fallbackCommandToken = null
+                NexoCommandAuth.clear(this)
                 NexoVoiceState.setEnabled(this, false)
                 shouldListen = false
                 cancelRecognition()
@@ -137,12 +143,14 @@ class AssistantWakeService : Service() {
     }
 
     private fun buildNotification(
-        pendingVoiceCommand: String? = fallbackCommand
+        pendingVoiceCommand: String? = fallbackCommand,
+        pendingCommandToken: String? = fallbackCommandToken
     ): android.app.Notification {
         val openIntent = Intent(this, MainActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-            if (!pendingVoiceCommand.isNullOrBlank()) {
+            if (!pendingVoiceCommand.isNullOrBlank() && !pendingCommandToken.isNullOrBlank()) {
                 putExtra(EXTRA_VOICE_COMMAND, pendingVoiceCommand)
+                putExtra(EXTRA_COMMAND_TOKEN, pendingCommandToken)
             }
         }
         val pendingIntent = PendingIntent.getActivity(
@@ -348,8 +356,20 @@ class AssistantWakeService : Service() {
             scheduleListening(250)
             return
         }
+        val commandToken = NexoCommandAuth.issue(this) ?: run {
+            pendingCommand = null
+            NexoRuntimeState.markIssue(
+                this,
+                "Voice Core",
+                "No pude autorizar de forma segura la orden de voz"
+            )
+            shouldListen = true
+            scheduleListening(700)
+            return
+        }
         pendingCommand = null
         fallbackCommand = null
+        fallbackCommandToken = null
         refreshNotification()
         shouldListen = false
         cancelRecognition()
@@ -357,6 +377,7 @@ class AssistantWakeService : Service() {
         val intent = Intent(this, MainActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
             putExtra(EXTRA_VOICE_COMMAND, command)
+            putExtra(EXTRA_COMMAND_TOKEN, commandToken)
         }
 
         awaitingCommandAck = true
@@ -367,6 +388,7 @@ class AssistantWakeService : Service() {
                 if (awaitingCommandAck && NexoVoiceState.isEnabled(this)) {
                     awaitingCommandAck = false
                     fallbackCommand = command
+                    fallbackCommandToken = commandToken
                     NexoRuntimeState.markIssue(
                         this,
                         "Voice Core",
@@ -380,6 +402,7 @@ class AssistantWakeService : Service() {
         } catch (_: Exception) {
             awaitingCommandAck = false
             fallbackCommand = command
+            fallbackCommandToken = commandToken
             NexoRuntimeState.markIssue(
                 this,
                 "Voice Core",
