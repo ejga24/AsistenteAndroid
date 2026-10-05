@@ -8,8 +8,9 @@ import java.util.Date
 import java.util.Locale
 
 object NexoActionLog {
-    private const val PREFS = "nexo_action_log"
-    private const val KEY = "entries"
+    private const val LEGACY_PREFS = "nexo_action_log"
+    private const val LEGACY_KEY = "entries"
+    private const val PRIVATE_KEY = "action_log_entries"
     private const val MAX = 80
 
     private fun sanitizeDetail(action: String, value: String): String {
@@ -51,9 +52,38 @@ object NexoActionLog {
             .take(280)
     }
 
+    private fun readEntries(context: Context): JSONArray {
+        NexoPrivateStore.getString(context, PRIVATE_KEY)?.let { raw ->
+            return runCatching { JSONArray(raw) }.getOrElse { JSONArray() }
+        }
+
+        val legacyPrefs = context.getSharedPreferences(
+            LEGACY_PREFS,
+            Context.MODE_PRIVATE
+        )
+        val legacyRaw = legacyPrefs.getString(LEGACY_KEY, null).orEmpty()
+        if (legacyRaw.isBlank()) return JSONArray()
+
+        val parsed = runCatching { JSONArray(legacyRaw) }.getOrElse { JSONArray() }
+        if (NexoPrivateStore.putString(context, PRIVATE_KEY, parsed.toString())) {
+            legacyPrefs.edit().remove(LEGACY_KEY).apply()
+        }
+        return parsed
+    }
+
+    private fun writeEntries(context: Context, entries: JSONArray): Boolean {
+        val saved = NexoPrivateStore.putString(context, PRIVATE_KEY, entries.toString())
+        if (saved) {
+            context.getSharedPreferences(LEGACY_PREFS, Context.MODE_PRIVATE)
+                .edit()
+                .remove(LEGACY_KEY)
+                .apply()
+        }
+        return saved
+    }
+
     fun add(context: Context, action: String, detail: String = "", success: Boolean = true) {
-        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-        val current = runCatching { JSONArray(prefs.getString(KEY, "[]")) }.getOrElse { JSONArray() }
+        val current = readEntries(context)
         val next = JSONArray()
         next.put(JSONObject().apply {
             put("time", System.currentTimeMillis())
@@ -62,12 +92,11 @@ object NexoActionLog {
             put("success", success)
         })
         for (i in 0 until minOf(current.length(), MAX - 1)) next.put(current.get(i))
-        prefs.edit().putString(KEY, next.toString()).apply()
+        writeEntries(context, next)
     }
 
     fun formatted(context: Context): String {
-        val raw = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY, "[]") ?: "[]"
-        val entries = runCatching { JSONArray(raw) }.getOrElse { JSONArray() }
+        val entries = readEntries(context)
         if (entries.length() == 0) return "Todavía no hay acciones registradas."
         val fmt = SimpleDateFormat("dd/MM/yyyy  hh:mm a", Locale("es", "PA"))
         return buildString {
@@ -84,6 +113,10 @@ object NexoActionLog {
     }
 
     fun clear(context: Context) {
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().remove(KEY).apply()
+        NexoPrivateStore.remove(context, PRIVATE_KEY)
+        context.getSharedPreferences(LEGACY_PREFS, Context.MODE_PRIVATE)
+            .edit()
+            .remove(LEGACY_KEY)
+            .apply()
     }
 }
