@@ -794,6 +794,19 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
     }
 
+    private fun stopPlanSilently(logDetail: String) {
+        planCancelled = true
+        planActive = false
+        unlockOrientationAfterPlan()
+        NexoPlanSessionStore.clear(this)
+        planGeneration++
+        planHandler.removeCallbacksAndMessages(null)
+        if (::nowRunningCard.isInitialized) {
+            nowRunningCard.visibility = android.view.View.GONE
+        }
+        NexoActionLog.add(this, "Plan detenido", logDetail, false)
+    }
+
     private fun cancelCurrentPlan() {
         planCancelled = true
         planActive = false
@@ -1157,10 +1170,13 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             "chatgpt" -> {
                 if (!requireUnlockedForSensitiveUi()) return
                 if (!isAccessibilityServiceEnabled()) {
-                    NexoActionLog.add(this, "Plan: ChatGPT", "Control de apps desactivado", false)
-                    respondAndThen("Para continuar necesito que actives el control de aplicaciones de NEXO.") {
+                    failPlanExecution(
+                        "Para continuar necesito que actives el control de aplicaciones de NEXO. Detuve el plan para no dejarlo en un estado incierto.",
+                        "Control de aplicaciones desactivado"
+                    )
+                    handler.postDelayed({
                         startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
-                    }
+                    }, 700)
                     return
                 }
                 val launch = packageManager.getLaunchIntentForPackage("com.openai.chatgpt")
@@ -1189,10 +1205,13 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                 ) return
 
                 if (!isAccessibilityServiceEnabled()) {
-                    NexoActionLog.add(this, "Plan: " + decision.tool, "Control de apps desactivado", false)
-                    respondAndThen("Para continuar necesito que actives el control de aplicaciones de NEXO.") {
+                    failPlanExecution(
+                        "Para continuar necesito que actives el control de aplicaciones de NEXO. Detuve el plan para no dejarlo en un estado incierto.",
+                        "Control de aplicaciones desactivado"
+                    )
+                    handler.postDelayed({
                         startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
-                    }
+                    }, 700)
                     return
                 }
 
@@ -1235,9 +1254,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                         }
                     },
                     onRejected = {
-                        planCancelled = true
-                        planActive = false
-                        nowRunningCard.visibility = android.view.View.GONE
+                        stopPlanSilently("El usuario canceló una acción sensible")
                     }
                 )
             }
@@ -1271,18 +1288,14 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             }
 
             "answer" -> {
-                planActive = false
-                unlockOrientationAfterPlan()
-                NexoPlanSessionStore.clear(this)
                 NexoActionLog.add(this, "Plan: respuesta", "Respuesta generada")
+                finishPlanSurface()
                 respond(decision.text.ifBlank { plan.speech.ifBlank { "Listo." } })
             }
 
             "clarify" -> {
-                planActive = false
-                unlockOrientationAfterPlan()
-                NexoPlanSessionStore.clear(this)
                 NexoActionLog.add(this, "Plan: aclaración", "Se solicitó información adicional")
+                finishPlanSurface()
                 respond(decision.text.ifBlank { "Necesito un dato más para continuar." })
             }
 
