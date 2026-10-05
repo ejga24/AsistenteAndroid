@@ -85,6 +85,20 @@ jobs:
           test -f "$APK"
           apksigner verify --verbose --print-certs "$APK"
 
+      - name: Validate APK identity
+        run: |
+          APK="app/build/outputs/apk/release/app-release.apk"
+          BADGING="$(aapt dump badging "$APK" | head -n 1)"
+          echo "$BADGING"
+          echo "$BADGING" | grep -q "name='com.eliel.asistente'"
+          echo "$BADGING" | grep -q "versionCode='17'"
+          echo "$BADGING" | grep -q "versionName='3.0-rc1'"
+          CERT_SHA256="$(apksigner verify --print-certs "$APK" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -n 1)"
+          test -n "$CERT_SHA256" || {
+            echo "Missing signing certificate SHA-256 digest"
+            exit 1
+          }
+
       - name: Generate APK checksum
         run: |
           cd app/build/outputs/apk/release
