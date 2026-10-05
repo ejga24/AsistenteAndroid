@@ -31,6 +31,14 @@ object NexoReleaseGate {
             )
         }
 
+        if (health.state != NexoHealthState.READY) {
+            return NexoReleaseReadiness(
+                state = NexoRcState.NEEDS_SETUP,
+                headline = "Estado degradado",
+                detail = health.recommendation
+            )
+        }
+
         if (debugBuild) {
             return NexoReleaseReadiness(
                 state = NexoRcState.DEBUG_BUILD,
