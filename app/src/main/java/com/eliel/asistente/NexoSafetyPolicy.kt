@@ -1,5 +1,8 @@
 package com.eliel.asistente
 
+import java.text.Normalizer
+import java.util.Locale
+
 enum class NexoRiskLevel {
     SAFE,
     CONFIRM,
@@ -58,9 +61,10 @@ object NexoSafetyPolicy {
     )
 
     fun evaluate(decision: MiaAgentDecision): NexoSafetyDecision {
-        val combined = listOf(decision.tool, decision.app, decision.text, decision.target)
-            .joinToString(" ")
-            .lowercase()
+        val combined = normalizeRiskText(
+            listOf(decision.tool, decision.app, decision.text, decision.target)
+                .joinToString(" ")
+        )
 
         if (blockedWords.any { combined.contains(it) }) {
             return NexoSafetyDecision(
@@ -92,6 +96,11 @@ object NexoSafetyPolicy {
             else -> NexoSafetyDecision(NexoRiskLevel.SAFE)
         }
     }
+
+    private fun normalizeRiskText(value: String): String =
+        Normalizer.normalize(value, Normalizer.Form.NFD)
+            .replace(Regex("\\p{Mn}+"), "")
+            .lowercase(Locale.ROOT)
 
     private fun reasonFor(category: NexoRiskCategory): String = when (category) {
         NexoRiskCategory.MONEY ->
