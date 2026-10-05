@@ -27,14 +27,26 @@ class SetupCenterActivity : AppCompatActivity() {
     ) { granted ->
         if (granted) {
             NexoVoiceState.setEnabled(this, true)
+            startVoiceServiceSafely()
+        }
+        refresh()
+    }
+
+    private fun startVoiceServiceSafely() {
+        runCatching {
             ContextCompat.startForegroundService(
                 this,
                 Intent(this, AssistantWakeService::class.java).apply {
                     action = AssistantWakeService.ACTION_START
                 }
             )
+        }.onFailure {
+            NexoRuntimeState.markIssue(
+                this,
+                "Voice Core",
+                "Android no permitió iniciar la escucha en segundo plano"
+            )
         }
-        refresh()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -52,12 +64,7 @@ class SetupCenterActivity : AppCompatActivity() {
                 ) == android.content.pm.PackageManager.PERMISSION_GRANTED
             ) {
                 NexoVoiceState.setEnabled(this, true)
-                ContextCompat.startForegroundService(
-                    this,
-                    Intent(this, AssistantWakeService::class.java).apply {
-                        action = AssistantWakeService.ACTION_START
-                    }
-                )
+                startVoiceServiceSafely()
                 refresh()
             } else {
                 micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
