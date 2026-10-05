@@ -685,15 +685,6 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                     startActivity(Intent(this, AgentSettingsActivity::class.java))
                 }
             }
-            planActive && containsAny(
-                command,
-                "cancela plan", "cancelar plan", "deten plan", "detén plan",
-                "detener plan", "para el plan", "parar plan", "cancela eso",
-                "detente", "deten eso", "detén eso"
-            ) -> {
-                cancelCurrentPlan()
-                respond("Plan detenido.")
-            }
             containsAny(command, "deja de escuchar", "detente", "pausa asistente", "para de escuchar") -> {
                 setVoiceActive(false, speak = true)
             }
