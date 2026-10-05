@@ -152,7 +152,15 @@ class MiaAccessibilityService : AccessibilityService() {
                         System.currentTimeMillis() - created > ttl
 
                     if (!expired) {
-                        if (changed) writeQueue(context, queue)
+                        if (changed && !writeQueue(context, queue)) {
+                            clearQueueStorage(context)
+                            NexoRuntimeState.markIssue(
+                                context,
+                                "Control de aplicaciones",
+                                "No pude actualizar de forma segura la cola de acciones"
+                            )
+                            return@synchronized null
+                        }
                         return@synchronized item
                     }
 
@@ -166,7 +174,14 @@ class MiaAccessibilityService : AccessibilityService() {
                     changed = true
                 }
 
-                if (changed) writeQueue(context, queue)
+                if (changed && !writeQueue(context, queue)) {
+                    clearQueueStorage(context)
+                    NexoRuntimeState.markIssue(
+                        context,
+                        "Control de aplicaciones",
+                        "No pude limpiar de forma segura la cola de acciones"
+                    )
+                }
                 null
             }
 
@@ -193,9 +208,27 @@ class MiaAccessibilityService : AccessibilityService() {
             return saved
         }
 
+        private fun clearQueueStorage(context: Context) {
+            NexoPrivateStore.remove(context, PRIVATE_QUEUE_KEY)
+            context.getSharedPreferences(LEGACY_PREFS, Context.MODE_PRIVATE)
+                .edit()
+                .remove(KEY_QUEUE)
+                .apply()
+        }
+
         private fun removeHead(context: Context) {
             synchronized(queueLock) {
-                writeQueue(context, withoutHead(readQueue(context)))
+                val next = withoutHead(readQueue(context))
+                if (!writeQueue(context, next)) {
+                    // Fall closed: losing queued follow-up actions is safer than
+                    // repeating an already executed UI action.
+                    clearQueueStorage(context)
+                    NexoRuntimeState.markIssue(
+                        context,
+                        "Control de aplicaciones",
+                        "No pude persistir el avance de la cola; se descartaron acciones pendientes"
+                    )
+                }
             }
         }
 
