@@ -1,0 +1,151 @@
+name: Build NEXO Release Candidate
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nexo-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Validate release branch
+        run: |
+          test "$GITHUB_REF_NAME" = "nexo-agent-v3" || {
+            echo "RC releases must run from nexo-agent-v3, got: $GITHUB_REF_NAME"
+            exit 1
+          }
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          accept-android-sdk-licenses: false
+          packages: platform-tools
+
+      - name: Accept Android SDK licenses
+        run: yes | sdkmanager --licenses > /dev/null
+
+      - name: Install Android SDK 35
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Validate signing secrets
+        env:
+          KEYSTORE_B64: ${{ secrets.NEXO_KEYSTORE_BASE64 }}
+          STORE_PASS: ${{ secrets.NEXO_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.NEXO_KEY_ALIAS }}
+          KEY_PASS: ${{ secrets.NEXO_KEY_PASSWORD }}
+        run: |
+          test -n "$KEYSTORE_B64" || (echo "Missing NEXO_KEYSTORE_BASE64" && exit 1)
+          test -n "$STORE_PASS" || (echo "Missing NEXO_KEYSTORE_PASSWORD" && exit 1)
+          test -n "$KEY_ALIAS" || (echo "Missing NEXO_KEY_ALIAS" && exit 1)
+          test -n "$KEY_PASS" || (echo "Missing NEXO_KEY_PASSWORD" && exit 1)
+
+      - name: Materialize release keystore
+        env:
+          KEYSTORE_B64: ${{ secrets.NEXO_KEYSTORE_BASE64 }}
+        run: |
+          printf '%s' "$KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/nexo-release.jks"
+          chmod 600 "$RUNNER_TEMP/nexo-release.jks"
+
+      - name: Validate keystore identity
+        env:
+          STORE_PASS: ${{ secrets.NEXO_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.NEXO_KEY_ALIAS }}
+        run: |
+          test -s "$RUNNER_TEMP/nexo-release.jks"
+          keytool -list \
+            -keystore "$RUNNER_TEMP/nexo-release.jks" \
+            -storepass:env STORE_PASS \
+            -alias "$KEY_ALIAS" > /dev/null
+
+      - name: Test lint and build signed release
+        env:
+          STORE_PASS: ${{ secrets.NEXO_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.NEXO_KEY_ALIAS }}
+          KEY_PASS: ${{ secrets.NEXO_KEY_PASSWORD }}
+        run: |
+          gradle :app:testDebugUnitTest :app:lintRelease :app:assembleRelease --stacktrace \
+            -PNEXO_KEYSTORE_FILE="$RUNNER_TEMP/nexo-release.jks" \
+            -PNEXO_KEYSTORE_PASSWORD="$STORE_PASS" \
+            -PNEXO_KEY_ALIAS="$KEY_ALIAS" \
+            -PNEXO_KEY_PASSWORD="$KEY_PASS"
+
+      - name: Verify APK signature
+        run: |
+          APK="app/build/outputs/apk/release/app-release.apk"
+          test -f "$APK"
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs "$APK"
+
+      - name: Validate APK identity
+        run: |
+          APK="app/build/outputs/apk/release/app-release.apk"
+          BADGING="$("$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | head -n 1)"
+          echo "$BADGING"
+          echo "$BADGING" | grep -q "name='com.eliel.asistente'"
+          echo "$BADGING" | grep -q "versionCode='17'"
+          echo "$BADGING" | grep -q "versionName='3.0-rc1'"
+          CERT_SHA256="$("$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --print-certs "$APK" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -n 1)"
+          test -n "$CERT_SHA256" || {
+            echo "Missing signing certificate SHA-256 digest"
+            exit 1
+          }
+
+      - name: Generate APK checksum
+        run: |
+          cd app/build/outputs/apk/release
+          sha256sum app-release.apk > app-release.apk.sha256
+
+      - name: Generate release manifest
+        run: |
+          APK="app/build/outputs/apk/release/app-release.apk"
+          OUT="app/build/outputs/apk/release/NEXO-RC-MANIFEST.txt"
+          PACKAGE_LINE="$("$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | head -n 1)"
+          CERT_SHA256="$("$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --print-certs "$APK" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -n 1)"
+          {
+            echo "product=NEXO"
+            echo "commit=${GITHUB_SHA}"
+            echo "branch=${GITHUB_REF_NAME}"
+            echo "workflowRun=${GITHUB_RUN_ID}"
+            echo "builtAtUtc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "packageMetadata=$PACKAGE_LINE"
+            echo "signingCertSha256=$CERT_SHA256"
+            cat app/build/outputs/apk/release/app-release.apk.sha256
+          } > "$OUT"
+
+      - name: Upload signed RC APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: NEXO-Agent-signed-rc
+          path: |
+            app/build/outputs/apk/release/app-release.apk
+            app/build/outputs/apk/release/app-release.apk.sha256
+            app/build/outputs/apk/release/NEXO-RC-MANIFEST.txt
+          if-no-files-found: error
+
+      - name: Upload lint report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: NEXO-Agent-release-lint
+          path: app/build/reports/lint-results-release.html
+          if-no-files-found: ignore
