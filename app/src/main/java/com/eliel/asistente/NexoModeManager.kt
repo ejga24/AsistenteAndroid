@@ -24,6 +24,8 @@ object NexoModeManager {
     }
 
     fun set(context: Context, mode: NexoMode) {
+        if (current(context) == mode) return
+
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .edit()
             .putString(KEY_CURRENT, mode.id)
