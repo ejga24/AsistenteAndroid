@@ -74,6 +74,8 @@ object NexoSkillPolicy {
             .getBoolean(skillId, true)
 
     fun setEnabled(context: Context, skillId: String, enabled: Boolean) {
+        if (isEnabled(context, skillId) == enabled) return
+
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .edit()
             .putBoolean(skillId, enabled)
