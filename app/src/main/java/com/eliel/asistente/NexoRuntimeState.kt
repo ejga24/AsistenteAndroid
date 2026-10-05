@@ -58,7 +58,11 @@ object NexoRuntimeState {
 
     fun currentIssue(context: Context): NexoRuntimeIssue? {
         val encrypted = NexoPrivateStore.getString(context, PRIVATE_KEY)
-        val issue = encrypted?.let(::parse) ?: migrateLegacy(context) ?: return null
+        val parsedEncrypted = encrypted?.let(::parse)
+        if (encrypted != null && parsedEncrypted == null) {
+            NexoPrivateStore.remove(context, PRIVATE_KEY)
+        }
+        val issue = parsedEncrypted ?: migrateLegacy(context) ?: return null
 
         if (issue.timestamp <= 0L ||
             System.currentTimeMillis() - issue.timestamp !in 0..MAX_AGE_MS
