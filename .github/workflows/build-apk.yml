@@ -5,6 +5,9 @@ on:
   push:
     branches: [ main, nexo-agent-v3 ]
 
+permissions:
+  contents: read
+
 concurrency:
   group: nexo-android-${{ github.ref }}
   cancel-in-progress: true
@@ -12,6 +15,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-24.04
+    timeout-minutes: 35
     steps:
       - name: Checkout
         uses: actions/checkout@v5
