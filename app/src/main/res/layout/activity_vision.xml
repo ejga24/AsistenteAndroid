@@ -34,6 +34,7 @@
 
         <androidx.camera.view.PreviewView
             android:id="@+id/visionPreview"
+            android:contentDescription="Vista previa de cámara de NEXO"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             app:scaleType="fillCenter" />
