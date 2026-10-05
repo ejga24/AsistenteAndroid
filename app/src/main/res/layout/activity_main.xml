@@ -40,8 +40,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="AGENT OS"
-                    android:textColor="@color/nexo_text_muted"
-                    android:textSize="11sp"
+                    style="@style/Nexo.Text.Section"
                     android:letterSpacing="0.08" />
             </LinearLayout>
 
@@ -51,8 +50,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="●  Inicializando"
+                style="@style/Nexo.Text.Meta"
                 android:textColor="@color/nexo_warning"
-                android:textSize="12sp"
                 android:paddingHorizontal="12dp"
                 android:paddingVertical="8dp"
                 android:background="@color/nexo_surface_alt" />
@@ -88,9 +87,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="Inicializando NEXO…"
-                    android:textColor="@color/nexo_text"
-                    android:textSize="20sp"
-                    android:textStyle="bold"
+                    style="@style/Nexo.Text.Status"
                     android:gravity="center"
                     android:layout_marginBottom="8dp" />
 
@@ -143,9 +140,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:text="Ejecutando plan"
-                            android:textColor="@color/nexo_text"
-                            android:textStyle="bold"
-                            android:textSize="18sp"
+                            style="@style/Nexo.Text.PlanTitle"
                             android:layout_marginTop="5dp" />
                     </LinearLayout>
 
@@ -154,8 +149,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="1 / 1"
-                        android:textColor="@color/nexo_text_muted"
-                        android:textSize="12sp" />
+                        style="@style/Nexo.Text.Meta" />
                 </LinearLayout>
 
                 <TextView
@@ -163,8 +157,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="Preparando acciones…"
-                    android:textColor="@color/nexo_text"
-                    android:textSize="14sp"
+                    style="@style/Nexo.Text.Body"
                     android:lineSpacingExtra="5dp"
                     android:layout_marginTop="14dp"
                     android:layout_marginBottom="14dp" />
@@ -213,8 +206,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="Verificando permisos…"
-                        android:textColor="@color/nexo_text"
-                        android:textSize="14sp"
+                        style="@style/Nexo.Text.Body"
                         android:layout_marginTop="6dp" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
