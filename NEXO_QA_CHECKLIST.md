@@ -103,8 +103,8 @@
 - [ ] Recovery does not create execution loops.
 
 ## 12. Release decision
-- [ ] Critical defects: 0.
-- [ ] High defects: 0.
+- [x] Critical repository-side defects: 0 at reviewed baseline; physical-device defects still unknown until HONOR QA.
+- [x] High repository-side defects: 0 at reviewed baseline; physical-device defects still unknown until HONOR QA.
 - [x] Known limitations documented in `NEXO_KNOWN_LIMITATIONS.md`.
 - [ ] NEXO_MASTER.md updated.
 - [ ] Release candidate build SHA recorded.
@@ -112,5 +112,5 @@
 - [ ] User installation instructions prepared.
 
 ## RC approval
-**Status:** REPOSITORY RC 91% — SIGNED ARTIFACT NOT READY YET  
-**Reason:** latest code build is green and repository-side security/reliability gates are largely closed. Stable release signing, exact RC artifact/checksum and physical HONOR validation remain open.
+**Status:** REPOSITORY RC 94% — SIGNED ARTIFACT NOT READY YET  
+**Reason:** repository review is closed with green CI and no known critical/high repository defects. Stable release signing, exact signed RC artifact/checksum and physical HONOR validation remain open.
