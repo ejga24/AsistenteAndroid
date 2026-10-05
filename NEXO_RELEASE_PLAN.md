@@ -4,16 +4,16 @@
 > Target: first APK worth installing on the HONOR Pad X9a.
 
 ## Current status
-**Repository RC readiness: 91%.**
+**Repository RC readiness: 95%.**
 
 This percentage measures the repository-side gate for the first serious RC, not physical HONOR validation. It only increases when a release gate is actually closed.
 
 Closed: architecture, main flows, safety policy, encrypted credentials/private history, Voice Core fallback, wake gating, multi-action validation, Vision, responsive resources, diagnostics, CI tests/lint/build, and release-signing workflow.
 
 Open before signed RC artifact:
-- final repository/static review and warning closure;
 - stable signing identity/secrets for the release workflow;
-- exact RC SHA + signed artifact/checksum.
+- exact RC SHA;
+- signed artifact + signature verification + SHA-256 checksum + provenance manifest.
 
 Physical HONOR validation remains a separate post-artifact gate: MagicOS background behavior, microphone/wake performance, permissions, orientation/font scaling, install/update compatibility, battery/thermal soak.
 
@@ -22,10 +22,10 @@ No rolling hour estimate is used as a release promise.
 ## Critical path
 
 ### Phase A — code closure
-Status: **near complete**
-- Final static/security consistency review.
-- Close only defects that can affect RC behavior.
-- Keep documentation synchronized with implementation.
+Status: **complete for repository RC1 review**
+- Static/security consistency review is recorded in `NEXO_RC1_REPOSITORY_REVIEW.md`.
+- No known critical/high repository-side defect remains on the reviewed baseline.
+- Keep documentation synchronized if the candidate SHA changes.
 
 ### Phase B — voice + wake
 Status: **RC path complete in repository**
