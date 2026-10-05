@@ -24,7 +24,7 @@ class AgentSettingsActivity : AppCompatActivity() {
         apiKeyInput.hint = if (NexoSecretStore.hasApiKey(this)) {
             "Credencial configurada · escribe una nueva para reemplazarla"
         } else {
-            "OpenAI API key"
+            "Gemini API key"
         }
         modelInput.setText(MiaAgentPlanner.resolveConfiguredModel(this))
 
