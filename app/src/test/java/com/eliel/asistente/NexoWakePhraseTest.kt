@@ -33,4 +33,15 @@ class NexoWakePhraseTest {
         assertTrue(result.found)
         assertEquals("", result.command)
     }
+    @Test
+    fun detectsWakeWordWithSpanishOpeningPunctuation() {
+        val question = NexoWakePhrase.extract("¿NEXO, abre Spotify?")
+        assertTrue(question.found)
+        assertEquals("abre Spotify?", question.command)
+
+        val exclamation = NexoWakePhrase.extract("¡NEXO! abre Waze")
+        assertTrue(exclamation.found)
+        assertEquals("abre Waze", exclamation.command)
+    }
+
 }
