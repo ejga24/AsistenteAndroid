@@ -54,6 +54,13 @@
                     android:layout_height="wrap_content"
                     android:text="La clave se cifra con Android Keystore y nunca se incluye en GitHub."
                     style="@style/Nexo.Text.BodyMuted"
+                    android:layout_marginBottom="8dp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Las solicitudes complejas y las capturas de Vision se envían al motor configurado solo cuando usas esas capacidades. NEXO solicita no almacenar esas respuestas."
+                    style="@style/Nexo.Text.BodyMuted"
                     android:layout_marginBottom="16dp" />
 
                 <com.google.android.material.textfield.TextInputEditText
