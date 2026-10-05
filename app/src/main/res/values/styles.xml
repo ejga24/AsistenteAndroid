@@ -3,30 +3,30 @@
 
     <style name="Nexo.Text.H1" parent="">
         <item name="android:textColor">@color/nexo_text</item>
-        <item name="android:textSize">28sp</item>
+        <item name="android:textSize">@dimen/nexo_text_h1</item>
         <item name="android:textStyle">bold</item>
     </style>
 
     <style name="Nexo.Text.Hero" parent="">
         <item name="android:textColor">@color/nexo_text</item>
-        <item name="android:textSize">30sp</item>
+        <item name="android:textSize">@dimen/nexo_text_hero</item>
         <item name="android:textStyle">bold</item>
         <item name="android:letterSpacing">0.13</item>
     </style>
 
     <style name="Nexo.Text.Body" parent="">
         <item name="android:textColor">@color/nexo_text</item>
-        <item name="android:textSize">15sp</item>
+        <item name="android:textSize">@dimen/nexo_text_body</item>
     </style>
 
     <style name="Nexo.Text.BodyMuted" parent="">
         <item name="android:textColor">@color/nexo_text_muted</item>
-        <item name="android:textSize">14sp</item>
+        <item name="android:textSize">@dimen/nexo_text_muted</item>
     </style>
 
     <style name="Nexo.Text.Section" parent="">
         <item name="android:textColor">@color/nexo_text_muted</item>
-        <item name="android:textSize">11sp</item>
+        <item name="android:textSize">@dimen/nexo_text_section</item>
         <item name="android:letterSpacing">0.14</item>
     </style>
 
