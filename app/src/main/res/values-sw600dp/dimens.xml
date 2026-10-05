@@ -10,4 +10,7 @@
     <dimen name="nexo_text_body">16sp</dimen>
     <dimen name="nexo_text_muted">15sp</dimen>
     <dimen name="nexo_text_section">12sp</dimen>
+    <dimen name="nexo_text_meta">13sp</dimen>
+    <dimen name="nexo_text_plan_title">20sp</dimen>
+    <dimen name="nexo_text_status">22sp</dimen>
 </resources>
