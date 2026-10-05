@@ -20,7 +20,7 @@
 - [ ] Determine signature compatibility with the previously installed APK.
 - [ ] Update over existing installation if signatures match.
 - [ ] If signatures do not match, document clean-install requirement before delivery.
-- [ ] User settings migration behavior documented.
+- [x] User settings migration behavior documented in `NEXO_MIGRATION_NOTES.md`; physical upgrade verification remains pending.
 
 ## 4. Voice Core
 - [ ] Wake word detected in foreground.
