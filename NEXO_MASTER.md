@@ -325,13 +325,14 @@ La primera versión entregada al usuario será una **Release Candidate**, no una
 - `NEXO_QA_CHECKLIST.md` — gate formal para Release Candidate.
 - `NEXO_RELEASE_PLAN.md` — estimado, ruta crítica y criterio de entrega del primer APK.
 - `NEXO_INSTALLATION_GUIDE.md` — instalación y QA físico en HONOR Pad.
+- `NEXO_RC1_REPOSITORY_REVIEW.md` — revisión estática, seguridad, CI y release del candidato.
 - Código fuente y GitHub Actions — implementación vigente.
 
 ---
 
 ## 11. Próxima secuencia de trabajo
 
-**Avance verificable hacia el RC de repositorio: 91%.**
+**Avance verificable hacia el RC de repositorio: 94%.**
 
 1. Mantener CI verde en el SHA candidato.
 2. Cerrar revisión estática/final sin ampliar alcance.
@@ -358,13 +359,13 @@ No reconstruir el estado desde recuerdos sueltos si este documento está disponi
 
 ## 13. Estado de primera Release Candidate
 
-**RC de repositorio: 91%.**
+**RC de repositorio: 94%.**
 
 No se mantiene un estimado horario rodante. El porcentaje solo cambia cuando se cierra un gate verificable.
 
 Pendiente para producir el APK RC firmado:
-- revisión final del SHA candidato;
 - identidad/secretos de firma estable;
-- workflow de release firmado + verificación de firma + checksum SHA-256.
+- ejecutar workflow de release firmado;
+- verificar firma, checksum SHA-256 y manifiesto de procedencia del artefacto.
 
 Después del artefacto, la validación física de MagicOS/HONOR es un gate separado y necesariamente requiere el dispositivo.
