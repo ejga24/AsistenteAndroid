@@ -16,13 +16,29 @@ object NexoActionLog {
         if (value.isBlank()) return ""
 
         val normalizedAction = action.lowercase(Locale.ROOT)
-        if (
-            normalizedAction.contains("type_text") ||
-            normalizedAction.contains("escribir texto") ||
-            normalizedAction.contains("credencial") ||
-            normalizedAction.contains("api key")
-        ) {
-            return "[contenido oculto]"
+        val sensitiveActionTokens = listOf(
+            "type_text",
+            "escribir texto",
+            "credencial",
+            "api key",
+            "whatsapp",
+            "mensaje",
+            "message",
+            "buscar",
+            "search",
+            "consulta",
+            "query",
+            "destino",
+            "destination",
+            "waze",
+            "youtube",
+            "spotify",
+            "vision",
+            "contacto",
+            "contact"
+        )
+        if (sensitiveActionTokens.any(normalizedAction::contains)) {
+            return "[contenido privado]"
         }
 
         return value
