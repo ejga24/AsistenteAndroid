@@ -40,7 +40,7 @@ jobs:
           gradle-version: '8.9'
 
       - name: Verify Android project
-        run: gradle :app:testDebugUnitTest :app:lintDebug :app:assembleDebug :app:assembleRelease --stacktrace
+        run: gradle :app:testDebugUnitTest :app:lintDebug :app:lintRelease :app:assembleDebug :app:assembleRelease --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
@@ -65,4 +65,13 @@ jobs:
         with:
           name: NEXO-Agent-unit-tests
           path: app/build/reports/tests/testDebugUnitTest/
+          if-no-files-found: ignore
+
+
+      - name: Upload release lint report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: NEXO-Agent-release-lint
+          path: app/build/reports/lint-results-release.html
           if-no-files-found: ignore
