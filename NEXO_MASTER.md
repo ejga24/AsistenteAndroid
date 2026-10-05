@@ -7,7 +7,7 @@
 **Última actualización:** 05-10-2026 · Panamá
 **Repositorio:** `ejga24/AsistenteAndroid`  
 **Rama de desarrollo:** `nexo-agent-v3`  
-**Versión en desarrollo:** `3.0-rc1` · Release Candidate en cierre técnico  
+**Versión en desarrollo:** `3.0-rc2` · Release Candidate en cierre técnico  
 **Dispositivo objetivo principal:** HONOR Pad X9a · MagicOS 10 · Android 16 · Snapdragon 685
 
 ---
@@ -48,6 +48,7 @@ El objetivo es que NEXO se sienta como un producto construido por un equipo seri
 12. No entregar APK por cambios internos; solo cuando exista un hito suficientemente completo.
 13. Antes de una release candidate: compilación limpia, checklist de QA y coherencia funcional/visual.
 14. Mantener este documento actualizado después de decisiones o cambios relevantes.
+15. **Autonomía continua:** una vez definido el objetivo y las reglas, avanzar de forma autónoma por los gates técnicos (código → CI → release firmado → verificación → artefacto) sin esperar una nueva orden del usuario entre pasos. Detenerse únicamente ante una decisión real del usuario, una acción física que solo él pueda realizar, un secreto/permiso no disponible o un bloqueo técnico que impida continuar.
 
 ---
 
@@ -68,7 +69,8 @@ Estado:
 Responsable de interpretar solicitudes y decidir acciones.
 
 Estado:
-- Planificador IA integrado.
+- Planificador IA integrado con **Gemini** para RC2.
+- Los comandos directos/skills locales no dependen de Gemini; la IA se usa para planificación avanzada/fallback.
 - Fallback a IA cuando una orden no coincide con comandos directos.
 - Planes de hasta **6 acciones**.
 - Respuesta final resumida del plan.
@@ -275,7 +277,8 @@ Futuro: confirmación por voz con ventana temporal y protección contra confirma
 
 Actual:
 - API key cifrada con AES/GCM y clave protegida por Android Keystore.
-- API remota con `store=false` para Planner/Vision y límites de salida para minimizar retención/costo.
+- Credencial Gemini cifrada con Android Keystore; la migración conserva la credencial ya almacenada en el dispositivo.
+- Planner RC2 usa Gemini con salida JSON estructurada y límites de salida. Vision mantiene su motor desacoplado y su migración a Gemini se valida por separado.
 - Migración automática de la credencial legacy si existe.
 - La UI no vuelve a mostrar la clave almacenada.
 - La credencial puede desconectarse explícitamente.
@@ -337,6 +340,8 @@ La primera versión entregada al usuario será una **Release Candidate**, no una
 
 **Avance verificable hacia el RC de repositorio: 95%.**
 
+Estado actualizado: la identidad estable de firma ya fue configurada y validada; el RC1 firmado se generó correctamente. RC2 migra el Planner a Gemini y requiere nuevo artefacto firmado + QA físico.
+
 1. Mantener CI verde en el SHA candidato.
 2. Configurar la identidad estable de firma mediante GitHub Secrets.
 3. Ejecutar el workflow de RC firmado desde `nexo-agent-v3`.
@@ -373,12 +378,15 @@ Pendiente para producir el APK RC firmado:
 
 Después del artefacto, la validación física de MagicOS/HONOR es un gate separado y necesariamente requiere el dispositivo.
 
-### Bloqueo actual de release
+### Gate actual de release
 
-El repositorio está en **95% RC**. El siguiente gate es la identidad estable de firma Android. El conector de GitHub usado por NEXO no permite leer ni crear repository secrets, por lo que no se puede verificar desde aquí si los cuatro secretos de firma ya existen.
+La identidad estable de firma Android **ya está configurada y validada** mediante el workflow firmado. El RC1 firmado cerró ese gate.
 
-Antes de producir el APK firmado hay que confirmar una de estas dos rutas:
-- reutilizar un keystore release existente que deba conservar compatibilidad de actualización; o
-- crear una nueva identidad estable de firma NEXO y guardarla de forma segura.
+Gate vigente para RC2:
+- CI verde del Planner Gemini;
+- versionCode 18 / versionName 3.0-rc2;
+- generar y verificar APK firmado con la misma identidad;
+- instalar como actualización sobre RC1 para conservar datos/credencial;
+- ejecutar checklist físico HONOR/MagicOS y registrar PASÓ / FALLÓ / AJUSTAR.
 
-No se generará ni versionará una clave privada de firma sin cerrar esa decisión.
+No desinstalar RC1 antes de instalar RC2, salvo que una prueba específica de instalación limpia lo requiera posteriormente.
