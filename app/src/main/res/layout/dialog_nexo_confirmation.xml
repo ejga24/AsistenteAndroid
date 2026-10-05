@@ -38,11 +38,10 @@
         android:layout_marginBottom="18dp" />
 
     <TextView
-        style="@style/Nexo.Text.BodyMuted"
+        style="@style/Nexo.Text.Meta"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="NEXO solo continuará si autorizas esta acción."
-        android:textSize="12sp"
         android:layout_marginBottom="18dp" />
 
     <LinearLayout
