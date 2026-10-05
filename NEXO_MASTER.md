@@ -338,9 +338,9 @@ La primera versión entregada al usuario será una **Release Candidate**, no una
 **Avance verificable hacia el RC de repositorio: 95%.**
 
 1. Mantener CI verde en el SHA candidato.
-2. Cerrar revisión estática/final sin ampliar alcance.
-3. Configurar identidad estable de firma mediante GitHub Secrets.
-4. Generar APK firmado, verificar firma y SHA-256.
+2. Configurar la identidad estable de firma mediante GitHub Secrets.
+3. Ejecutar el workflow de RC firmado desde `nexo-agent-v3`.
+4. Verificar firma, identidad/versionado, SHA-256 y manifiesto de procedencia.
 5. Entregar únicamente ese RC para validación física en HONOR.
 6. Ejecutar QA MagicOS: permisos, foreground/background, wake real, orientación/font scaling, instalación/actualización y batería/térmica.
 
