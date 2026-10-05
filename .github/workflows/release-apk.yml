@@ -74,11 +74,18 @@ jobs:
           test -f "$APK"
           apksigner verify --verbose --print-certs "$APK"
 
+      - name: Generate APK checksum
+        run: |
+          cd app/build/outputs/apk/release
+          sha256sum app-release.apk > app-release.apk.sha256
+
       - name: Upload signed RC APK
         uses: actions/upload-artifact@v4
         with:
           name: NEXO-Agent-signed-rc
-          path: app/build/outputs/apk/release/app-release.apk
+          path: |
+            app/build/outputs/apk/release/app-release.apk
+            app/build/outputs/apk/release/app-release.apk.sha256
           if-no-files-found: error
 
       - name: Upload lint report
