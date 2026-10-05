@@ -927,6 +927,16 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         Thread {
             val result = planner.plan(raw)
             runOnUiThread {
+                if (isFinishing || isDestroyed) {
+                    NexoActionLog.add(
+                        this,
+                        "Plan IA interrumpido",
+                        "La interfaz se cerró antes de recibir la respuesta.",
+                        false
+                    )
+                    return@runOnUiThread
+                }
+
                 result.onSuccess {
                     NexoRuntimeState.clearIssue(this, "Agent Brain")
                     executeAgentPlan(it)
