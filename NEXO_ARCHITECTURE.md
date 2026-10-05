@@ -59,9 +59,9 @@ Este branch parte de la versión funcional existente v2.4 y evita destruir el hi
 - [x] Fallback al planificador IA cuando un comando no coincide con reglas directas.
 - [x] Motor de planes multiacción (hasta 6 acciones por orden).
 - [ ] Wake word local dedicado.
-- [ ] Visión.
+- [x] Visión con CameraX, análisis IA y limpieza temporal segura.
 - [ ] Automatizaciones externas.
-- [ ] Hardening de credenciales.
+- [x] Credenciales cifradas con Android Keystore; sin secretos en repositorio/logs.
 
 - [x] Skill Registry inicial para resolver apps conocidas y futuras habilidades.
 
@@ -138,4 +138,4 @@ La primera instalación en la HONOR será tratada como **release candidate**, no
 - [x] Política central de seguridad con clasificación SAFE / CONFIRM / BLOCK.
 - [x] Confirmación explícita para acciones de pantalla potencialmente sensibles.
 - [x] Contrato desacoplado de wake engine para sustituir el fallback de Android por hotword local sin rehacer NEXO.
-- [ ] Implementación final del hotword local 'NEXO' sobre el contrato de wake engine.
+- [ ] Hotword local dedicado como mejora posterior al RC1; RC1 usa Android Speech con gating exacto y fallback explícito.
