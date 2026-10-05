@@ -58,4 +58,14 @@ class NexoPlanValidatorTest {
         )
         assertFalse(NexoPlanValidator.validate(plan).valid)
     }
+    @Test
+    fun rejectsMoreThanSixActions() {
+        val plan = NexoAgentPlan(
+            actions = List(7) {
+                MiaAgentDecision(tool = "open_app", app = "Chrome")
+            }
+        )
+        assertFalse(NexoPlanValidator.validate(plan).valid)
+    }
 }
+
