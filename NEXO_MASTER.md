@@ -281,12 +281,12 @@ Actual:
 - La credencial puede desconectarse explícitamente.
 - Nunca versionada en GitHub.
 
-Antes de release final:
-- evaluar Android Keystore;
-- evitar mostrar claves completas;
-- permitir borrar/desconectar credenciales;
-- registrar estado, nunca el secreto;
-- no incluir secretos en logs.
+Estado de release:
+- Android Keystore ya protege credenciales y almacenamiento privado cifrado;
+- la UI no muestra claves completas;
+- la credencial puede borrarse/desconectarse;
+- se registra estado, nunca el secreto;
+- secretos y patrones de credenciales se excluyen o redactan de logs/diagnósticos.
 
 ---
 
@@ -328,6 +328,7 @@ La primera versión entregada al usuario será una **Release Candidate**, no una
 - `NEXO_SIGNING_SETUP.md` — configuración segura de la identidad estable de firma Android.
 - `NEXO_RC1_REPOSITORY_REVIEW.md` — revisión estática, seguridad, CI y release del candidato.
 - `NEXO_KNOWN_LIMITATIONS.md` — limitaciones aceptadas y bloqueos no aceptables del RC1.
+- `NEXO_MIGRATION_NOTES.md` — comportamiento de migración de datos locales y ruta de actualización.
 - Código fuente y GitHub Actions — implementación vigente.
 
 ---
