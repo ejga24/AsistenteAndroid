@@ -89,7 +89,7 @@
 
 ## 10. MagicOS / background
 - [ ] Foreground service notification visible and correct.
-- [ ] Background restrictions documented.
+- [x] Background restrictions documented in installation guide and RC1 known limitations.
 - [ ] Battery optimization behavior tested.
 - [ ] Autostart/restart behavior tested.
 - [ ] Recovery after reboot tested.
@@ -106,11 +106,11 @@
 - [x] Critical repository-side defects: 0 at reviewed baseline; physical-device defects still unknown until HONOR QA.
 - [x] High repository-side defects: 0 at reviewed baseline; physical-device defects still unknown until HONOR QA.
 - [x] Known limitations documented in `NEXO_KNOWN_LIMITATIONS.md`.
-- [ ] NEXO_MASTER.md updated.
+- [x] NEXO_MASTER.md updated with current RC state and measurable percentage.
 - [ ] Release candidate build SHA recorded.
 - [ ] APK artifact retained.
-- [ ] User installation instructions prepared.
+- [x] User installation instructions prepared in `NEXO_INSTALLATION_GUIDE.md`.
 
 ## RC approval
-**Status:** REPOSITORY RC 94% — SIGNED ARTIFACT NOT READY YET  
+**Status:** REPOSITORY RC 95% — SIGNED ARTIFACT NOT READY YET  
 **Reason:** repository review is closed with green CI and no known critical/high repository defects. Stable release signing, exact signed RC artifact/checksum and physical HONOR validation remain open.
