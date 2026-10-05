@@ -1,0 +1,28 @@
+# Android / Gradle
+.gradle/
+**/build/
+local.properties
+captures/
+.externalNativeBuild/
+.cxx/
+
+# IDE
+.idea/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# NEXO release signing — never commit private signing material
+*.jks
+*.keystore
+keystore.properties
+signing.properties
+nexo-release.*
+!NEXO_RELEASE_SIGNING.md
+
+# Runtime/local secrets
+.env
+.env.*
+!.env.example
