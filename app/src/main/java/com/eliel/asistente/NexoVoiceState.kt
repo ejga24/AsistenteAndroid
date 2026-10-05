@@ -11,6 +11,8 @@ object NexoVoiceState {
             .getBoolean(KEY_ENABLED, true)
 
     fun setEnabled(context: Context, enabled: Boolean) {
+        if (isEnabled(context) == enabled) return
+
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .edit()
             .putBoolean(KEY_ENABLED, enabled)
