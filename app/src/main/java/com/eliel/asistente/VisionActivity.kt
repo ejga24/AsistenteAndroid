@@ -142,7 +142,7 @@ class VisionActivity : AppCompatActivity() {
                 }
             }.onFailure {
                 stateText.text = "No pude iniciar la cámara."
-                NexoActionLog.add(this, "Vision", it.message ?: "Error de cámara", false)
+                NexoActionLog.add(this, "Vision", "Error al iniciar CameraX", false)
             }
         }, ContextCompat.getMainExecutor(this))
     }
@@ -242,7 +242,7 @@ class VisionActivity : AppCompatActivity() {
                     NexoActionLog.add(
                         this@VisionActivity,
                         "Vision",
-                        exception.message ?: "Error de captura",
+                        "Error de captura CameraX",
                         false
                     )
                 }
