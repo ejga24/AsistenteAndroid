@@ -46,6 +46,24 @@ jobs:
       - name: Verify Android project
         run: gradle :app:testDebugUnitTest :app:lintDebug :app:lintRelease :app:assembleDebug :app:assembleRelease --stacktrace
 
+      - name: Smoke-test signed release plumbing
+        env:
+          CI_STORE_PASS: nexo-ci-disposable-only
+          CI_KEY_PASS: nexo-ci-disposable-only
+          CI_KEY_ALIAS: nexo-ci
+        run: |
+          keytool -genkeypair             -keystore "$RUNNER_TEMP/nexo-ci.jks"             -storepass "$CI_STORE_PASS"             -keypass "$CI_KEY_PASS"             -alias "$CI_KEY_ALIAS"             -dname "CN=NEXO CI Disposable,O=NEXO CI,C=PA"             -keyalg RSA             -keysize 2048             -validity 1
+
+          gradle :app:assembleRelease --stacktrace             -PNEXO_KEYSTORE_FILE="$RUNNER_TEMP/nexo-ci.jks"             -PNEXO_KEYSTORE_PASSWORD="$CI_STORE_PASS"             -PNEXO_KEY_ALIAS="$CI_KEY_ALIAS"             -PNEXO_KEY_PASSWORD="$CI_KEY_PASS"
+
+          APK="app/build/outputs/apk/release/app-release.apk"
+          test -f "$APK"
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs "$APK"
+          BADGING="$("$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | head -n 1)"
+          echo "$BADGING" | grep -q "name='com.eliel.asistente'"
+          echo "$BADGING" | grep -q "versionCode='17'"
+          echo "$BADGING" | grep -q "versionName='3.0-rc1'"
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
