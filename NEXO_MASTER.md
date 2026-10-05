@@ -332,7 +332,7 @@ La primera versión entregada al usuario será una **Release Candidate**, no una
 
 ## 11. Próxima secuencia de trabajo
 
-**Avance verificable hacia el RC de repositorio: 94%.**
+**Avance verificable hacia el RC de repositorio: 95%.**
 
 1. Mantener CI verde en el SHA candidato.
 2. Cerrar revisión estática/final sin ampliar alcance.
@@ -359,7 +359,7 @@ No reconstruir el estado desde recuerdos sueltos si este documento está disponi
 
 ## 13. Estado de primera Release Candidate
 
-**RC de repositorio: 94%.**
+**RC de repositorio: 95%.**
 
 No se mantiene un estimado horario rodante. El porcentaje solo cambia cuando se cierra un gate verificable.
 
