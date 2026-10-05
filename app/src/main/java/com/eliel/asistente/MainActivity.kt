@@ -189,11 +189,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             safeStartWakeService()
         }
 
-        intent.getStringExtra(AssistantWakeService.EXTRA_VOICE_COMMAND)?.let { command ->
-            acknowledgeWakeCommand()
-            intent.removeExtra(AssistantWakeService.EXTRA_VOICE_COMMAND)
-            handler.postDelayed({ handleCommand(command) }, 500)
-        }
+        handleAuthorizedWakeIntent(intent, 500L)
 
         handler.postDelayed({
             if (!isFinishing && NexoOnboardingState.shouldPresent(this)) {
@@ -206,11 +202,34 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        intent.getStringExtra(AssistantWakeService.EXTRA_VOICE_COMMAND)?.let { command ->
-            acknowledgeWakeCommand()
-            intent.removeExtra(AssistantWakeService.EXTRA_VOICE_COMMAND)
-            handler.postDelayed({ handleCommand(command) }, 350)
+        handleAuthorizedWakeIntent(intent, 350L)
+    }
+
+    private fun handleAuthorizedWakeIntent(sourceIntent: Intent, delayMs: Long) {
+        val command = sourceIntent.getStringExtra(AssistantWakeService.EXTRA_VOICE_COMMAND)
+            ?: return
+        val token = sourceIntent.getStringExtra(AssistantWakeService.EXTRA_COMMAND_TOKEN)
+
+        sourceIntent.removeExtra(AssistantWakeService.EXTRA_VOICE_COMMAND)
+        sourceIntent.removeExtra(AssistantWakeService.EXTRA_COMMAND_TOKEN)
+
+        if (!NexoCommandAuth.consume(this, token)) {
+            NexoActionLog.add(
+                this,
+                "Comando externo bloqueado",
+                "Intent de comando sin autorización interna válida",
+                false
+            )
+            NexoRuntimeState.markIssue(
+                this,
+                "Security",
+                "Se bloqueó un intento de comando no autorizado"
+            )
+            return
         }
+
+        acknowledgeWakeCommand()
+        handler.postDelayed({ handleCommand(command) }, delayMs)
     }
 
     private fun acknowledgeWakeCommand() {
