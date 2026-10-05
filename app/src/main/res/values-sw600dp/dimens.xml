@@ -4,4 +4,10 @@
     <dimen name="nexo_page_padding_top">26dp</dimen>
     <dimen name="nexo_orb_size">144dp</dimen>
     <dimen name="nexo_touch_min">52dp</dimen>
+
+    <dimen name="nexo_text_hero">34sp</dimen>
+    <dimen name="nexo_text_h1">30sp</dimen>
+    <dimen name="nexo_text_body">16sp</dimen>
+    <dimen name="nexo_text_muted">15sp</dimen>
+    <dimen name="nexo_text_section">12sp</dimen>
 </resources>
