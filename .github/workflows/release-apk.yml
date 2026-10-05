@@ -2,6 +2,12 @@ name: Build NEXO Release Candidate
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - nexo-agent-v3
+    paths:
+      - 'app/**'
+      - '.github/workflows/release-apk.yml'
 
 permissions:
   contents: read
@@ -102,8 +108,8 @@ jobs:
           BADGING="$("$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | head -n 1)"
           echo "$BADGING"
           echo "$BADGING" | grep -q "name='com.eliel.asistente'"
-          echo "$BADGING" | grep -q "versionCode='17'"
-          echo "$BADGING" | grep -q "versionName='3.0-rc1'"
+          echo "$BADGING" | grep -q "versionCode='18'"
+          echo "$BADGING" | grep -q "versionName='3.0-rc2'"
           CERT_SHA256="$("$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --print-certs "$APK" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -n 1)"
           test -n "$CERT_SHA256" || {
             echo "Missing signing certificate SHA-256 digest"
