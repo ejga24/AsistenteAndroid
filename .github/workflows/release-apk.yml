@@ -67,6 +67,14 @@ jobs:
           printf '%s' "$KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/nexo-release.jks"
           chmod 600 "$RUNNER_TEMP/nexo-release.jks"
 
+      - name: Validate keystore identity
+        env:
+          STORE_PASS: ${{ secrets.NEXO_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.NEXO_KEY_ALIAS }}
+        run: |
+          test -s "$RUNNER_TEMP/nexo-release.jks"
+          keytool -list             -keystore "$RUNNER_TEMP/nexo-release.jks"             -storepass:env STORE_PASS             -alias "$KEY_ALIAS" > /dev/null
+
       - name: Test lint and build signed release
         env:
           STORE_PASS: ${{ secrets.NEXO_KEYSTORE_PASSWORD }}
@@ -83,17 +91,17 @@ jobs:
         run: |
           APK="app/build/outputs/apk/release/app-release.apk"
           test -f "$APK"
-          apksigner verify --verbose --print-certs "$APK"
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs "$APK"
 
       - name: Validate APK identity
         run: |
           APK="app/build/outputs/apk/release/app-release.apk"
-          BADGING="$(aapt dump badging "$APK" | head -n 1)"
+          BADGING="$("$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | head -n 1)"
           echo "$BADGING"
           echo "$BADGING" | grep -q "name='com.eliel.asistente'"
           echo "$BADGING" | grep -q "versionCode='17'"
           echo "$BADGING" | grep -q "versionName='3.0-rc1'"
-          CERT_SHA256="$(apksigner verify --print-certs "$APK" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -n 1)"
+          CERT_SHA256="$("$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --print-certs "$APK" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -n 1)"
           test -n "$CERT_SHA256" || {
             echo "Missing signing certificate SHA-256 digest"
             exit 1
@@ -108,7 +116,7 @@ jobs:
         run: |
           APK="app/build/outputs/apk/release/app-release.apk"
           OUT="app/build/outputs/apk/release/NEXO-RC-MANIFEST.txt"
-          PACKAGE_LINE="$(aapt dump badging "$APK" | head -n 1)"
+          PACKAGE_LINE="$("$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | head -n 1)"
           CERT_SHA256="$(apksigner verify --print-certs "$APK" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -n 1)"
           {
             echo "product=NEXO"
