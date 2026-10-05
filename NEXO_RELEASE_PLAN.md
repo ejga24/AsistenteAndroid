@@ -3,38 +3,42 @@
 > Source of truth: `NEXO_MASTER.md`.
 > Target: first APK worth installing on the HONOR Pad X9a.
 
-## Current estimate
-**Engineering completion for first device installation:** approximately 7–11 effective development hours.
+## Current status
+**Repository RC readiness: 91%.**
 
-**Calendar estimate at the current pace:** approximately 12–20 hours, assuming no blocking issue appears in Android/MagicOS physical-device behavior or release signing.
+This percentage measures the repository-side gate for the first serious RC, not physical HONOR validation. It only increases when a release gate is actually closed.
 
-The estimate is deliberately conservative around the final 20–25% because device-level reliability work is less predictable than feature implementation.
+Closed: architecture, main flows, safety policy, encrypted credentials/private history, Voice Core fallback, wake gating, multi-action validation, Vision, responsive resources, diagnostics, CI tests/lint/build, and release-signing workflow.
+
+Open before signed RC artifact:
+- final repository/static review and warning closure;
+- stable signing identity/secrets for the release workflow;
+- exact RC SHA + signed artifact/checksum.
+
+Physical HONOR validation remains a separate post-artifact gate: MagicOS background behavior, microphone/wake performance, permissions, orientation/font scaling, install/update compatibility, battery/thermal soak.
+
+No rolling hour estimate is used as a release promise.
 
 ## Critical path
 
 ### Phase A — code closure
-Estimated remaining: 2–3 effective hours
-- Finish safety categorization and confirmation behavior.
-- Finish Skills enforcement consistency.
-- Complete Modes base behavior needed for RC.
-- Finalize onboarding and degraded-state UX.
-- Clean remaining legacy naming / consistency issues.
+Status: **near complete**
+- Final static/security consistency review.
+- Close only defects that can affect RC behavior.
+- Keep documentation synchronized with implementation.
 
 ### Phase B — voice + wake
-Estimated remaining: 1–3 effective hours
-- Integrate local wake-engine candidate behind `NexoWakeEngine`.
-- Preserve Android Speech fallback.
-- Verify STT/TTS handoff logic.
-- Add failure fallback and diagnostics.
-- If candidate proves unreliable, RC may ship with the safer Android fallback while local hotword remains explicitly marked beta, only if the fallback passes the release gate.
+Status: **RC path complete in repository**
+- Android Speech is the explicit safe RC1 fallback.
+- Exact wake phrase gating is implemented and unit-tested, including Spanish opening punctuation.
+- Dedicated local hotword remains a post-RC enhancement unless a verified redistributable model is selected; it must not delay the safe RC path.
 
 ### Phase C — release hardening
-Estimated remaining: 3–5 effective hours
-- Build cleanly from latest SHA.
-- Static review of permissions/security/logging.
-- Landscape/portrait resource review.
-- Installation/update-path review.
-- Prepare RC artifact and installation checklist.
+Status: **in progress**
+- Latest branch CI must remain green.
+- Final warning/static review.
+- Stable release signing identity must be configured through GitHub Secrets.
+- Produce signed APK, verify signature, and publish SHA-256 checksum.
 
 ## Device QA after APK delivery
 Some release gates can only be completed on the physical HONOR Pad:
@@ -62,6 +66,4 @@ The APK is delivered only when:
 - MagicOS device behavior confidence before physical test: **medium-low**, by nature of OEM background restrictions.
 
 ## Target
-**First serious RC for installation: ~12–20 hours at the current development pace.**
-If local hotword integration behaves unusually well, this can compress toward the lower end.
-If the local engine/model creates licensing, pronunciation, battery, or native-library issues, keep the stable fallback and avoid delaying the entire RC indefinitely.
+The next milestone is not another experimental APK. It is a **signed NEXO 3.0-rc1 artifact** from an exact green commit, followed by physical HONOR validation.
