@@ -59,6 +59,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private var pendingAction: (() -> Unit)? = null
     private var pendingContactName: String? = null
     private var waitingForCommand = false
+    private var foregroundRecognitionErrorStreak = 0
     private var planCancelled = false
     private var planActive = false
     private var activityResumed = false
@@ -243,6 +244,8 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             recognizer.setRecognitionListener(object : RecognitionListener {
                 override fun onReadyForSpeech(params: Bundle?) {
                     isListening = true
+                    foregroundRecognitionErrorStreak = 0
+                    NexoRuntimeState.clearIssue(this@MainActivity, "Voice Core")
                     statusText.text = "Te escucho…"
                     setOrbListening()
                 }
@@ -263,18 +266,59 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                     isListening = false
                     if (!assistantActive || isFinishing || isDestroyed) return
 
-                    when (error) {
-                        SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> {
-                            assistantActive = false
-                            statusText.text = "Necesito permiso de micrófono para escucharte."
-                        }
-                        SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> scheduleListening(600)
-                        else -> scheduleListening(300)
+                    foregroundRecognitionErrorStreak =
+                        (foregroundRecognitionErrorStreak + 1).coerceAtMost(6)
+
+                    if (error == SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS) {
+                        assistantActive = false
+                        NexoVoiceState.setEnabled(this@MainActivity, false)
+                        updateVoiceControl()
+                        NexoRuntimeState.markIssue(
+                            this@MainActivity,
+                            "Voice Core",
+                            "El permiso de micrófono dejó de estar disponible"
+                        )
+                        statusText.text = "Necesito permiso de micrófono para escucharte."
+                        setOrbError()
+                        return
                     }
+
+                    val delay = when (error) {
+                        SpeechRecognizer.ERROR_NO_MATCH,
+                        SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> 300L
+
+                        SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> 900L
+
+                        SpeechRecognizer.ERROR_NETWORK,
+                        SpeechRecognizer.ERROR_NETWORK_TIMEOUT,
+                        SpeechRecognizer.ERROR_SERVER,
+                        SpeechRecognizer.ERROR_SERVER_DISCONNECTED ->
+                            (1200L * foregroundRecognitionErrorStreak).coerceAtMost(7200L)
+
+                        else ->
+                            (500L * foregroundRecognitionErrorStreak).coerceAtMost(3000L)
+                    }
+
+                    if (foregroundRecognitionErrorStreak >= 4 &&
+                        error !in setOf(
+                            SpeechRecognizer.ERROR_NO_MATCH,
+                            SpeechRecognizer.ERROR_SPEECH_TIMEOUT
+                        )
+                    ) {
+                        NexoRuntimeState.markIssue(
+                            this@MainActivity,
+                            "Voice Core",
+                            "Reconocimiento de voz inestable · reintento automático"
+                        )
+                        refreshSystemOverview()
+                    }
+
+                    scheduleListening(delay)
                 }
 
                 override fun onResults(results: Bundle?) {
                     isListening = false
+                    foregroundRecognitionErrorStreak = 0
                     val spoken = results
                         ?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                         ?.firstOrNull()
