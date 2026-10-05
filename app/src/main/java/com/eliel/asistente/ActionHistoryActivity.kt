@@ -12,8 +12,16 @@ class ActionHistoryActivity : AppCompatActivity() {
         val text = findViewById<TextView>(R.id.historyText)
         fun refresh() { text.text = NexoActionLog.formatted(this) }
         findViewById<Button>(R.id.clearHistoryButton).setOnClickListener {
-            NexoActionLog.clear(this)
-            refresh()
+            NexoConfirmationDialog.show(
+                context = this,
+                actionLabel = "Borrar historial local de NEXO",
+                reason = "Esta acción elimina el registro visible de actividad guardado en la tablet.",
+                onApproved = {
+                    NexoActionLog.clear(this)
+                    refresh()
+                },
+                onRejected = {}
+            )
         }
         refresh()
     }
