@@ -6,5 +6,9 @@ The active project source of truth is [NEXO_MASTER.md](./NEXO_MASTER.md). Consul
 Supporting documents:
 - [NEXO_ARCHITECTURE.md](./NEXO_ARCHITECTURE.md)
 - [NEXO_DESIGN_SYSTEM.md](./NEXO_DESIGN_SYSTEM.md)
+- [NEXO_QA_CHECKLIST.md](./NEXO_QA_CHECKLIST.md)
+- [NEXO_RELEASE_PLAN.md](./NEXO_RELEASE_PLAN.md)
+- [NEXO_RELEASE_SIGNING.md](./NEXO_RELEASE_SIGNING.md)
+- [NEXO_INSTALLATION_GUIDE.md](./NEXO_INSTALLATION_GUIDE.md)
 
-Development branch: `nexo-agent-v3`.
+Current candidate: `3.0-rc1` on branch `nexo-agent-v3`.
