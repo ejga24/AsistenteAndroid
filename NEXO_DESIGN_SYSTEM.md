@@ -46,7 +46,12 @@ Motion must communicate state, not decorate for decoration's sake.
 ## Responsive targets
 Primary target: HONOR tablet.
 - Must work in portrait and landscape.
-- Main interactive targets should remain comfortably tappable.
+- Main dashboard has a dedicated landscape composition.
+- Shared page padding, orb size, touch targets and typography use resource tokens.
+- `values-sw600dp` provides tablet-specific spacing/typography scaling.
+- Primary touch targets use at least 48dp and 52dp on tablet resources.
+- Dynamic state text uses accessibility live regions where useful.
+- Decorative orb visuals are excluded from accessibility focus.
 - Do not rely on phone-only narrow layouts.
 - Avoid text overlap when Android font scaling is increased.
 
