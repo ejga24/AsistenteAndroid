@@ -79,6 +79,19 @@ jobs:
           cd app/build/outputs/apk/release
           sha256sum app-release.apk > app-release.apk.sha256
 
+      - name: Generate release manifest
+        run: |
+          OUT="app/build/outputs/apk/release/NEXO-RC-MANIFEST.txt"
+          {
+            echo "product=NEXO"
+            echo "version=3.0-rc1"
+            echo "versionCode=17"
+            echo "commit=${GITHUB_SHA}"
+            echo "workflowRun=${GITHUB_RUN_ID}"
+            echo "builtAtUtc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            cat app/build/outputs/apk/release/app-release.apk.sha256
+          } > "$OUT"
+
       - name: Upload signed RC APK
         uses: actions/upload-artifact@v4
         with:
@@ -86,6 +99,7 @@ jobs:
           path: |
             app/build/outputs/apk/release/app-release.apk
             app/build/outputs/apk/release/app-release.apk.sha256
+            app/build/outputs/apk/release/NEXO-RC-MANIFEST.txt
           if-no-files-found: error
 
       - name: Upload lint report
