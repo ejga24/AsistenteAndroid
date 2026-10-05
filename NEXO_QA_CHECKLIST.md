@@ -82,7 +82,7 @@
 - [ ] Increased Android font scale reviewed.
 - [ ] No clipping/overlap.
 - [ ] All primary screens use NEXO Design System.
-- [ ] No visible legacy “Mía” branding.
+- [x] No visible legacy “Mía” branding in app resources.
 - [ ] Loading/success/error/permission states are visually consistent.
 - [ ] Now Running accurately reflects real execution.
 - [ ] Orb state matches functional state.
