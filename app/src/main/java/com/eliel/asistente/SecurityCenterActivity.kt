@@ -69,6 +69,8 @@ class SecurityCenterActivity : AppCompatActivity() {
             append("• Vision y la automatización sensible de pantalla requieren que la tablet esté desbloqueada.\n")
             append("• Los permisos se solicitan solo cuando una capacidad los necesita.\n")
             append("• Vision envía únicamente la captura solicitada al motor configurado para analizarla.\n")
+            append("• Las solicitudes de Intelligence y Vision usan almacenamiento remoto desactivado cuando la API lo permite.\n")
+            append("• Las pantallas de credenciales, Vision e historial están protegidas contra capturas del sistema.\n")
             append("• La captura temporal de Vision se elimina después del análisis o de un error.")
         }
     }
