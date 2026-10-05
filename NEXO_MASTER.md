@@ -371,3 +371,13 @@ Pendiente para producir el APK RC firmado:
 - verificar firma, checksum SHA-256 y manifiesto de procedencia del artefacto.
 
 Después del artefacto, la validación física de MagicOS/HONOR es un gate separado y necesariamente requiere el dispositivo.
+
+### Bloqueo actual de release
+
+El repositorio está en **95% RC**. El siguiente gate es la identidad estable de firma Android. El conector de GitHub usado por NEXO no permite leer ni crear repository secrets, por lo que no se puede verificar desde aquí si los cuatro secretos de firma ya existen.
+
+Antes de producir el APK firmado hay que confirmar una de estas dos rutas:
+- reutilizar un keystore release existente que deba conservar compatibilidad de actualización; o
+- crear una nueva identidad estable de firma NEXO y guardarla de forma segura.
+
+No se generará ni versionará una clave privada de firma sin cerrar esa decisión.
