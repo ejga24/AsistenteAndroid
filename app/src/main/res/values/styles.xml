@@ -34,6 +34,23 @@
         <item name="android:textColor">@color/nexo_accent</item>
     </style>
 
+    <style name="Nexo.Text.Meta" parent="">
+        <item name="android:textColor">@color/nexo_text_muted</item>
+        <item name="android:textSize">@dimen/nexo_text_meta</item>
+    </style>
+
+    <style name="Nexo.Text.PlanTitle" parent="">
+        <item name="android:textColor">@color/nexo_text</item>
+        <item name="android:textSize">@dimen/nexo_text_plan_title</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="Nexo.Text.Status" parent="">
+        <item name="android:textColor">@color/nexo_text</item>
+        <item name="android:textSize">@dimen/nexo_text_status</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
     <style name="Nexo.Button" parent="Widget.Material3.Button">
         <item name="android:minHeight">@dimen/nexo_touch_min</item>
         <item name="cornerRadius">16dp</item>
