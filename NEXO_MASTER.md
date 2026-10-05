@@ -325,6 +325,7 @@ La primera versión entregada al usuario será una **Release Candidate**, no una
 - `NEXO_QA_CHECKLIST.md` — gate formal para Release Candidate.
 - `NEXO_RELEASE_PLAN.md` — estimado, ruta crítica y criterio de entrega del primer APK.
 - `NEXO_INSTALLATION_GUIDE.md` — instalación y QA físico en HONOR Pad.
+- `NEXO_SIGNING_SETUP.md` — configuración segura de la identidad estable de firma Android.
 - `NEXO_RC1_REPOSITORY_REVIEW.md` — revisión estática, seguridad, CI y release del candidato.
 - Código fuente y GitHub Actions — implementación vigente.
 
