@@ -23,19 +23,19 @@ object NexoReleaseGate {
         val health = NexoSystemHealth.snapshot(context)
         val missingRequired = health.checks.filter { it.required && !it.ready }
 
-        if (debugBuild) {
-            return NexoReleaseReadiness(
-                state = NexoRcState.DEBUG_BUILD,
-                headline = "Build de validación",
-                detail = "Las funciones pueden probarse, pero el APK final RC debe usar firma estable de release."
-            )
-        }
-
         if (missingRequired.isNotEmpty()) {
             return NexoReleaseReadiness(
                 state = NexoRcState.NEEDS_SETUP,
                 headline = "Configuración pendiente",
                 detail = missingRequired.joinToString(" · ") { it.label }
+            )
+        }
+
+        if (debugBuild) {
+            return NexoReleaseReadiness(
+                state = NexoRcState.DEBUG_BUILD,
+                headline = "Build de validación",
+                detail = "La configuración está lista. El APK final RC debe usar firma estable de release."
             )
         }
 
