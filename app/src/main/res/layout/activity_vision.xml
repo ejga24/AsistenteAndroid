@@ -5,7 +5,7 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="@color/nexo_bg"
-    android:padding="24dp">
+    android:padding="@dimen/nexo_page_padding">
 
     <TextView
         style="@style/Nexo.Text.H1"
@@ -41,6 +41,7 @@
 
     <TextView
         android:id="@+id/visionStateText"
+        android:accessibilityLiveRegion="polite"
         style="@style/Nexo.Text.Body"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -73,6 +74,7 @@
 
             <TextView
                 android:id="@+id/visionResultText"
+                android:accessibilityLiveRegion="polite"
                 style="@style/Nexo.Text.Body"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
