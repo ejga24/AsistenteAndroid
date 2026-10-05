@@ -54,13 +54,19 @@ object NexoCommandAuth {
 
         val age = System.currentTimeMillis() - stored.second
         val fresh = stored.second > 0L && age in 0..MAX_AGE_MS
-        val matches = fresh && MessageDigest.isEqual(
+        if (!fresh) {
+            clear(context)
+            return false
+        }
+
+        val matches = MessageDigest.isEqual(
             stored.first.toByteArray(Charsets.UTF_8),
             presentedToken.toByteArray(Charsets.UTF_8)
         )
-
-        // One-time token: consume regardless of match to avoid repeated guessing.
-        clear(context)
+        if (matches) {
+            // One-time token: only the authorized handoff consumes it.
+            clear(context)
+        }
         return matches
     }
 
