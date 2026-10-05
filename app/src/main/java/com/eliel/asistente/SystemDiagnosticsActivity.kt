@@ -74,8 +74,15 @@ class SystemDiagnosticsActivity : AppCompatActivity() {
             append("\nMotor: ").append(wake.displayName)
             append("\nModo: ").append(if (wake.local) "Local" else "Compatibilidad")
 
+            append("\n\nRELEASE CANDIDATE\n")
+            append(rc.headline)
+            append("\n").append(rc.detail)
+
             append("\n\nNEXO\n")
-            append("3.0 alpha · ").append(NexoSkillRegistry.knownSkills().size).append(" skills base")
+            append(versionName.ifBlank { "3.0-rc1" })
+            append(" · ").append(enabledSkills.size)
+            append("/").append(NexoSkillPolicy.definitions.size)
+            append(" skills activas")
         }
     }
 
