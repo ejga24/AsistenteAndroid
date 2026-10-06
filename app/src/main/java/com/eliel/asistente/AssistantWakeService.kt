@@ -242,7 +242,9 @@ class AssistantWakeService : Service() {
 
                 override fun onBeginningOfSpeech() = Unit
                 override fun onRmsChanged(rmsdB: Float) {
-                    if (waitingForCommand || rmsdB > 1.5f) {
+                    // Before the wake word NEXO stays visually silent. Once activated,
+                    // RMS changes keep the listening square alive while the user speaks.
+                    if (waitingForCommand) {
                         MiaAccessibilityService.showNexoVoiceOverlay("listening")
                     }
                 }
@@ -329,6 +331,9 @@ class AssistantWakeService : Service() {
                         cancelRecognition()
                         handler.postDelayed({ launchPendingCommand() }, 80)
                     } else if (NexoWakePhrase.extract(normalizedPartial).found) {
+                        playWakeTone()
+                        duckMediaForCommand()
+                        waitingForCommand = true
                         MiaAccessibilityService.showNexoVoiceOverlay("listening")
                     }
                 }
