@@ -1542,12 +1542,22 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
         val playIntent = Intent(MediaStore.INTENT_ACTION_MEDIA_PLAY_FROM_SEARCH).apply {
             setPackage(packageName)
-            putExtra(SearchManager.QUERY, query)
+            putExtra(SearchManager.QUERY, playableQuery)
             putExtra(MediaStore.EXTRA_MEDIA_FOCUS, "vnd.android.cursor.item/*")
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
 
         val canPlayDirectly = playIntent.resolveActivity(packageManager) != null
+        // Spotify may accept MEDIA_PLAY_FROM_SEARCH but only open its search UI.
+        // Queue a verified UI fallback before launching so NEXO can continue to Play.
+        if (packageName == "com.spotify.music" && isAccessibilityServiceEnabled()) {
+            MiaAccessibilityService.queueGenericAction(
+                this,
+                "spotify_play_query",
+                playableQuery,
+                packageName
+            )
+        }
         if (canPlayDirectly) {
             respondAndThen("Reproduciendo $playableQuery en $displayName") {
                 startActivity(playIntent)
@@ -1565,15 +1575,6 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                 Intent.ACTION_VIEW,
                 Uri.parse("https://www.youtube.com/results?search_query=${Uri.encode(playableQuery)}")
             ).apply { setPackage(packageName) }
-        }
-
-        if (packageName == "com.spotify.music" && isAccessibilityServiceEnabled()) {
-            MiaAccessibilityService.queueGenericAction(
-                this,
-                "spotify_play_query",
-                playableQuery,
-                packageName
-            )
         }
 
         respondAndThen(
