@@ -514,16 +514,39 @@ class MiaAccessibilityService : AccessibilityService() {
             "back" -> performGlobalAction(GLOBAL_ACTION_BACK)
             "home" -> performGlobalAction(GLOBAL_ACTION_HOME)
             "spotify_play_query" -> {
-                val selected = clickFirstMatching(value)
-                if (selected) {
-                    handler.postDelayed({
-                        clickFirstMatching(
-                            "Reproducir", "Play", "Reproducción aleatoria",
-                            "Reproduccion aleatoria", "Shuffle", "Shuffle play"
-                        )
-                    }, 900)
+                // Spotify can land on Search, artist results, or the artist page depending
+                // on app version/account. Walk forward until a real Play control is pressed.
+                val alreadyPlayable = clickFirstMatching(
+                    "Reproducir", "Play", "Reproducción aleatoria",
+                    "Reproduccion aleatoria", "Shuffle", "Shuffle play"
+                ) || clickNodeByDescription(
+                    rootInActiveWindow,
+                    listOf("Reproducir", "Play", "Reproducción aleatoria",
+                        "Reproduccion aleatoria", "Shuffle", "Shuffle play")
+                )
+                if (alreadyPlayable) {
+                    true
+                } else {
+                    val selected = clickFirstMatching(value)
+                    if (selected) {
+                        handler.postDelayed({
+                            val played = clickFirstMatching(
+                                "Reproducir", "Play", "Reproducción aleatoria",
+                                "Reproduccion aleatoria", "Shuffle", "Shuffle play"
+                            ) || clickNodeByDescription(
+                                rootInActiveWindow,
+                                listOf("Reproducir", "Play", "Reproducción aleatoria",
+                                    "Reproduccion aleatoria", "Shuffle", "Shuffle play")
+                            )
+                            if (!played) {
+                                // Some Spotify layouts expose the first song title but not
+                                // a labelled Play button; activate the first clickable result.
+                                clickFirstVisibleResult(value)
+                            }
+                        }, 1200)
+                    }
+                    selected
                 }
-                selected
             }
             else -> false
         }
@@ -562,6 +585,17 @@ class MiaAccessibilityService : AccessibilityService() {
             if (found != null) return found
         }
         return null
+    }
+
+    private fun clickFirstVisibleResult(label: String): Boolean {
+        val root = rootInActiveWindow ?: return false
+        val matches = root.findAccessibilityNodeInfosByText(label)
+        for (node in matches) {
+            if (!node.isVisibleToUser) continue
+            val clickable = findClickableParent(node)
+            if (clickable?.performAction(AccessibilityNodeInfo.ACTION_CLICK) == true) return true
+        }
+        return false
     }
 
     private fun clickFirstMatching(vararg labels: String): Boolean {
