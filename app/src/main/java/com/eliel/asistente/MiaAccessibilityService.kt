@@ -487,6 +487,18 @@ class MiaAccessibilityService : AccessibilityService() {
             }
             "back" -> performGlobalAction(GLOBAL_ACTION_BACK)
             "home" -> performGlobalAction(GLOBAL_ACTION_HOME)
+            "spotify_play_query" -> {
+                val selected = clickFirstMatching(value)
+                if (selected) {
+                    handler.postDelayed({
+                        clickFirstMatching(
+                            "Reproducir", "Play", "Reproducción aleatoria",
+                            "Reproduccion aleatoria", "Shuffle", "Shuffle play"
+                        )
+                    }, 900)
+                }
+                selected
+            }
             else -> false
         }
 
