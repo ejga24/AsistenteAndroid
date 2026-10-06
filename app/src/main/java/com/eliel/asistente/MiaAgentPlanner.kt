@@ -25,7 +25,7 @@ class MiaAgentPlanner(private val context: Context) {
         const val PREFS = "mia_ai"
         const val KEY_API_KEY = "openai_api_key"
         const val KEY_MODEL = "openai_model"
-        const val DEFAULT_MODEL = "gemini-2.5-flash"
+        const val DEFAULT_MODEL = "gemini-2.5-flash-lite"
         private const val LEGACY_MODEL = "gpt-6-luna"
         private const val MAX_ACTIONS = 6
 
@@ -59,7 +59,8 @@ class MiaAgentPlanner(private val context: Context) {
             return Result.failure(IllegalStateException("NEXO_AI_NOT_CONFIGURED"))
         }
 
-        val model = resolveConfiguredModel(context)
+        val configuredModel = resolveConfiguredModel(context)
+        val models = linkedSetOf(configuredModel, DEFAULT_MODEL, "gemini-2.5-flash")
 
         return runCatching {
             val actionSchema = JSONObject().apply {
@@ -149,64 +150,73 @@ class MiaAgentPlanner(private val context: Context) {
                 })
             }
 
-            val connection = (URL("https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent").openConnection() as HttpURLConnection).apply {
-                requestMethod = "POST"
-                connectTimeout = 15000
-                readTimeout = 30000
-                doOutput = true
-                setRequestProperty("x-goog-api-key", apiKey)
-                setRequestProperty("Content-Type", "application/json")
-                setRequestProperty("Cache-Control", "no-store")
-                setRequestProperty("Pragma", "no-cache")
-            }
-
-            try {
-                connection.outputStream.use {
-                    it.write(body.toString().toByteArray(Charsets.UTF_8))
+            var lastError: Throwable? = null
+            for (model in models) {
+                val normalizedModel = model.removePrefix("models/").trim()
+                val connection = (URL("https://generativelanguage.googleapis.com/v1beta/models/$normalizedModel:generateContent").openConnection() as HttpURLConnection).apply {
+                    requestMethod = "POST"
+                    connectTimeout = 15000
+                    readTimeout = 30000
+                    doOutput = true
+                    setRequestProperty("x-goog-api-key", apiKey)
+                    setRequestProperty("Content-Type", "application/json")
+                    setRequestProperty("Cache-Control", "no-store")
+                    setRequestProperty("Pragma", "no-cache")
                 }
 
-                val code = connection.responseCode
-                val stream = if (code in 200..299) {
-                    connection.inputStream
-                } else {
-                    connection.errorStream
-                }
-
-                val responseText = stream?.bufferedReader()?.use { it.readText() }.orEmpty()
-
-                if (code !in 200..299) {
-                    throw IllegalStateException("Gemini HTTP $code")
-                }
-                if (responseText.isBlank()) {
-                    throw IllegalStateException("Gemini devolvió una respuesta vacía.")
-                }
-
-                val responseJson = JSONObject(responseText)
-                val structuredText = extractOutputText(responseJson)
-                val planJson = JSONObject(structuredText)
-                val actionArray = planJson.getJSONArray("actions")
-                val actions = buildList {
-                    for (i in 0 until minOf(actionArray.length(), MAX_ACTIONS)) {
-                        val action = actionArray.getJSONObject(i)
-                        add(
-                            MiaAgentDecision(
-                                tool = action.getString("tool"),
-                                app = action.optString("app"),
-                                text = action.optString("text"),
-                                target = action.optString("target"),
-                                newChat = action.optBoolean("new_chat", false)
-                            )
-                        )
+                try {
+                    connection.outputStream.use {
+                        it.write(body.toString().toByteArray(Charsets.UTF_8))
                     }
-                }
 
-                NexoAgentPlan(
-                    actions = actions,
-                    speech = planJson.optString("speech")
-                )
-            } finally {
-                connection.disconnect()
+                    val code = connection.responseCode
+                    val stream = if (code in 200..299) connection.inputStream else connection.errorStream
+                    val responseText = stream?.bufferedReader()?.use { it.readText() }.orEmpty()
+
+                    if (code !in 200..299) {
+                        val detail = runCatching {
+                            JSONObject(responseText).optJSONObject("error")?.optString("message")
+                        }.getOrNull().orEmpty().take(240)
+                        val error = IllegalStateException(
+                            "Gemini HTTP $code" + if (detail.isNotBlank()) ": $detail" else ""
+                        )
+                        lastError = error
+                        if (code == 404 || code == 400) continue
+                        throw error
+                    }
+                    if (responseText.isBlank()) {
+                        lastError = IllegalStateException("Gemini devolvió una respuesta vacía.")
+                        continue
+                    }
+
+                    val responseJson = JSONObject(responseText)
+                    val structuredText = extractOutputText(responseJson)
+                    val planJson = JSONObject(structuredText)
+                    val actionArray = planJson.getJSONArray("actions")
+                    val actions = buildList {
+                        for (i in 0 until minOf(actionArray.length(), MAX_ACTIONS)) {
+                            val action = actionArray.getJSONObject(i)
+                            add(
+                                MiaAgentDecision(
+                                    tool = action.getString("tool"),
+                                    app = action.optString("app"),
+                                    text = action.optString("text"),
+                                    target = action.optString("target"),
+                                    newChat = action.optBoolean("new_chat", false)
+                                )
+                            )
+                        }
+                    }
+
+                    return@runCatching NexoAgentPlan(
+                        actions = actions,
+                        speech = planJson.optString("speech")
+                    )
+                } finally {
+                    connection.disconnect()
+                }
             }
+            throw lastError ?: IllegalStateException("Gemini no pudo generar un plan.")
         }
     }
 
