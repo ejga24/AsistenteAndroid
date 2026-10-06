@@ -6,6 +6,8 @@ import android.content.Context
 import android.graphics.Color
 import android.graphics.PixelFormat
 import android.graphics.drawable.GradientDrawable
+import android.animation.ValueAnimator
+import android.view.animation.AccelerateDecelerateInterpolator
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -274,6 +276,7 @@ class MiaAccessibilityService : AccessibilityService() {
     private var busy = false
     private var voiceOverlay: View? = null
     private val overlayHandler = Handler(Looper.getMainLooper())
+    private var voicePulse: ValueAnimator? = null
 
     override fun onServiceConnected() {
         super.onServiceConnected()
@@ -288,48 +291,50 @@ class MiaAccessibilityService : AccessibilityService() {
     private fun renderVoiceOverlay(state: String) {
         overlayHandler.removeCallbacksAndMessages(null)
         val windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
+
+        // The passive wake detector stays invisible. The visual square only appears
+        // after the wake word has actually been detected.
+        if (state == "ready") {
+            voicePulse?.cancel()
+            voicePulse = null
+            hideVoiceOverlay(0)
+            return
+        }
+
         val label = (voiceOverlay as? TextView) ?: TextView(this).apply {
             gravity = Gravity.CENTER
-            textSize = 12f
+            textSize = 11f
             setTextColor(Color.WHITE)
-            setPadding(18, 12, 18, 12)
-            elevation = 10f
-            val backgroundShape = GradientDrawable().apply {
-                shape = GradientDrawable.RECTANGLE
-                cornerRadius = 18f
-                setColor(Color.argb(232, 24, 27, 34))
-                setStroke(2, Color.argb(210, 90, 170, 255))
-            }
-            background = backgroundShape
+            setPadding(12, 10, 12, 10)
+            elevation = 14f
+            minWidth = 112
+            minHeight = 82
         }
 
         label.text = when (state) {
-            "ready" -> "●  NEXO · Atento"
-            "listening" -> "◉  NEXO · Te escucho…"
-            "processing" -> "◌  NEXO · Procesando…"
-            "executing" -> "◆  NEXO · Ejecutando…"
-            "success" -> "✓  NEXO · Listo"
-            else -> "●  NEXO"
+            "listening" -> "◉\nNEXO\nTE ESCUCHO"
+            "processing" -> "◌\nNEXO\nPROCESANDO"
+            "executing" -> "◆\nNEXO\nEJECUTANDO"
+            "success" -> "✓\nNEXO\nLISTO"
+            else -> "NEXO"
         }
+
+        fun paint(strokeAlpha: Int, strokeWidth: Int = 3) {
+            label.background = GradientDrawable().apply {
+                shape = GradientDrawable.RECTANGLE
+                cornerRadius = 14f
+                setColor(Color.argb(238, 17, 20, 27))
+                setStroke(strokeWidth, Color.argb(strokeAlpha, 86, 184, 255))
+            }
+        }
+
+        voicePulse?.cancel()
+        voicePulse = null
         label.animate().cancel()
-        when (state) {
-            "listening" -> {
-                label.scaleX = 1.0f
-                label.scaleY = 1.0f
-                label.alpha = 1f
-                label.animate().scaleX(1.08f).scaleY(1.08f).setDuration(180).start()
-            }
-            "processing" -> {
-                label.scaleX = 1.03f
-                label.scaleY = 1.03f
-                label.alpha = 0.96f
-            }
-            else -> {
-                label.scaleX = 1f
-                label.scaleY = 1f
-                label.alpha = 0.90f
-            }
-        }
+        label.scaleX = 1f
+        label.scaleY = 1f
+        label.alpha = 1f
+        paint(if (state == "listening") 255 else 205)
 
         if (voiceOverlay == null) {
             val params = WindowManager.LayoutParams(
@@ -348,9 +353,30 @@ class MiaAccessibilityService : AccessibilityService() {
             runCatching { windowManager.addView(label, params) }
                 .onSuccess { voiceOverlay = label }
         }
+
+        if (state == "listening") {
+            voicePulse = ValueAnimator.ofFloat(0f, 1f).apply {
+                duration = 620L
+                repeatCount = ValueAnimator.INFINITE
+                repeatMode = ValueAnimator.REVERSE
+                interpolator = AccelerateDecelerateInterpolator()
+                addUpdateListener { animation ->
+                    val phase = animation.animatedValue as Float
+                    label.scaleX = 1f + (0.07f * phase)
+                    label.scaleY = 1f + (0.07f * phase)
+                    label.alpha = 0.78f + (0.22f * phase)
+                    paint((145 + (110 * phase)).toInt(), if (phase > 0.55f) 5 else 3)
+                }
+                start()
+            }
+        } else if (state == "success") {
+            overlayHandler.postDelayed({ hideVoiceOverlay(0) }, 950L)
+        }
     }
 
     private fun hideVoiceOverlay(delayMs: Long) {
+        voicePulse?.cancel()
+        voicePulse = null
         overlayHandler.removeCallbacksAndMessages(null)
         overlayHandler.postDelayed({
             val view = voiceOverlay ?: return@postDelayed
