@@ -65,7 +65,6 @@ class MiaAgentPlanner(private val context: Context) {
         return runCatching {
             val actionSchema = JSONObject().apply {
                 put("type", "object")
-                put("additionalProperties", false)
                 put("properties", JSONObject().apply {
                     put("tool", JSONObject().apply {
                         put("type", "string")
@@ -86,7 +85,6 @@ class MiaAgentPlanner(private val context: Context) {
 
             val planSchema = JSONObject().apply {
                 put("type", "object")
-                put("additionalProperties", false)
                 put("properties", JSONObject().apply {
                     put("actions", JSONObject().apply {
                         put("type", "array")
