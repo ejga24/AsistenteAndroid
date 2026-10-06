@@ -3,9 +3,16 @@ package com.eliel.asistente
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.AccessibilityServiceInfo
 import android.content.Context
+import android.graphics.Color
+import android.graphics.PixelFormat
+import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.view.Gravity
+import android.view.View
+import android.view.WindowManager
+import android.widget.TextView
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import org.json.JSONArray
@@ -28,6 +35,15 @@ class MiaAccessibilityService : AccessibilityService() {
         private const val GENERIC_TTL_MS = 45_000L
         private const val CHATGPT_TTL_MS = 90_000L
         private val queueLock = Any()
+        @Volatile private var activeInstance: MiaAccessibilityService? = null
+
+        fun showNexoVoiceOverlay(state: String) {
+            activeInstance?.renderVoiceOverlay(state)
+        }
+
+        fun hideNexoVoiceOverlay(delayMs: Long = 700L) {
+            activeInstance?.hideVoiceOverlay(delayMs)
+        }
 
         private const val TYPE_CHATGPT = "chatgpt"
         private const val TYPE_GENERIC = "generic"
@@ -256,14 +272,81 @@ class MiaAccessibilityService : AccessibilityService() {
 
     private val handler = Handler(Looper.getMainLooper())
     private var busy = false
+    private var voiceOverlay: View? = null
+    private val overlayHandler = Handler(Looper.getMainLooper())
 
     override fun onServiceConnected() {
         super.onServiceConnected()
+        activeInstance = this
         serviceInfo = serviceInfo.apply {
             flags = flags or
                 AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS or
                 AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS
         }
+    }
+
+    private fun renderVoiceOverlay(state: String) {
+        overlayHandler.removeCallbacksAndMessages(null)
+        val windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
+        val label = (voiceOverlay as? TextView) ?: TextView(this).apply {
+            gravity = Gravity.CENTER
+            textSize = 12f
+            setTextColor(Color.WHITE)
+            setPadding(18, 12, 18, 12)
+            elevation = 10f
+            val backgroundShape = GradientDrawable().apply {
+                shape = GradientDrawable.RECTANGLE
+                cornerRadius = 18f
+                setColor(Color.argb(232, 24, 27, 34))
+                setStroke(2, Color.argb(210, 90, 170, 255))
+            }
+            background = backgroundShape
+        }
+
+        label.text = when (state) {
+            "listening" -> "NEXO · Escuchando"
+            "processing" -> "NEXO · Procesando"
+            "executing" -> "NEXO · Ejecutando"
+            "success" -> "NEXO · Listo"
+            else -> "NEXO"
+        }
+
+        if (voiceOverlay == null) {
+            val params = WindowManager.LayoutParams(
+                WindowManager.LayoutParams.WRAP_CONTENT,
+                WindowManager.LayoutParams.WRAP_CONTENT,
+                WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                    WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or
+                    WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+                PixelFormat.TRANSLUCENT
+            ).apply {
+                gravity = Gravity.TOP or Gravity.END
+                x = 28
+                y = 72
+            }
+            runCatching { windowManager.addView(label, params) }
+                .onSuccess { voiceOverlay = label }
+        }
+    }
+
+    private fun hideVoiceOverlay(delayMs: Long) {
+        overlayHandler.removeCallbacksAndMessages(null)
+        overlayHandler.postDelayed({
+            val view = voiceOverlay ?: return@postDelayed
+            val windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
+            runCatching { windowManager.removeView(view) }
+            voiceOverlay = null
+        }, delayMs)
+    }
+
+    override fun onInterrupt() = Unit
+
+    override fun onDestroy() {
+        if (activeInstance === this) activeInstance = null
+        hideVoiceOverlay(0)
+        overlayHandler.removeCallbacksAndMessages(null)
+        super.onDestroy()
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
