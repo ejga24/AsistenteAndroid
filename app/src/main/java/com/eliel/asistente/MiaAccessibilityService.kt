@@ -578,5 +578,4 @@ class MiaAccessibilityService : AccessibilityService() {
         return node
     }
 
-    override fun onInterrupt() = Unit
 }
