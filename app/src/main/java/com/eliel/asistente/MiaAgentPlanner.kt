@@ -39,6 +39,7 @@ class MiaAgentPlanner(private val context: Context) {
                 saved.isBlank() -> DEFAULT_MODEL
                 saved.equals(LEGACY_MODEL, ignoreCase = true) -> DEFAULT_MODEL
                 saved.startsWith("gpt-", ignoreCase = true) -> DEFAULT_MODEL
+                saved.startsWith("gemini-2.5-", ignoreCase = true) -> DEFAULT_MODEL
                 else -> saved
             }
 
