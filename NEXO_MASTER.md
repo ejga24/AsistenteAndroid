@@ -4,10 +4,10 @@
 > Antes de continuar desarrollo, cambios de arquitectura, diseño, seguridad o releases, consultar este documento primero.
 > Los documentos especializados (`NEXO_ARCHITECTURE.md`, `NEXO_DESIGN_SYSTEM.md`) amplían esta información, pero este archivo conserva el estado vigente, decisiones, reglas, pendientes y criterio de release.
 
-**Última actualización:** 05-10-2026 · Panamá
+**Última actualización:** 06-10-2026 · Panamá
 **Repositorio:** `ejga24/AsistenteAndroid`  
 **Rama de desarrollo:** `nexo-agent-v3`  
-**Versión en desarrollo:** `3.0-rc2` · Release Candidate en cierre técnico  
+**Versión en desarrollo:** `3.0-rc3` · Release Candidate firmado; QA físico pendiente  
 **Dispositivo objetivo principal:** HONOR Pad X9a · MagicOS 10 · Android 16 · Snapdragon 685
 
 ---
@@ -69,7 +69,7 @@ Estado:
 Responsable de interpretar solicitudes y decidir acciones.
 
 Estado:
-- Planificador IA integrado con **Gemini** para RC2.
+- Planificador IA integrado con **Gemini**; RC3 añade fallback de modelo y diagnóstico de errores de API.
 - Los comandos directos/skills locales no dependen de Gemini; la IA se usa para planificación avanzada/fallback.
 - Fallback a IA cuando una orden no coincide con comandos directos.
 - Planes de hasta **6 acciones**.
@@ -340,7 +340,7 @@ La primera versión entregada al usuario será una **Release Candidate**, no una
 
 **Avance verificable hacia el RC de repositorio: 95%.**
 
-Estado actualizado: la identidad estable de firma ya fue configurada y validada; el RC1 firmado se generó correctamente. RC2 migra el Planner a Gemini y requiere nuevo artefacto firmado + QA físico.
+Estado actualizado: la identidad estable de firma ya fue configurada y validada; el RC1 firmado se generó correctamente. RC3 incorpora robustez Gemini, overlay de estado de voz, mejora de detección y protección de reproducción multimedia; artefacto firmado generado, QA físico pendiente.
 
 1. Mantener CI verde en el SHA candidato.
 2. Configurar la identidad estable de firma mediante GitHub Secrets.
@@ -382,11 +382,20 @@ Después del artefacto, la validación física de MagicOS/HONOR es un gate separ
 
 La identidad estable de firma Android **ya está configurada y validada** mediante el workflow firmado. El RC1 firmado cerró ese gate.
 
-Gate vigente para RC2:
+Gate vigente para RC3:
 - CI verde del Planner Gemini;
-- versionCode 18 / versionName 3.0-rc2;
+- versionCode 19 / versionName 3.0-rc3;
 - generar y verificar APK firmado con la misma identidad;
 - instalar como actualización sobre RC1 para conservar datos/credencial;
 - ejecutar checklist físico HONOR/MagicOS y registrar PASÓ / FALLÓ / AJUSTAR.
 
 No desinstalar RC1 antes de instalar RC2, salvo que una prueba específica de instalación limpia lo requiera posteriormente.
+
+
+## 14. RC3 — 06-10-2026
+- Gemini: modelo por defecto gemini-2.5-flash-lite, normalización de nombre, fallback a gemini-2.5-flash y errores HTTP con detalle seguro.
+- Voice UX: overlay cuadrado/compacto mediante AccessibilityService para estados escuchando/procesando/ejecutando/listo.
+- Comandos de voz autorizados intentan mantener visible la app que el usuario estaba usando en lugar de dejar NEXO al frente.
+- Wake fallback: ajustes de endpointer, más resultados y feedback temprano con resultados parciales.
+- Media coexistence: el fallback SpeechRecognizer no inicia captura continua mientras Android reporta reproducción musical activa, evitando interferencia observada con Spotify. Esto limita temporalmente el wake por voz durante reproducción hasta sustituir el fallback por hotword local dedicado.
+- Release: versionCode 19, versionName 3.0-rc3. Workflow firmado #12 (run 37461966363) completado correctamente; firma, identidad, checksum y artefacto validados.
