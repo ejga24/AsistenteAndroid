@@ -15,6 +15,7 @@ import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
 import android.widget.TextView
+import android.widget.LinearLayout
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import org.json.JSONArray
@@ -275,6 +276,8 @@ class MiaAccessibilityService : AccessibilityService() {
     private val handler = Handler(Looper.getMainLooper())
     private var busy = false
     private var voiceOverlay: View? = null
+    private var voiceFace: TextView? = null
+    private var voiceStatus: TextView? = null
     private val overlayHandler = Handler(Looper.getMainLooper())
     private var voicePulse: ValueAnimator? = null
 
@@ -291,9 +294,6 @@ class MiaAccessibilityService : AccessibilityService() {
     private fun renderVoiceOverlay(state: String) {
         overlayHandler.removeCallbacksAndMessages(null)
         val windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
-
-        // The passive wake detector stays invisible. The visual square only appears
-        // after the wake word has actually been detected.
         if (state == "ready") {
             voicePulse?.cancel()
             voicePulse = null
@@ -301,26 +301,47 @@ class MiaAccessibilityService : AccessibilityService() {
             return
         }
 
-        val label = (voiceOverlay as? TextView) ?: TextView(this).apply {
+        val panel = voiceOverlay ?: LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
-            textSize = 11f
-            setTextColor(Color.WHITE)
-            setPadding(12, 10, 12, 10)
+            setPadding(12, 9, 12, 9)
             elevation = 14f
-            minWidth = 112
-            minHeight = 82
+            minimumWidth = 116
+            minimumHeight = 96
+
+            voiceFace = TextView(this@MiaAccessibilityService).apply {
+                gravity = Gravity.CENTER
+                textSize = 19f
+                setTextColor(Color.WHITE)
+                text = "●  ●\n  ▿"
+            }
+            voiceStatus = TextView(this@MiaAccessibilityService).apply {
+                gravity = Gravity.CENTER
+                textSize = 10f
+                setTextColor(Color.WHITE)
+            }
+            addView(voiceFace)
+            addView(voiceStatus)
         }
 
-        label.text = when (state) {
-            "listening" -> "◉\nNEXO\nTE ESCUCHO"
-            "processing" -> "◌\nNEXO\nPROCESANDO"
-            "executing" -> "◆\nNEXO\nEJECUTANDO"
-            "success" -> "✓\nNEXO\nLISTO"
+        val face = voiceFace ?: return
+        val status = voiceStatus ?: return
+        status.text = when (state) {
+            "listening" -> "NEXO\nTE ESCUCHO"
+            "processing" -> "NEXO\nPROCESANDO"
+            "executing" -> "NEXO\nEJECUTANDO"
+            "success" -> "NEXO\nLISTO"
             else -> "NEXO"
+        }
+        face.text = when (state) {
+            "processing" -> "◉  ◉\n  —"
+            "executing" -> "◆  ◆\n  ▿"
+            "success" -> "◠  ◠\n  ∪"
+            else -> "●  ●\n  ▿"
         }
 
         fun paint(strokeAlpha: Int, strokeWidth: Int = 3) {
-            label.background = GradientDrawable().apply {
+            panel.background = GradientDrawable().apply {
                 shape = GradientDrawable.RECTANGLE
                 cornerRadius = 14f
                 setColor(Color.argb(238, 17, 20, 27))
@@ -330,10 +351,11 @@ class MiaAccessibilityService : AccessibilityService() {
 
         voicePulse?.cancel()
         voicePulse = null
-        label.animate().cancel()
-        label.scaleX = 1f
-        label.scaleY = 1f
-        label.alpha = 1f
+        panel.animate().cancel()
+        panel.scaleX = 1f
+        panel.scaleY = 1f
+        panel.alpha = 1f
+        face.translationX = 0f
         paint(if (state == "listening") 255 else 205)
 
         if (voiceOverlay == null) {
@@ -350,8 +372,8 @@ class MiaAccessibilityService : AccessibilityService() {
                 x = 28
                 y = 72
             }
-            runCatching { windowManager.addView(label, params) }
-                .onSuccess { voiceOverlay = label }
+            runCatching { windowManager.addView(panel, params) }
+                .onSuccess { voiceOverlay = panel }
         }
 
         if (state == "listening") {
@@ -362,9 +384,12 @@ class MiaAccessibilityService : AccessibilityService() {
                 interpolator = AccelerateDecelerateInterpolator()
                 addUpdateListener { animation ->
                     val phase = animation.animatedValue as Float
-                    label.scaleX = 1f + (0.07f * phase)
-                    label.scaleY = 1f + (0.07f * phase)
-                    label.alpha = 0.78f + (0.22f * phase)
+                    panel.scaleX = 1f + (0.07f * phase)
+                    panel.scaleY = 1f + (0.07f * phase)
+                    panel.alpha = 0.80f + (0.20f * phase)
+                    // Eyes glance left/right while the existing square breathes.
+                    face.translationX = -5f + (10f * phase)
+                    face.text = if (phase > 0.52f) "  ● ●\n   ▿" else "● ●  \n ▿"
                     paint((145 + (110 * phase)).toInt(), if (phase > 0.55f) 5 else 3)
                 }
                 start()
@@ -383,6 +408,8 @@ class MiaAccessibilityService : AccessibilityService() {
             val windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
             runCatching { windowManager.removeView(view) }
             voiceOverlay = null
+            voiceFace = null
+            voiceStatus = null
         }, delayMs)
     }
 
