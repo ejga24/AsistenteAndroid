@@ -7,7 +7,7 @@
 **Última actualización:** 06-10-2026 · Panamá
 **Repositorio:** `ejga24/AsistenteAndroid`  
 **Rama de desarrollo:** `nexo-agent-v3`  
-**Versión en desarrollo:** `3.0-rc3` · Release Candidate firmado; QA físico pendiente  
+**Versión en desarrollo:** `3.0-rc6` · mejoras de voz en segundo plano, overlay dinámico y reproducción Spotify; QA físico pendiente  
 **Dispositivo objetivo principal:** HONOR Pad X9a · MagicOS 10 · Android 16 · Snapdragon 685
 
 ---
@@ -69,7 +69,7 @@ Estado:
 Responsable de interpretar solicitudes y decidir acciones.
 
 Estado:
-- Planificador IA integrado con **Gemini**; RC3 añade fallback de modelo y diagnóstico de errores de API.
+- Planificador IA integrado con **Gemini**; integración endurecida con diagnóstico de API, esquema compatible y modelos actuales.
 - Los comandos directos/skills locales no dependen de Gemini; la IA se usa para planificación avanzada/fallback.
 - Fallback a IA cuando una orden no coincide con comandos directos.
 - Planes de hasta **6 acciones**.
@@ -399,3 +399,13 @@ No desinstalar RC1 antes de instalar RC2, salvo que una prueba específica de in
 - Wake fallback: ajustes de endpointer, más resultados y feedback temprano con resultados parciales.
 - Media coexistence: el fallback SpeechRecognizer no inicia captura continua mientras Android reporta reproducción musical activa, evitando interferencia observada con Spotify. Esto limita temporalmente el wake por voz durante reproducción hasta sustituir el fallback por hotword local dedicado.
 - Release: versionCode 19, versionName 3.0-rc3. Workflow firmado #12 (run 37461966363) completado correctamente; firma, identidad, checksum y artefacto validados.
+
+
+## RC6 — 06-10-2026 · voz/media
+- Corregido bloqueo de escucha en segundo plano cuando había música activa: el wake recognizer ya no se suspende por `isMusicActive`.
+- Al detectar “NEXO” con música activa, baja temporalmente el volumen multimedia para escuchar la orden y luego lo restaura.
+- Overlay de voz ahora refleja estado real: Atento → Te escucho → Procesando → Ejecutando/Listo, con respuesta visual dinámica.
+- Al volver el recognizer de segundo plano a estado listo, el overlay deja de quedarse en “Procesando”.
+- Spotify: se limpia “música/canciones de <artista>”, se intenta reproducción nativa y, si Spotify solo abre búsqueda, Accessibility continúa hacia el artista y botón Reproducir/Play.
+- Release: versionCode 22 / versionName 3.0-rc6.
+- QA físico requerido: wake con Spotify reproduciendo, restauración de volumen, comandos en segundo plano, overlay y autoplay de Spotify.
