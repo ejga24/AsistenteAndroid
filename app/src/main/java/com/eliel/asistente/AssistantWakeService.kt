@@ -235,6 +235,9 @@ class AssistantWakeService : Service() {
                     isListening = true
                     recognitionErrorStreak = 0
                     NexoRuntimeState.clearIssue(this@AssistantWakeService, "Voice Core")
+                    if (!waitingForCommand) {
+                        MiaAccessibilityService.showNexoVoiceOverlay("ready")
+                    }
                 }
 
                 override fun onBeginningOfSpeech() = Unit
