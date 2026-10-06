@@ -229,6 +229,10 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         }
 
         acknowledgeWakeCommand()
+        MiaAccessibilityService.showNexoVoiceOverlay("processing")
+        // Keep the app the user was using visible. NEXO can process the authorized
+        // voice command without forcing its dashboard in front of that app.
+        moveTaskToBack(true)
         handler.postDelayed({ handleCommand(command) }, delayMs)
     }
 
@@ -1804,6 +1808,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     }
 
     private fun setOrbListening() {
+        MiaAccessibilityService.showNexoVoiceOverlay("listening")
         if (!::orbView.isInitialized) return
         (orbView.tag as? ObjectAnimator)?.cancel()
         orbView.animate().cancel()
@@ -1827,6 +1832,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     }
 
     private fun setOrbProcessing() {
+        MiaAccessibilityService.showNexoVoiceOverlay("processing")
         if (!::orbView.isInitialized) return
         (orbView.tag as? ObjectAnimator)?.cancel()
         orbView.background = makeOrbDrawable(115, R.color.nexo_warning)
@@ -1844,6 +1850,8 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     }
 
     private fun setOrbSuccess() {
+        MiaAccessibilityService.showNexoVoiceOverlay("success")
+        MiaAccessibilityService.hideNexoVoiceOverlay(900)
         if (!::orbView.isInitialized) return
         (orbView.tag as? ObjectAnimator)?.cancel()
         orbView.animate().cancel()
@@ -1852,6 +1860,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     }
 
     private fun setOrbError() {
+        MiaAccessibilityService.hideNexoVoiceOverlay(900)
         if (!::orbView.isInitialized) return
         (orbView.tag as? ObjectAnimator)?.cancel()
         orbView.animate().cancel()
