@@ -331,6 +331,8 @@ class AssistantWakeService : Service() {
                         cancelRecognition()
                         handler.postDelayed({ launchPendingCommand() }, 80)
                     } else if (NexoWakePhrase.extract(normalizedPartial).found) {
+                        MiaAccessibilityService.showNexoVoiceOverlay("listening")
+                    } else if (NexoWakePhrase.extract(normalizedPartial).found) {
                         playWakeTone()
                         duckMediaForCommand()
                         waitingForCommand = true
