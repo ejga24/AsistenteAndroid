@@ -25,7 +25,7 @@ class MiaAgentPlanner(private val context: Context) {
         const val PREFS = "mia_ai"
         const val KEY_API_KEY = "openai_api_key"
         const val KEY_MODEL = "openai_model"
-        const val DEFAULT_MODEL = "gemini-2.5-flash-lite"
+        const val DEFAULT_MODEL = "gemini-3.5-flash-lite"
         private const val LEGACY_MODEL = "gpt-6-luna"
         private const val MAX_ACTIONS = 6
 
@@ -60,7 +60,7 @@ class MiaAgentPlanner(private val context: Context) {
         }
 
         val configuredModel = resolveConfiguredModel(context)
-        val models = linkedSetOf(configuredModel, DEFAULT_MODEL, "gemini-2.5-flash")
+        val models = linkedSetOf(configuredModel, DEFAULT_MODEL, "gemini-3.8-flash", "gemini-3.5-flash")
 
         return runCatching {
             val actionSchema = JSONObject().apply {
