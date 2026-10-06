@@ -52,6 +52,7 @@ class AssistantWakeService : Service() {
     private var fallbackCommand: String? = null
     private var fallbackCommandToken: String? = null
     private var recognitionErrorStreak = 0
+    private var duckedMusicVolume: Int? = null
     private val wakeWord = NexoWakeConfig.WAKE_WORD
 
     override fun onCreate() {
@@ -357,6 +358,7 @@ class AssistantWakeService : Service() {
         }
 
         playWakeTone()
+        duckMediaForCommand()
         MiaAccessibilityService.showNexoVoiceOverlay("listening")
 
         if (wake.command.isBlank()) {
@@ -395,6 +397,7 @@ class AssistantWakeService : Service() {
             return
         }
         MiaAccessibilityService.showNexoVoiceOverlay("processing")
+        restoreMediaVolume()
         pendingCommand = null
         fallbackCommand = null
         fallbackCommandToken = null
@@ -442,6 +445,24 @@ class AssistantWakeService : Service() {
         }
     }
 
+
+    private fun duckMediaForCommand() {
+        val audio = getSystemService(AUDIO_SERVICE) as AudioManager
+        if (!audio.isMusicActive || duckedMusicVolume != null) return
+        val current = audio.getStreamVolume(AudioManager.STREAM_MUSIC)
+        duckedMusicVolume = current
+        val max = audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC).coerceAtLeast(1)
+        val ducked = minOf(current, (max * 0.22f).toInt().coerceAtLeast(1))
+        audio.setStreamVolume(AudioManager.STREAM_MUSIC, ducked, 0)
+    }
+
+    private fun restoreMediaVolume() {
+        val previous = duckedMusicVolume ?: return
+        duckedMusicVolume = null
+        val audio = getSystemService(AUDIO_SERVICE) as AudioManager
+        runCatching { audio.setStreamVolume(AudioManager.STREAM_MUSIC, previous, 0) }
+    }
+
     private fun playWakeTone() {
         try {
             ToneGenerator(AudioManager.STREAM_NOTIFICATION, 80).apply {
@@ -460,14 +481,8 @@ class AssistantWakeService : Service() {
 
     private fun startListening() {
         if (!shouldListen || isListening) return
-        val audio = getSystemService(AUDIO_SERVICE) as AudioManager
-        if (audio.isMusicActive) {
-            // Android SpeechRecognizer is not designed for continuous recognition and can
-            // interfere with active media on some OEM builds. Protect playback and retry
-            // when the media session is no longer actively playing.
-            scheduleListening(1800)
-            return
-        }
+        // Keep the wake recognizer active even while media is playing. Once NEXO is
+        // detected we duck STREAM_MUSIC so the follow-up command can be heard clearly.
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
             return
         }
@@ -502,6 +517,7 @@ class AssistantWakeService : Service() {
         commandWindowHandler.removeCallbacksAndMessages(null)
         ackHandler.removeCallbacksAndMessages(null)
         speechRecognizer?.destroy()
+        restoreMediaVolume()
         MiaAccessibilityService.hideNexoVoiceOverlay(0)
         super.onDestroy()
     }
