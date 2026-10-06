@@ -1205,7 +1205,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
                 val direct = Intent(MediaStore.INTENT_ACTION_MEDIA_PLAY_FROM_SEARCH).apply {
                     setPackage(packageName)
-                    putExtra(SearchManager.QUERY, query)
+                    putExtra(SearchManager.QUERY, playableQuery)
                     putExtra(MediaStore.EXTRA_MEDIA_FOCUS, "vnd.android.cursor.item/*")
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
@@ -1528,6 +1528,13 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
     private fun playMediaSearch(packageName: String, displayName: String, query: String) {
         if (!requireSkill("media")) return
+        val playableQuery = if (packageName == "com.spotify.music") {
+            query.trim()
+                .replace(Regex("^(musica|música)\\s+de\\s+", RegexOption.IGNORE_CASE), "")
+                .replace(Regex("^canciones\\s+de\\s+", RegexOption.IGNORE_CASE), "")
+                .trim()
+                .ifBlank { query.trim() }
+        } else query.trim()
         if (packageManager.getLaunchIntentForPackage(packageName) == null) {
             respond("$displayName no está instalado.")
             return
@@ -1542,7 +1549,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
         val canPlayDirectly = playIntent.resolveActivity(packageManager) != null
         if (canPlayDirectly) {
-            respondAndThen("Reproduciendo $query en $displayName") {
+            respondAndThen("Reproduciendo $playableQuery en $displayName") {
                 startActivity(playIntent)
             }
             return
@@ -1551,16 +1558,28 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         val fallbackIntent = when (packageName) {
             "com.spotify.music" -> Intent(
                 Intent.ACTION_VIEW,
-                Uri.parse("spotify:search:${Uri.encode(query)}")
+                Uri.parse("spotify:search:${Uri.encode(playableQuery)}")
             ).apply { setPackage(packageName) }
 
             else -> Intent(
                 Intent.ACTION_VIEW,
-                Uri.parse("https://www.youtube.com/results?search_query=${Uri.encode(query)}")
+                Uri.parse("https://www.youtube.com/results?search_query=${Uri.encode(playableQuery)}")
             ).apply { setPackage(packageName) }
         }
 
-        respondAndThen("Buscando $query en $displayName") {
+        if (packageName == "com.spotify.music" && isAccessibilityServiceEnabled()) {
+            MiaAccessibilityService.queueGenericAction(
+                this,
+                "spotify_play_query",
+                playableQuery,
+                packageName
+            )
+        }
+
+        respondAndThen(
+            if (packageName == "com.spotify.music") "Buscando y reproduciendo $playableQuery en Spotify"
+            else "Buscando $playableQuery en $displayName"
+        ) {
             startActivity(fallbackIntent)
         }
     }
