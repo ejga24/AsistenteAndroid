@@ -220,7 +220,10 @@ class AssistantWakeService : Service() {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
             putExtra(RecognizerIntent.EXTRA_LANGUAGE, "es-PA")
             putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
-            putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
+            putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 5)
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 650L)
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 500L)
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 350L)
         }
 
         speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this).also { recognizer ->
@@ -232,7 +235,11 @@ class AssistantWakeService : Service() {
                 }
 
                 override fun onBeginningOfSpeech() = Unit
-                override fun onRmsChanged(rmsdB: Float) = Unit
+                override fun onRmsChanged(rmsdB: Float) {
+                    if (waitingForCommand || rmsdB > 1.5f) {
+                        MiaAccessibilityService.showNexoVoiceOverlay("listening")
+                    }
+                }
                 override fun onBufferReceived(buffer: ByteArray?) = Unit
                 override fun onEndOfSpeech() = Unit
 
@@ -299,7 +306,26 @@ class AssistantWakeService : Service() {
                     }
                 }
 
-                override fun onPartialResults(partialResults: Bundle?) = Unit
+                override fun onPartialResults(partialResults: Bundle?) {
+                    if (!shouldListen || pendingCommand != null) return
+                    val partial = partialResults
+                        ?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                        ?.firstOrNull()
+                        ?.trim()
+                        .orEmpty()
+                    if (partial.isBlank()) return
+                    val normalizedPartial = normalize(partial)
+                    if (waitingForCommand && normalizedPartial.length >= 2) {
+                        waitingForCommand = false
+                        commandWindowHandler.removeCallbacksAndMessages(null)
+                        pendingCommand = normalizedPartial
+                        MiaAccessibilityService.showNexoVoiceOverlay("processing")
+                        cancelRecognition()
+                        handler.postDelayed({ launchPendingCommand() }, 80)
+                    } else if (NexoWakePhrase.extract(normalizedPartial).found) {
+                        MiaAccessibilityService.showNexoVoiceOverlay("listening")
+                    }
+                }
                 override fun onEvent(eventType: Int, params: Bundle?) = Unit
             })
         }
@@ -331,6 +357,7 @@ class AssistantWakeService : Service() {
         }
 
         playWakeTone()
+        MiaAccessibilityService.showNexoVoiceOverlay("listening")
 
         if (wake.command.isBlank()) {
             waitingForCommand = true
@@ -367,6 +394,7 @@ class AssistantWakeService : Service() {
             scheduleListening(700)
             return
         }
+        MiaAccessibilityService.showNexoVoiceOverlay("processing")
         pendingCommand = null
         fallbackCommand = null
         fallbackCommandToken = null
@@ -432,6 +460,14 @@ class AssistantWakeService : Service() {
 
     private fun startListening() {
         if (!shouldListen || isListening) return
+        val audio = getSystemService(AUDIO_SERVICE) as AudioManager
+        if (audio.isMusicActive) {
+            // Android SpeechRecognizer is not designed for continuous recognition and can
+            // interfere with active media on some OEM builds. Protect playback and retry
+            // when the media session is no longer actively playing.
+            scheduleListening(1800)
+            return
+        }
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
             return
         }
@@ -466,6 +502,7 @@ class AssistantWakeService : Service() {
         commandWindowHandler.removeCallbacksAndMessages(null)
         ackHandler.removeCallbacksAndMessages(null)
         speechRecognizer?.destroy()
+        MiaAccessibilityService.hideNexoVoiceOverlay(0)
         super.onDestroy()
     }
 
