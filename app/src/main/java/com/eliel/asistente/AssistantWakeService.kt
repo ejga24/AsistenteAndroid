@@ -102,6 +102,7 @@ class AssistantWakeService : Service() {
                 refreshNotification()
             }
             ACTION_STOP_VOICE -> {
+                restoreMediaVolume()
                 fallbackCommand = null
                 fallbackCommandToken = null
                 NexoCommandAuth.clear(this)
@@ -113,6 +114,7 @@ class AssistantWakeService : Service() {
                 return START_NOT_STICKY
             }
             ACTION_PAUSE_LISTENING -> {
+                restoreMediaVolume()
                 shouldListen = false
                 cancelRecognition()
             }
@@ -371,6 +373,8 @@ class AssistantWakeService : Service() {
                 if (waitingForCommand) {
                     waitingForCommand = false
                     pendingCommand = null
+                    restoreMediaVolume()
+                    MiaAccessibilityService.showNexoVoiceOverlay("ready")
                     scheduleListening(250)
                 }
             }, 6500)
