@@ -1205,7 +1205,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
                 val direct = Intent(MediaStore.INTENT_ACTION_MEDIA_PLAY_FROM_SEARCH).apply {
                     setPackage(packageName)
-                    putExtra(SearchManager.QUERY, playableQuery)
+                    putExtra(SearchManager.QUERY, query)
                     putExtra(MediaStore.EXTRA_MEDIA_FOCUS, "vnd.android.cursor.item/*")
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
