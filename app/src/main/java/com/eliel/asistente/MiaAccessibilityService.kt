@@ -304,11 +304,31 @@ class MiaAccessibilityService : AccessibilityService() {
         }
 
         label.text = when (state) {
-            "listening" -> "NEXO · Escuchando"
-            "processing" -> "NEXO · Procesando"
-            "executing" -> "NEXO · Ejecutando"
-            "success" -> "NEXO · Listo"
-            else -> "NEXO"
+            "ready" -> "●  NEXO · Atento"
+            "listening" -> "◉  NEXO · Te escucho…"
+            "processing" -> "◌  NEXO · Procesando…"
+            "executing" -> "◆  NEXO · Ejecutando…"
+            "success" -> "✓  NEXO · Listo"
+            else -> "●  NEXO"
+        }
+        label.animate().cancel()
+        when (state) {
+            "listening" -> {
+                label.scaleX = 1.0f
+                label.scaleY = 1.0f
+                label.alpha = 1f
+                label.animate().scaleX(1.08f).scaleY(1.08f).setDuration(180).start()
+            }
+            "processing" -> {
+                label.scaleX = 1.03f
+                label.scaleY = 1.03f
+                label.alpha = 0.96f
+            }
+            else -> {
+                label.scaleX = 1f
+                label.scaleY = 1f
+                label.alpha = 0.90f
+            }
         }
 
         if (voiceOverlay == null) {
