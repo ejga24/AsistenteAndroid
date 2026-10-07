@@ -269,13 +269,21 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                     isListening = true
                     foregroundRecognitionErrorStreak = 0
                     NexoRuntimeState.clearIssue(this@MainActivity, "Voice Core")
-                    statusText.text = "Te escucho…"
-                    setOrbListening()
+                    if (waitingForCommand) {
+                        statusText.text = "Te escucho…"
+                        setOrbListening()
+                    } else {
+                        statusText.text = "Di “NEXO” para activarme."
+                        setOrbIdle()
+                        MiaAccessibilityService.hideNexoVoiceOverlay(0)
+                    }
                 }
 
                 override fun onBeginningOfSpeech() {
-                    statusText.text = "Escuchando…"
-                    setOrbListening()
+                    if (waitingForCommand) {
+                        statusText.text = "Escuchando…"
+                        setOrbListening()
+                    }
                 }
 
                 override fun onRmsChanged(rmsdB: Float) = Unit
@@ -1780,9 +1788,16 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                 statusText.text = "Te escucho…"
                 scheduleListening(80)
             } else {
-                statusText.text = "Te escucho…"
-                setOrbListening()
-                scheduleListening(180)
+                statusText.text = "Listo."
+                setOrbSuccess()
+                // Keep NEXO present through the final spoken syllable, then close the
+                // visual cycle and return to silent wake-word monitoring.
+                handler.postDelayed({
+                    MiaAccessibilityService.hideNexoVoiceOverlay(0)
+                    statusText.text = "Di “NEXO” para activarme."
+                    setOrbIdle()
+                    scheduleListening(180)
+                }, 950)
             }
         }
     }
