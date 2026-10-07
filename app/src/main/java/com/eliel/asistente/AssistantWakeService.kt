@@ -15,6 +15,8 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import android.os.PowerManager
+import android.speech.tts.TextToSpeech
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
@@ -22,7 +24,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import java.util.Locale
 
-class AssistantWakeService : Service() {
+class AssistantWakeService : Service(), TextToSpeech.OnInitListener {
 
     companion object {
         const val ACTION_START = "com.eliel.asistente.START"
@@ -53,6 +55,8 @@ class AssistantWakeService : Service() {
     private var fallbackCommandToken: String? = null
     private var recognitionErrorStreak = 0
     private var duckedMusicVolume: Int? = null
+    private var wakeTts: TextToSpeech? = null
+    private var wakeTtsReady = false
     private val wakeWord = NexoWakeConfig.WAKE_WORD
 
     override fun onCreate() {
@@ -86,6 +90,7 @@ class AssistantWakeService : Service() {
             return
         }
 
+        wakeTts = TextToSpeech(this, this)
         setupRecognizer()
     }
 
@@ -344,6 +349,41 @@ class AssistantWakeService : Service() {
         }
     }
 
+    override fun onInit(status: Int) {
+        wakeTtsReady = status == TextToSpeech.SUCCESS
+        if (wakeTtsReady) {
+            wakeTts?.language = Locale("es", "PA")
+        }
+    }
+
+    private fun wakeScreenForNexo() {
+        val power = getSystemService(POWER_SERVICE) as PowerManager
+        if (power.isInteractive) return
+        @Suppress("DEPRECATION")
+        val wakeLock = power.newWakeLock(
+            PowerManager.SCREEN_BRIGHT_WAKE_LOCK or
+                PowerManager.ACQUIRE_CAUSES_WAKEUP or
+                PowerManager.ON_AFTER_RELEASE,
+            "NEXO:WakeScreen"
+        )
+        runCatching {
+            wakeLock.acquire(3500L)
+            handler.postDelayed({ if (wakeLock.isHeld) wakeLock.release() }, 1200L)
+        }
+    }
+
+    private fun sayDimeAndListen() {
+        if (!wakeTtsReady) {
+            scheduleListening(120)
+            return
+        }
+        wakeTts?.speak("Dime", TextToSpeech.QUEUE_FLUSH, null, "nexo_dime")
+        // Give the short greeting time to finish so SpeechRecognizer does not hear NEXO itself.
+        handler.postDelayed({
+            if (waitingForCommand && shouldListen) scheduleListening(120)
+        }, 650L)
+    }
+
     private fun processSpeech(raw: String) {
         val normalized = normalize(raw)
 
@@ -370,13 +410,14 @@ class AssistantWakeService : Service() {
         }
 
         playWakeTone()
+        wakeScreenForNexo()
         duckMediaForCommand()
         MiaAccessibilityService.showNexoVoiceOverlay("listening")
 
         if (wake.command.isBlank()) {
             waitingForCommand = true
             pendingCommand = null
-            scheduleListening(120)
+            sayDimeAndListen()
 
             commandWindowHandler.removeCallbacksAndMessages(null)
             commandWindowHandler.postDelayed({
@@ -531,6 +572,9 @@ class AssistantWakeService : Service() {
         commandWindowHandler.removeCallbacksAndMessages(null)
         ackHandler.removeCallbacksAndMessages(null)
         speechRecognizer?.destroy()
+        wakeTts?.stop()
+        wakeTts?.shutdown()
+        wakeTts = null
         restoreMediaVolume()
         MiaAccessibilityService.hideNexoVoiceOverlay(0)
         super.onDestroy()
