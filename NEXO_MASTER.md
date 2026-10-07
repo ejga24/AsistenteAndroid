@@ -7,7 +7,7 @@
 **Última actualización:** 07-10-2026 · Panamá
 **Repositorio:** `ejga24/AsistenteAndroid`  
 **Rama de desarrollo:** `nexo-agent-v3`  
-**Versión en desarrollo:** `3.0-rc11` · rostro gráfico nativo, wake de pantalla + “Dime”, voz/media y Spotify; QA físico pendiente  
+**Versión en desarrollo:** `3.0-rc12` · expresiones ampliadas, personaje persistente durante la acción y conversación continua mejorada; QA físico pendiente  
 **Dispositivo objetivo principal:** HONOR Pad X9a · MagicOS 10 · Android 16 · Snapdragon 685
 
 ---
@@ -419,3 +419,14 @@ No desinstalar RC1 antes de instalar RC2, salvo que una prueba específica de in
 - El workflow general/legacy `.github/workflows/build-apk.yml` ya no se ejecuta automáticamente en pushes a `nexo-agent-v3`; conserva ejecución en `main` y manual mediante `workflow_dispatch`.
 - Motivo: ese workflow conserva validaciones/versiones históricas y podía producir falsos fallos sobre NEXO 3.
 - QA físico HONOR/MagicOS continúa pendiente; avance verificable se mantiene en 95%.
+
+
+## 16. RC12 — conversación y expresividad
+- NEXO amplía el rostro gráfico con estados neutral/escucha, pensamiento, ejecución, habla, éxito/felicidad, sorpresa y guiño.
+- El personaje permanece visible durante el ciclo activo y no desaparece antes de terminar la acción.
+- Tras responder, NEXO vuelve a escucha activa con menor pausa para permitir turnos consecutivos sin repetir el wake word durante la interacción.
+- Se conserva el Voice Core actual como fallback.
+- Evaluación Live API: Gemini Live soporta audio bidireccional por WebSocket y el nivel gratuito actual incluye modelos Live; una integración cliente directa requiere tokens efímeros para no exponer la credencial. Por seguridad, no se incrusta una clave Gemini permanente en el APK para Live.
+- Próximo gate Live: endpoint seguro para emitir tokens efímeros + cliente de audio PCM streaming; hasta entonces RC12 mejora el flujo conversacional sin degradar el sistema estable.
+- Release: versionCode 28 / versionName 3.0-rc12.
+- QA físico HONOR/MagicOS pendiente; avance verificable permanece en 95%.
