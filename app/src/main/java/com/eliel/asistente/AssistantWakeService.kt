@@ -17,6 +17,7 @@ import android.os.IBinder
 import android.os.Looper
 import android.os.PowerManager
 import android.speech.tts.TextToSpeech
+import android.speech.tts.UtteranceProgressListener
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
@@ -353,6 +354,31 @@ class AssistantWakeService : Service(), TextToSpeech.OnInitListener {
         wakeTtsReady = status == TextToSpeech.SUCCESS
         if (wakeTtsReady) {
             wakeTts?.language = Locale("es", "PA")
+            wakeTts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+                override fun onStart(utteranceId: String?) {
+                    if (utteranceId == "nexo_dime") {
+                        MiaAccessibilityService.showNexoVoiceOverlay("speaking")
+                    }
+                }
+
+                override fun onDone(utteranceId: String?) {
+                    if (utteranceId != "nexo_dime") return
+                    handler.post {
+                        if (waitingForCommand && shouldListen) {
+                            MiaAccessibilityService.showNexoVoiceOverlay("listening")
+                            scheduleListening(80)
+                        }
+                    }
+                }
+
+                @Deprecated("Deprecated in Java")
+                override fun onError(utteranceId: String?) {
+                    if (utteranceId != "nexo_dime") return
+                    handler.post {
+                        if (waitingForCommand && shouldListen) scheduleListening(80)
+                    }
+                }
+            })
         }
     }
 
@@ -373,15 +399,16 @@ class AssistantWakeService : Service(), TextToSpeech.OnInitListener {
     }
 
     private fun sayDimeAndListen() {
+        cancelRecognition()
+        MiaAccessibilityService.showNexoVoiceOverlay("speaking")
         if (!wakeTtsReady) {
-            scheduleListening(120)
+            MiaAccessibilityService.showNexoVoiceOverlay("listening")
+            scheduleListening(80)
             return
         }
+        // Recognition restarts only from UtteranceProgressListener.onDone().
+        // This prevents NEXO from hearing its own greeting or opening the mic too late.
         wakeTts?.speak("Dime", TextToSpeech.QUEUE_FLUSH, null, "nexo_dime")
-        // Give the short greeting time to finish so SpeechRecognizer does not hear NEXO itself.
-        handler.postDelayed({
-            if (waitingForCommand && shouldListen) scheduleListening(120)
-        }, 650L)
     }
 
     private fun processSpeech(raw: String) {
@@ -536,11 +563,20 @@ class AssistantWakeService : Service(), TextToSpeech.OnInitListener {
 
     private fun startListening() {
         if (!shouldListen || isListening) return
-        // Keep the wake recognizer active even while media is playing. Once NEXO is
-        // detected we duck STREAM_MUSIC so the follow-up command can be heard clearly.
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
             return
         }
+
+        // Android's system SpeechRecognizer can repeatedly take/lose audio focus while
+        // Spotify is playing, producing the 1-second play / several-second mute loop.
+        // Until the dedicated local hotword engine lands, protect active media instead
+        // of continuously reopening the recognizer over it.
+        val audio = getSystemService(AUDIO_SERVICE) as AudioManager
+        if (!waitingForCommand && audio.isMusicActive) {
+            scheduleListening(1800)
+            return
+        }
+
         try {
             isListening = true
             speechRecognizer?.startListening(speechIntent)
