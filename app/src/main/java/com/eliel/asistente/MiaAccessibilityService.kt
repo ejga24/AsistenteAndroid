@@ -277,7 +277,7 @@ class MiaAccessibilityService : AccessibilityService() {
     private val handler = Handler(Looper.getMainLooper())
     private var busy = false
     private var voiceOverlay: View? = null
-    private var voiceFace: TextView? = null
+    private var voiceFace: NexoFaceView? = null
     private var voiceStatus: TextView? = null
     private val overlayHandler = Handler(Looper.getMainLooper())
     private var voicePulse: ValueAnimator? = null
@@ -310,12 +310,8 @@ class MiaAccessibilityService : AccessibilityService() {
             minimumWidth = 132
             minimumHeight = 112
 
-            voiceFace = TextView(this@MiaAccessibilityService).apply {
-                gravity = Gravity.CENTER
-                textSize = 22f
-                typeface = Typeface.DEFAULT_BOLD
-                setTextColor(Color.WHITE)
-                text = "◉   ◉\n  ᴗ"
+            voiceFace = NexoFaceView(this@MiaAccessibilityService).apply {
+                layoutParams = LinearLayout.LayoutParams(132, 132)
             }
             voiceStatus = TextView(this@MiaAccessibilityService).apply {
                 gravity = Gravity.CENTER
@@ -335,12 +331,7 @@ class MiaAccessibilityService : AccessibilityService() {
             "success" -> "NEXO\nLISTO"
             else -> "NEXO"
         }
-        face.text = when (state) {
-            "processing" -> "◉   ◉\n   •"
-            "executing" -> "◉   ◉\n   ᴗ"
-            "success" -> "⌒   ⌒\n   ᴗ"
-            else -> "◉   ◉\n   ᴗ"
-        }
+        face.showMode(state)
 
         fun paint(strokeAlpha: Int, strokeWidth: Int = 3) {
             panel.background = GradientDrawable().apply {
@@ -389,9 +380,6 @@ class MiaAccessibilityService : AccessibilityService() {
                     panel.scaleX = 1f + (0.07f * phase)
                     panel.scaleY = 1f + (0.07f * phase)
                     panel.alpha = 0.80f + (0.20f * phase)
-                    // Eyes glance left/right while the existing square breathes.
-                    face.translationX = -5f + (10f * phase)
-                    face.text = if (phase > 0.52f) "  ◉ ◉\n   ᴗ" else "◉ ◉  \n ᴗ"
                     paint((145 + (110 * phase)).toInt(), if (phase > 0.55f) 5 else 3)
                 }
                 start()
