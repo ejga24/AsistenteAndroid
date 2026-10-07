@@ -3,13 +3,14 @@ name: Build Android APK
 on:
   workflow_dispatch:
   push:
-    branches: [ main, nexo-agent-v3 ]
+    branches: [ main ]
 
 permissions:
   contents: read
 
 concurrency:
-  group: nexo-android-${{ github.ref }}
+  # Legacy/general Android CI. NEXO 3 RCs on nexo-agent-v3 are validated only by release-apk.yml.
+  group: android-build-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
