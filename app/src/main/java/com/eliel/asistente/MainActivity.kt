@@ -1710,6 +1710,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         stopListening()
         statusText.text = message
         setOrbProcessing()
+        MiaAccessibilityService.showNexoVoiceOverlay("speaking")
         if (!listenAgain) assistantActive = false
 
         if (speechReady) {
@@ -1743,6 +1744,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private fun respondAndThen(message: String, action: () -> Unit) {
         stopListening()
         statusText.text = message
+        MiaAccessibilityService.showNexoVoiceOverlay("speaking")
 
         if (!speechReady) {
             if (runUiActionSafely(action)) {
@@ -1776,9 +1778,9 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                 statusText.text = "Te escucho…"
                 scheduleListening(80)
             } else {
-                statusText.text = "Escuchando…"
-                setOrbIdle()
-                scheduleListening(350)
+                statusText.text = "Te escucho…"
+                setOrbListening()
+                scheduleListening(180)
             }
         }
     }
@@ -1871,7 +1873,6 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
     private fun setOrbSuccess() {
         MiaAccessibilityService.showNexoVoiceOverlay("success")
-        MiaAccessibilityService.hideNexoVoiceOverlay(900)
         if (!::orbView.isInitialized) return
         (orbView.tag as? ObjectAnimator)?.cancel()
         orbView.animate().cancel()
@@ -1880,7 +1881,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     }
 
     private fun setOrbError() {
-        MiaAccessibilityService.hideNexoVoiceOverlay(900)
+        MiaAccessibilityService.showNexoVoiceOverlay("surprised")
         if (!::orbView.isInitialized) return
         (orbView.tag as? ObjectAnimator)?.cancel()
         orbView.animate().cancel()
