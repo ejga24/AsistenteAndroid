@@ -6,6 +6,7 @@ import android.content.Context
 import android.graphics.Color
 import android.graphics.PixelFormat
 import android.graphics.drawable.GradientDrawable
+import android.graphics.Typeface
 import android.animation.ValueAnimator
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.os.Bundle
@@ -306,14 +307,15 @@ class MiaAccessibilityService : AccessibilityService() {
             gravity = Gravity.CENTER
             setPadding(12, 9, 12, 9)
             elevation = 14f
-            minimumWidth = 116
-            minimumHeight = 96
+            minimumWidth = 132
+            minimumHeight = 112
 
             voiceFace = TextView(this@MiaAccessibilityService).apply {
                 gravity = Gravity.CENTER
-                textSize = 19f
+                textSize = 22f
+                typeface = Typeface.DEFAULT_BOLD
                 setTextColor(Color.WHITE)
-                text = "●  ●\n  ▿"
+                text = "◉   ◉\n  ᴗ"
             }
             voiceStatus = TextView(this@MiaAccessibilityService).apply {
                 gravity = Gravity.CENTER
@@ -334,10 +336,10 @@ class MiaAccessibilityService : AccessibilityService() {
             else -> "NEXO"
         }
         face.text = when (state) {
-            "processing" -> "◉  ◉\n  —"
-            "executing" -> "◆  ◆\n  ▿"
-            "success" -> "◠  ◠\n  ∪"
-            else -> "●  ●\n  ▿"
+            "processing" -> "◉   ◉\n   •"
+            "executing" -> "◉   ◉\n   ᴗ"
+            "success" -> "⌒   ⌒\n   ᴗ"
+            else -> "◉   ◉\n   ᴗ"
         }
 
         fun paint(strokeAlpha: Int, strokeWidth: Int = 3) {
@@ -389,7 +391,7 @@ class MiaAccessibilityService : AccessibilityService() {
                     panel.alpha = 0.80f + (0.20f * phase)
                     // Eyes glance left/right while the existing square breathes.
                     face.translationX = -5f + (10f * phase)
-                    face.text = if (phase > 0.52f) "  ● ●\n   ▿" else "● ●  \n ▿"
+                    face.text = if (phase > 0.52f) "  ◉ ◉\n   ᴗ" else "◉ ◉  \n ᴗ"
                     paint((145 + (110 * phase)).toInt(), if (phase > 0.55f) 5 else 3)
                 }
                 start()
