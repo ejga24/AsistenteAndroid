@@ -4,10 +4,10 @@
 > Antes de continuar desarrollo, cambios de arquitectura, diseño, seguridad o releases, consultar este documento primero.
 > Los documentos especializados (`NEXO_ARCHITECTURE.md`, `NEXO_DESIGN_SYSTEM.md`) amplían esta información, pero este archivo conserva el estado vigente, decisiones, reglas, pendientes y criterio de release.
 
-**Última actualización:** 06-10-2026 · Panamá
+**Última actualización:** 07-10-2026 · Panamá
 **Repositorio:** `ejga24/AsistenteAndroid`  
 **Rama de desarrollo:** `nexo-agent-v3`  
-**Versión en desarrollo:** `3.0-rc6` · mejoras de voz en segundo plano, overlay dinámico y reproducción Spotify; QA físico pendiente  
+**Versión en desarrollo:** `3.0-rc11` · rostro gráfico nativo, wake de pantalla + “Dime”, voz/media y Spotify; QA físico pendiente  
 **Dispositivo objetivo principal:** HONOR Pad X9a · MagicOS 10 · Android 16 · Snapdragon 685
 
 ---
@@ -409,3 +409,13 @@ No desinstalar RC1 antes de instalar RC2, salvo que una prueba específica de in
 - Spotify: se limpia “música/canciones de <artista>”, se intenta reproducción nativa y, si Spotify solo abre búsqueda, Accessibility continúa hacia el artista y botón Reproducir/Play.
 - Release: versionCode 22 / versionName 3.0-rc6.
 - QA físico requerido: wake con Spotify reproduciendo, restauración de volumen, comandos en segundo plano, overlay y autoplay de Spotify.
+
+
+## 15. RC11 y política CI — 07-10-2026
+- Release vigente: versionCode 27 / versionName 3.0-rc11.
+- Overlay: NEXO usa un renderer gráfico nativo para rostro/ojos/boca y animación, sustituyendo la cara basada en caracteres.
+- Wake: al detectar NEXO se solicita encender la pantalla sin omitir el bloqueo; NEXO responde “Dime” y luego abre la ventana de escucha del comando sin exigir repetir el wake word.
+- CI: `.github/workflows/release-apk.yml` es la señal válida de Release Candidate para `nexo-agent-v3`.
+- El workflow general/legacy `.github/workflows/build-apk.yml` ya no se ejecuta automáticamente en pushes a `nexo-agent-v3`; conserva ejecución en `main` y manual mediante `workflow_dispatch`.
+- Motivo: ese workflow conserva validaciones/versiones históricas y podía producir falsos fallos sobre NEXO 3.
+- QA físico HONOR/MagicOS continúa pendiente; avance verificable se mantiene en 95%.
