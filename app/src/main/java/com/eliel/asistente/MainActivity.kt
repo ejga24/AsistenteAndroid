@@ -646,9 +646,11 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
         if (wake.command.isBlank()) {
             waitingForCommand = true
-            statusText.text = "Sí, dime…"
-            setOrbListening()
-            scheduleListening(120)
+            statusText.text = "Dime…"
+            setOrbActivated()
+            // respond() keeps the NEXO face visible in speaking state. The existing
+            // TTS onDone callback then calls finishSpeechCycle(), which starts listening.
+            respond("Dime")
 
             handler.postDelayed({
                 if (waitingForCommand) {
