@@ -430,3 +430,12 @@ No desinstalar RC1 antes de instalar RC2, salvo que una prueba específica de in
 - Próximo gate Live: endpoint seguro para emitir tokens efímeros + cliente de audio PCM streaming; hasta entonces RC12 mejora el flujo conversacional sin degradar el sistema estable.
 - Release: versionCode 28 / versionName 3.0-rc12.
 - QA físico HONOR/MagicOS pendiente; avance verificable permanece en 95%.
+
+
+### RC12 hotfix de voz/media — 07-10-2026
+- TTS wake: “Dime” deja de depender de un retardo fijo; la escucha de la orden arranca desde `UtteranceProgressListener.onDone()`.
+- Foreground y background convergen en el flujo: wake → “Dime” → fin real de TTS → escucha de orden.
+- Overlay: NEXO permanece visible mientras habla y solo cierra el ciclo visual después del fin real del TTS; el monitoreo de wake vuelve a ser visualmente silencioso.
+- Spotify/audio focus RC12: se confirmó por comportamiento físico que el fallback Android `SpeechRecognizer` reabierto continuamente puede interrumpir la reproducción en ciclos. Mientras haya música activa y NEXO no esté dentro de una ventana de comando, el fallback no reabre el recognizer y reintenta de forma espaciada.
+- Trade-off temporal: con Spotify/media activa, el wake por voz puede no estar disponible usando el fallback Android. La solución definitiva para wake continuo coexistiendo con música sigue siendo el hotword local dedicado.
+- QA físico requerido: Spotify sin cortes cíclicos; “Oye NEXO” → solo “Dime” → orden capturada; rostro visible hasta terminar respuesta y oculto después.
