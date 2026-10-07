@@ -327,7 +327,7 @@ class MiaAccessibilityService : AccessibilityService() {
         status.text = when (state) {
             "listening" -> "NEXO\nTE ESCUCHO"
             "processing" -> "NEXO\nPROCESANDO"
-            "executing" -> "NEXO\nEJECUTANDO"
+            "executing" -> "NEXO\nEJECUTANDO"\n            "speaking" -> "NEXO\nHABLANDO"\n            "surprised" -> "NEXO"\n            "wink" -> "NEXO"
             "success" -> "NEXO\nLISTO"
             else -> "NEXO"
         }
