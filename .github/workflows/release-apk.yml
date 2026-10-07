@@ -1,4 +1,5 @@
 name: Build NEXO Release Candidate
+# RC12: expressive persistent face + continuous conversational turn loop
 
 on:
   workflow_dispatch:
