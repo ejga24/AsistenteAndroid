@@ -2,12 +2,17 @@ package com.eliel.asistente
 
 import android.animation.ValueAnimator
 import android.content.Context
+import android.util.AttributeSet
 import android.graphics.*
 import android.view.View
 import android.view.animation.AccelerateDecelerateInterpolator
 import kotlin.math.min
 
-class NexoFaceView(context: Context) : View(context) {
+class NexoFaceView @JvmOverloads constructor(
+    context: Context,
+    attrs: AttributeSet? = null,
+    defStyleAttr: Int = 0
+) : View(context, attrs, defStyleAttr) {
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     private var mode = "listening"
     private var phase = 0f
