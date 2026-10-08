@@ -16,8 +16,8 @@ android {
         applicationId = "com.eliel.asistente"
         minSdk = 26
         targetSdk = 35
-        versionCode = 30
-        versionName = "3.0-rc14"
+        versionCode = 31
+        versionName = "3.0-rc15"
     }
 
     compileOptions {
