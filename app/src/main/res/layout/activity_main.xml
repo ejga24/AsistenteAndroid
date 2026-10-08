@@ -249,9 +249,18 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="CONTROLES"
+            android:text="ESCUCHA Y VOZ"
             style="@style/Nexo.Text.Section"
+            android:layout_marginTop="18dp"
             android:layout_marginBottom="10dp" />
+
+        <com.google.android.material.button.MaterialButton
+            style="@style/Nexo.Button.Secondary"
+            android:id="@+id/voiceToggleButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Pausar escucha"
+            android:layout_marginBottom="9dp" />
 
         <com.google.android.material.button.MaterialButton
             style="@style/Nexo.Button.Secondary"
@@ -259,6 +268,22 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Dar permiso de micrófono"
+            android:layout_marginBottom="9dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="FUNCIONES"
+            style="@style/Nexo.Text.Section"
+            android:layout_marginTop="18dp"
+            android:layout_marginBottom="10dp" />
+
+        <com.google.android.material.button.MaterialButton
+            style="@style/Nexo.Button.Secondary"
+            android:id="@+id/intelligenceButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Inteligencia de NEXO"
             android:layout_marginBottom="9dp" />
 
         <com.google.android.material.button.MaterialButton
@@ -271,14 +296,6 @@
 
         <com.google.android.material.button.MaterialButton
             style="@style/Nexo.Button.Secondary"
-            android:id="@+id/intelligenceButton"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Inteligencia de NEXO"
-            android:layout_marginBottom="9dp" />
-
-        <com.google.android.material.button.MaterialButton
-            style="@style/Nexo.Button.Secondary"
             android:id="@+id/carModeButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -287,11 +304,34 @@
 
         <com.google.android.material.button.MaterialButton
             style="@style/Nexo.Button.Secondary"
-            android:id="@+id/voiceToggleButton"
+            android:id="@+id/visionButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Pausar escucha"
+            android:text="Vision"
             android:layout_marginBottom="9dp" />
+
+        <com.google.android.material.button.MaterialButton
+            style="@style/Nexo.Button.Secondary"
+            android:id="@+id/modesButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Modes"
+            android:layout_marginBottom="9dp" />
+
+        <com.google.android.material.button.MaterialButton
+            style="@style/Nexo.Button.Secondary"
+            android:id="@+id/skillsButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Skills" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="ACTIVIDAD Y SEGURIDAD"
+            style="@style/Nexo.Text.Section"
+            android:layout_marginTop="18dp"
+            android:layout_marginBottom="10dp" />
 
         <com.google.android.material.button.MaterialButton
             style="@style/Nexo.Button.Secondary"
@@ -319,33 +359,10 @@
 
         <com.google.android.material.button.MaterialButton
             style="@style/Nexo.Button.Secondary"
-            android:id="@+id/visionButton"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Vision"
-            android:layout_marginBottom="9dp" />
-
-        <com.google.android.material.button.MaterialButton
-            style="@style/Nexo.Button.Secondary"
             android:id="@+id/setupButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Setup Center"
             android:layout_marginBottom="9dp" />
-
-        <com.google.android.material.button.MaterialButton
-            style="@style/Nexo.Button.Secondary"
-            android:id="@+id/modesButton"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Modes"
-            android:layout_marginBottom="9dp" />
-
-        <com.google.android.material.button.MaterialButton
-            style="@style/Nexo.Button.Secondary"
-            android:id="@+id/skillsButton"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Skills" />
     </LinearLayout>
 </ScrollView>
