@@ -321,27 +321,16 @@ class AssistantWakeService : Service(), TextToSpeech.OnInitListener {
                 }
 
                 override fun onPartialResults(partialResults: Bundle?) {
+                    // Partial recognition is only a visual hint. Never dispatch an
+                    // unfinished command: wait for onResults() to finalize speech.
                     if (!shouldListen || pendingCommand != null) return
                     val partial = partialResults
                         ?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-                        ?.firstOrNull()
-                        ?.trim()
-                        .orEmpty()
+                        ?.firstOrNull()?.trim().orEmpty()
                     if (partial.isBlank()) return
-                    val normalizedPartial = normalize(partial)
-                    if (waitingForCommand && normalizedPartial.length >= 2) {
-                        waitingForCommand = false
-                        commandWindowHandler.removeCallbacksAndMessages(null)
-                        pendingCommand = normalizedPartial
-                        MiaAccessibilityService.showNexoVoiceOverlay("processing")
-                        cancelRecognition()
-                        handler.postDelayed({ launchPendingCommand() }, 80)
-                    } else if (NexoWakePhrase.extract(normalizedPartial).found) {
+                    if (waitingForCommand) {
                         MiaAccessibilityService.showNexoVoiceOverlay("listening")
-                    } else if (NexoWakePhrase.extract(normalizedPartial).found) {
-                        playWakeTone()
-                        duckMediaForCommand()
-                        waitingForCommand = true
+                    } else if (NexoWakePhrase.extract(normalize(partial)).found) {
                         MiaAccessibilityService.showNexoVoiceOverlay("listening")
                     }
                 }
