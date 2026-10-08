@@ -282,6 +282,7 @@ class MiaAccessibilityService : AccessibilityService() {
     private val overlayHandler = Handler(Looper.getMainLooper())
     private var voicePulse: ValueAnimator? = null
     private var voiceTravel: ValueAnimator? = null
+    private var voicePlayful: ValueAnimator? = null
 
     override fun onServiceConnected() {
         super.onServiceConnected()
@@ -301,6 +302,8 @@ class MiaAccessibilityService : AccessibilityService() {
             voicePulse = null
             voiceTravel?.cancel()
             voiceTravel = null
+            voicePlayful?.cancel()
+            voicePlayful = null
             hideVoiceOverlay(0)
             return
         }
@@ -396,6 +399,27 @@ class MiaAccessibilityService : AccessibilityService() {
             }
         }
 
+        // Subtle occasional hops and turns, independent of screen travel.
+        if (voiceOverlay != null && voicePlayful == null) {
+            voicePlayful = ValueAnimator.ofFloat(0f, 1f).apply {
+                duration = 10500L
+                repeatCount = ValueAnimator.INFINITE
+                interpolator = android.view.animation.LinearInterpolator()
+                addUpdateListener { animation ->
+                    val t = animation.animatedValue as Float
+                    val hop = if (t in 0.64f..0.78f)
+                        kotlin.math.sin(((t - 0.64f) / 0.14f * Math.PI).toFloat()) * 22f
+                    else 0f
+                    panel.translationY = -hop
+                    val turn = if (t in 0.32f..0.48f)
+                        kotlin.math.sin(((t - 0.32f) / 0.16f * Math.PI).toFloat()) * 14f
+                    else 0f
+                    face.rotation = turn
+                }
+                start()
+            }
+        }
+
         if (state == "listening") {
             voicePulse = ValueAnimator.ofFloat(0f, 1f).apply {
                 duration = 620L
@@ -417,6 +441,10 @@ class MiaAccessibilityService : AccessibilityService() {
     }
 
     private fun hideVoiceOverlay(delayMs: Long) {
+        voicePlayful?.cancel()
+        voicePlayful = null
+        voiceOverlay?.translationY = 0f
+        voiceFace?.rotation = 0f
         voiceTravel?.cancel()
         voiceTravel = null
         voicePulse?.cancel()
