@@ -366,6 +366,18 @@ class AssistantWakeService : Service(), TextToSpeech.OnInitListener {
                         if (waitingForCommand && shouldListen) {
                             MiaAccessibilityService.showNexoVoiceOverlay("listening")
                             scheduleListening(80)
+                            // The command timeout starts when the microphone can listen,
+                            // never while NEXO is still saying its greeting.
+                            commandWindowHandler.removeCallbacksAndMessages(null)
+                            commandWindowHandler.postDelayed({
+                                if (waitingForCommand) {
+                                    waitingForCommand = false
+                                    pendingCommand = null
+                                    restoreMediaVolume()
+                                    MiaAccessibilityService.showNexoVoiceOverlay("ready")
+                                    scheduleListening(250)
+                                }
+                            }, 9000)
                         }
                     }
                 }
@@ -445,16 +457,6 @@ class AssistantWakeService : Service(), TextToSpeech.OnInitListener {
             pendingCommand = null
             sayDimeAndListen()
 
-            commandWindowHandler.removeCallbacksAndMessages(null)
-            commandWindowHandler.postDelayed({
-                if (waitingForCommand) {
-                    waitingForCommand = false
-                    pendingCommand = null
-                    restoreMediaVolume()
-                    MiaAccessibilityService.showNexoVoiceOverlay("ready")
-                    scheduleListening(250)
-                }
-            }, 6500)
         } else {
             pendingCommand = wake.command
             handler.postDelayed({ launchPendingCommand() }, 120)
