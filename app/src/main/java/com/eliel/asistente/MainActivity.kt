@@ -1825,9 +1825,10 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
     private fun setOrbIdle() {
         if (!::orbView.isInitialized) return
+        (orbView as? NexoFaceView)?.showMode("idle")
         (orbView.tag as? ObjectAnimator)?.cancel()
         orbView.animate().cancel()
-        orbView.background = makeOrbDrawable(68, R.color.nexo_text_muted)
+        // NexoFaceView draws its own animated character
         orbView.scaleX = 0.72f
         orbView.scaleY = 0.72f
         orbView.alpha = 0.76f
@@ -1835,9 +1836,10 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
     private fun setOrbActivated() {
         if (!::orbView.isInitialized) return
+        (orbView as? NexoFaceView)?.showMode("surprised")
         (orbView.tag as? ObjectAnimator)?.cancel()
         orbView.animate().cancel()
-        orbView.background = makeOrbDrawable(160, R.color.nexo_accent)
+        // NexoFaceView draws its own animated character
         orbView.animate()
             .scaleX(1.22f)
             .scaleY(1.22f)
@@ -1851,7 +1853,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         if (!::orbView.isInitialized) return
         (orbView.tag as? ObjectAnimator)?.cancel()
         orbView.animate().cancel()
-        orbView.background = makeOrbDrawable(145, R.color.nexo_accent)
+        // NexoFaceView draws its own animated character
         orbView.scaleX = 1.0f
         orbView.scaleY = 1.0f
         orbView.alpha = 1f
@@ -1874,7 +1876,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         MiaAccessibilityService.showNexoVoiceOverlay("processing")
         if (!::orbView.isInitialized) return
         (orbView.tag as? ObjectAnimator)?.cancel()
-        orbView.background = makeOrbDrawable(115, R.color.nexo_warning)
+        // NexoFaceView draws its own animated character
         orbView.scaleX = 0.95f
         orbView.scaleY = 0.95f
         orbView.alpha = 0.94f
@@ -1893,7 +1895,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         if (!::orbView.isInitialized) return
         (orbView.tag as? ObjectAnimator)?.cancel()
         orbView.animate().cancel()
-        orbView.background = makeOrbDrawable(150, R.color.nexo_success)
+        // NexoFaceView draws its own animated character
         orbView.animate().scaleX(1.08f).scaleY(1.08f).alpha(1f).setDuration(220).start()
     }
 
@@ -1902,7 +1904,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         if (!::orbView.isInitialized) return
         (orbView.tag as? ObjectAnimator)?.cancel()
         orbView.animate().cancel()
-        orbView.background = makeOrbDrawable(150, R.color.nexo_error)
+        // NexoFaceView draws its own animated character
         orbView.animate().scaleX(1.04f).scaleY(1.04f).alpha(1f).setDuration(180).start()
     }
 
