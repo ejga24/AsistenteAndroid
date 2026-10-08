@@ -74,11 +74,11 @@
                 android:gravity="center"
                 android:padding="26dp">
 
-                <View
+                <com.eliel.asistente.NexoFaceView
                     android:id="@+id/orbView"
                     android:importantForAccessibility="no"
                     android:layout_width="@dimen/nexo_orb_size"
-                            android:layout_height="@dimen/nexo_orb_size"
+                    android:layout_height="@dimen/nexo_orb_size"
                     android:layout_marginBottom="20dp" />
 
                 <TextView
