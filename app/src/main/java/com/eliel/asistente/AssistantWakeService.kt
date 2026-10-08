@@ -343,6 +343,16 @@ class AssistantWakeService : Service(), TextToSpeech.OnInitListener {
         wakeTtsReady = status == TextToSpeech.SUCCESS
         if (wakeTtsReady) {
             wakeTts?.language = Locale("es", "PA")
+            wakeTts?.setSpeechRate(1.02f)
+            wakeTts?.setPitch(1.05f)
+            val localVoices = wakeTts?.voices?.filter {
+                it.locale.language == "es" && !it.isNetworkConnectionRequired
+            }.orEmpty()
+            val preferred = localVoices.sortedWith(
+                compareByDescending<android.speech.tts.Voice> { it.locale.country == "PA" }
+                    .thenByDescending { it.quality }
+            ).firstOrNull()
+            if (preferred != null) wakeTts?.voice = preferred
             wakeTts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
                 override fun onStart(utteranceId: String?) {
                     if (utteranceId == "nexo_dime") {
