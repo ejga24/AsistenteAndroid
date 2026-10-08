@@ -1829,9 +1829,9 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         (orbView.tag as? ObjectAnimator)?.cancel()
         orbView.animate().cancel()
         // NexoFaceView draws its own animated character
-        orbView.scaleX = 0.72f
-        orbView.scaleY = 0.72f
-        orbView.alpha = 0.76f
+        orbView.scaleX = 1f
+        orbView.scaleY = 1f
+        orbView.alpha = 1f
     }
 
     private fun setOrbActivated() {
@@ -1841,8 +1841,8 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         orbView.animate().cancel()
         // NexoFaceView draws its own animated character
         orbView.animate()
-            .scaleX(1.22f)
-            .scaleY(1.22f)
+            .scaleX(1.04f)
+            .scaleY(1.04f)
             .alpha(1f)
             .setDuration(180)
             .start()
@@ -1859,36 +1859,19 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         orbView.scaleY = 1.0f
         orbView.alpha = 1f
 
-        val pulse = ObjectAnimator.ofPropertyValuesHolder(
-            orbView,
-            PropertyValuesHolder.ofFloat(android.view.View.SCALE_X, 1.0f, 1.18f),
-            PropertyValuesHolder.ofFloat(android.view.View.SCALE_Y, 1.0f, 1.18f),
-            PropertyValuesHolder.ofFloat(android.view.View.ALPHA, 0.82f, 1.0f)
-        ).apply {
-            duration = 720
-            repeatCount = ObjectAnimator.INFINITE
-            repeatMode = ObjectAnimator.REVERSE
-        }
-        orbView.tag = pulse
-        pulse.start()
+
     }
 
     private fun setOrbProcessing() {
         MiaAccessibilityService.showNexoVoiceOverlay("processing")
         if (!::orbView.isInitialized) return
+        (orbView as? NexoFaceView)?.showMode("processing")
         (orbView.tag as? ObjectAnimator)?.cancel()
-        // NexoFaceView draws its own animated character
-        orbView.scaleX = 0.95f
-        orbView.scaleY = 0.95f
-        orbView.alpha = 0.94f
-
-        ObjectAnimator.ofFloat(orbView, android.view.View.ROTATION, 0f, 360f).apply {
-            duration = 1200
-            repeatCount = ObjectAnimator.INFINITE
-            interpolator = android.view.animation.LinearInterpolator()
-            orbView.tag = this
-            start()
-        }
+        orbView.animate().cancel()
+        orbView.rotation = 0f
+        orbView.scaleX = 1f
+        orbView.scaleY = 1f
+        orbView.alpha = 1f
     }
 
     private fun setOrbSuccess() {
