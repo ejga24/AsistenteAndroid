@@ -281,6 +281,7 @@ class MiaAccessibilityService : AccessibilityService() {
     private var voiceStatus: TextView? = null
     private val overlayHandler = Handler(Looper.getMainLooper())
     private var voicePulse: ValueAnimator? = null
+    private var voiceTravel: ValueAnimator? = null
 
     override fun onServiceConnected() {
         super.onServiceConnected()
@@ -298,6 +299,8 @@ class MiaAccessibilityService : AccessibilityService() {
         if (state == "ready") {
             voicePulse?.cancel()
             voicePulse = null
+            voiceTravel?.cancel()
+            voiceTravel = null
             hideVoiceOverlay(0)
             return
         }
@@ -372,6 +375,27 @@ class MiaAccessibilityService : AccessibilityService() {
                 .onSuccess { voiceOverlay = panel }
         }
 
+        if (voiceOverlay != null && voiceTravel == null) {
+            val metrics = resources.displayMetrics
+            val maxX = (metrics.widthPixels - panel.width.coerceAtLeast(160) - 32).coerceAtLeast(0)
+            val maxY = (metrics.heightPixels - panel.height.coerceAtLeast(180) - 120).coerceAtLeast(0)
+            voiceTravel = ValueAnimator.ofFloat(0f, 1f).apply {
+                duration = 14000L
+                repeatCount = ValueAnimator.INFINITE
+                repeatMode = ValueAnimator.REVERSE
+                interpolator = android.view.animation.LinearInterpolator()
+                addUpdateListener { animation ->
+                    val fraction = animation.animatedValue as Float
+                    val params = panel.layoutParams as? WindowManager.LayoutParams ?: return@addUpdateListener
+                    params.gravity = Gravity.TOP or Gravity.LEFT
+                    params.x = (24f + (maxX - 24).coerceAtLeast(0) * fraction).toInt()
+                    params.y = (72f + (maxY - 72).coerceAtLeast(0) * fraction).toInt()
+                    runCatching { windowManager.updateViewLayout(panel, params) }
+                }
+                start()
+            }
+        }
+
         if (state == "listening") {
             voicePulse = ValueAnimator.ofFloat(0f, 1f).apply {
                 duration = 620L
@@ -393,6 +417,8 @@ class MiaAccessibilityService : AccessibilityService() {
     }
 
     private fun hideVoiceOverlay(delayMs: Long) {
+        voiceTravel?.cancel()
+        voiceTravel = null
         voicePulse?.cancel()
         voicePulse = null
         overlayHandler.removeCallbacksAndMessages(null)
