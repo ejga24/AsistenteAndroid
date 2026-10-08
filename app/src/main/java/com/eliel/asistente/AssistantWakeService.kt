@@ -356,7 +356,7 @@ class AssistantWakeService : Service(), TextToSpeech.OnInitListener {
             wakeTts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
                 override fun onStart(utteranceId: String?) {
                     if (utteranceId == "nexo_dime") {
-                        MiaAccessibilityService.showNexoVoiceOverlay("speaking")
+                        MiaAccessibilityService.showNexoVoiceOverlay("activated")
                     }
                 }
 
@@ -411,7 +411,7 @@ class AssistantWakeService : Service(), TextToSpeech.OnInitListener {
 
     private fun sayDimeAndListen() {
         cancelRecognition()
-        MiaAccessibilityService.showNexoVoiceOverlay("speaking")
+        MiaAccessibilityService.showNexoVoiceOverlay("activated")
         if (!wakeTtsReady) {
             MiaAccessibilityService.showNexoVoiceOverlay("listening")
             scheduleListening(80)
