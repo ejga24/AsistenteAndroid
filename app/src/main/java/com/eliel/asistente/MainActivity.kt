@@ -1836,7 +1836,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
     private fun setOrbActivated() {
         if (!::orbView.isInitialized) return
-        (orbView as? NexoFaceView)?.showMode("surprised")
+        (orbView as? NexoFaceView)?.showMode("activated")
         (orbView.tag as? ObjectAnimator)?.cancel()
         orbView.animate().cancel()
         // NexoFaceView draws its own animated character
@@ -1849,6 +1849,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     }
 
     private fun setOrbListening() {
+        (orbView as? NexoFaceView)?.showMode("listening")
         MiaAccessibilityService.showNexoVoiceOverlay("listening")
         if (!::orbView.isInitialized) return
         (orbView.tag as? ObjectAnimator)?.cancel()
