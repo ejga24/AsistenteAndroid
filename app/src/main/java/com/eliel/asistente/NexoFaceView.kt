@@ -28,6 +28,24 @@ class NexoFaceView(context: Context) : View(context) {
         canvas.drawRoundRect(box,s*.18f,s*.18f,paint); paint.clearShadowLayer(); paint.shader=null
         paint.style=Paint.Style.STROKE; paint.strokeWidth=s*.028f; paint.color=Color.rgb(45,184,255); canvas.drawRoundRect(box,s*.18f,s*.18f,paint)
         paint.strokeWidth=s*.009f; paint.color=Color.rgb(185,232,255); canvas.drawRoundRect(RectF(box.left+5,box.top+5,box.right-5,box.bottom-5),s*.15f,s*.15f,paint)
+        // Animated side equalizers: unmistakable visual listening feedback.
+        if (mode == "listening" || mode == "speaking" || mode == "processing") {
+            paint.shader = null
+            paint.style = Paint.Style.STROKE
+            paint.strokeCap = Paint.Cap.ROUND
+            paint.strokeWidth = s * .018f
+            paint.color = Color.rgb(67, 215, 255)
+            for (side in 0..1) {
+                val x = if (side == 0) w * .14f else w * .86f
+                for (i in 0..3) {
+                    val wave = kotlin.math.abs(kotlin.math.sin((phase * 3.14159f + i * .85f + side * .4f).toDouble())).toFloat()
+                    val bar = s * (.035f + .065f * wave)
+                    val centerY = h * (.34f + i * .11f)
+                    canvas.drawLine(x, centerY - bar / 2, x, centerY + bar / 2, paint)
+                }
+            }
+            paint.strokeCap = Paint.Cap.BUTT
+        }
         val y=h*.43f; val r=s*.14f
         if(mode=="success"){ happyEye(canvas,w*.34f,y,r); happyEye(canvas,w*.66f,y,r) } else { eye(canvas,w*.34f,y,r); eye(canvas,w*.66f,y,r) }
         paint.style=Paint.Style.STROKE; paint.strokeCap=Paint.Cap.ROUND; paint.strokeWidth=s*.032f; paint.color=Color.rgb(75,204,255)
