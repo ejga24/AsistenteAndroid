@@ -14,7 +14,7 @@ class NexoFaceView @JvmOverloads constructor(
     defStyleAttr: Int = 0
 ) : View(context, attrs, defStyleAttr) {
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private var mode = "listening"
+    private var mode = "ready"
     private var phase = 0f
     private var talkPhase = 0f
     private val motion = ValueAnimator.ofFloat(0f,1f).apply {
@@ -52,18 +52,27 @@ class NexoFaceView @JvmOverloads constructor(
             paint.strokeCap = Paint.Cap.BUTT
         }
         val y=h*.43f; val r=s*.14f
-        if(mode=="success"){ happyEye(canvas,w*.34f,y,r); happyEye(canvas,w*.66f,y,r) } else { eye(canvas,w*.34f,y,r); eye(canvas,w*.66f,y,r) }
+        if(mode=="ready" || mode=="idle"){ closedEye(canvas,w*.34f,y,r); closedEye(canvas,w*.66f,y,r) } else if(mode=="success"){ happyEye(canvas,w*.34f,y,r); happyEye(canvas,w*.66f,y,r) } else { eye(canvas,w*.34f,y,r); eye(canvas,w*.66f,y,r) }
         paint.style=Paint.Style.STROKE; paint.strokeCap=Paint.Cap.ROUND; paint.strokeWidth=s*.032f; paint.color=Color.rgb(75,204,255)
         val mouth=RectF(w*.39f,h*.61f,w*.61f,h*.76f)
         when(mode){
             "processing" -> { canvas.drawCircle(w*.5f,h*.69f,s*.035f,paint) }
             "executing" -> canvas.drawArc(mouth,15f,150f,false,paint)
             "speaking" -> { val open=s*.025f+s*.025f*phase; canvas.drawOval(RectF(w*.46f,h*.66f-open,w*.54f,h*.69f+open),paint) }
+            "activated" -> canvas.drawArc(RectF(w*.34f,h*.56f,w*.66f,h*.80f),10f,160f,false,paint)
             "success" -> canvas.drawArc(RectF(w*.36f,h*.58f,w*.64f,h*.78f),15f,150f,false,paint)
             "surprised" -> canvas.drawCircle(w*.5f,h*.69f,s*.045f,paint)
             "wink" -> canvas.drawArc(mouth,15f,150f,false,paint)
             else -> canvas.drawArc(mouth,15f,150f,false,paint)
         }
+        paint.strokeCap=Paint.Cap.BUTT
+    }
+    private fun closedEye(c:Canvas,cx:Float,cy:Float,r:Float){
+        paint.style=Paint.Style.STROKE
+        paint.strokeWidth=r*.22f
+        paint.strokeCap=Paint.Cap.ROUND
+        paint.color=Color.rgb(200,240,255)
+        c.drawArc(RectF(cx-r,cy-r*.30f,cx+r,cy+r*.65f),15f,150f,false,paint)
         paint.strokeCap=Paint.Cap.BUTT
     }
     private fun happyEye(c:Canvas,cx:Float,cy:Float,r:Float){
