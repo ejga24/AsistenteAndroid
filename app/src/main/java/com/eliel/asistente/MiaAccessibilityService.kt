@@ -297,22 +297,13 @@ class MiaAccessibilityService : AccessibilityService() {
     private fun renderVoiceOverlay(state: String) {
         overlayHandler.removeCallbacksAndMessages(null)
         val windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
-        if (state == "ready") {
-            voicePulse?.cancel()
-            voicePulse = null
-            voiceTravel?.cancel()
-            voiceTravel = null
-            voicePlayful?.cancel()
-            voicePlayful = null
-            hideVoiceOverlay(0)
-            return
-        }
+        // Ready is a resting expression, not a reason to remove NEXO.
 
         val panel = voiceOverlay ?: LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
-            setPadding(12, 9, 12, 9)
-            elevation = 14f
+            setPadding(0, 0, 0, 0)
+            elevation = 0f
             minimumWidth = 132
             minimumHeight = 112
 
@@ -346,8 +337,8 @@ class MiaAccessibilityService : AccessibilityService() {
             panel.background = GradientDrawable().apply {
                 shape = GradientDrawable.RECTANGLE
                 cornerRadius = 14f
-                setColor(Color.argb(238, 17, 20, 27))
-                setStroke(strokeWidth, Color.argb(strokeAlpha, 86, 184, 255))
+                setColor(Color.TRANSPARENT)
+                setStroke(0, Color.TRANSPARENT)
             }
         }
 
@@ -383,16 +374,19 @@ class MiaAccessibilityService : AccessibilityService() {
             val maxX = (metrics.widthPixels - panel.width.coerceAtLeast(160) - 32).coerceAtLeast(0)
             val maxY = (metrics.heightPixels - panel.height.coerceAtLeast(180) - 120).coerceAtLeast(0)
             voiceTravel = ValueAnimator.ofFloat(0f, 1f).apply {
-                duration = 14000L
+                duration = 19000L
                 repeatCount = ValueAnimator.INFINITE
-                repeatMode = ValueAnimator.REVERSE
+                repeatMode = ValueAnimator.RESTART
                 interpolator = android.view.animation.LinearInterpolator()
                 addUpdateListener { animation ->
                     val fraction = animation.animatedValue as Float
                     val params = panel.layoutParams as? WindowManager.LayoutParams ?: return@addUpdateListener
                     params.gravity = Gravity.TOP or Gravity.LEFT
-                    params.x = (24f + (maxX - 24).coerceAtLeast(0) * fraction).toInt()
-                    params.y = (72f + (maxY - 72).coerceAtLeast(0) * fraction).toInt()
+                    val t = fraction * (2.0 * Math.PI)
+                    val fx = (0.5 + 0.44 * kotlin.math.sin(t * 2.0 + 0.3)).toFloat()
+                    val fy = (0.5 + 0.43 * kotlin.math.sin(t * 3.0 + 1.2)).toFloat()
+                    params.x = (16f + (maxX - 16).coerceAtLeast(0) * fx).toInt()
+                    params.y = (56f + (maxY - 56).coerceAtLeast(0) * fy).toInt()
                     runCatching { windowManager.updateViewLayout(panel, params) }
                 }
                 start()
@@ -435,8 +429,6 @@ class MiaAccessibilityService : AccessibilityService() {
                 }
                 start()
             }
-        } else if (state == "success") {
-            overlayHandler.postDelayed({ hideVoiceOverlay(0) }, 950L)
         }
     }
 
