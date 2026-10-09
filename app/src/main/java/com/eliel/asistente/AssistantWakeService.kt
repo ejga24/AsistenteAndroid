@@ -230,9 +230,9 @@ class AssistantWakeService : Service(), TextToSpeech.OnInitListener {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE, "es-PA")
             putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
             putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 5)
-            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 650L)
-            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 500L)
-            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 350L)
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 450L)
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 900L)
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 650L)
         }
 
         speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this).also { recognizer ->
@@ -321,8 +321,8 @@ class AssistantWakeService : Service(), TextToSpeech.OnInitListener {
                 }
 
                 override fun onPartialResults(partialResults: Bundle?) {
-                    // Partial recognition is only a visual hint. Never dispatch an
-                    // unfinished command: wait for onResults() to finalize speech.
+                    // Wake-only partial results can react promptly to a softly spoken
+                    // activation phrase. Commands still require finalized results.
                     if (!shouldListen || pendingCommand != null) return
                     val partial = partialResults
                         ?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
@@ -330,8 +330,19 @@ class AssistantWakeService : Service(), TextToSpeech.OnInitListener {
                     if (partial.isBlank()) return
                     if (waitingForCommand) {
                         MiaAccessibilityService.showNexoVoiceOverlay("listening")
-                    } else if (NexoWakePhrase.extract(normalize(partial)).found) {
-                        MiaAccessibilityService.showNexoVoiceOverlay("listening")
+                    } else {
+                        val wake = NexoWakePhrase.extract(normalize(partial))
+                        if (wake.found && wake.command.isBlank()) {
+                            // Activate on a confirmed wake phrase without waiting for the
+                            // recognizer to time out. Never execute partial commands.
+                            waitingForCommand = true
+                            playWakeTone()
+                            wakeScreenForNexo()
+                            duckMediaForCommand()
+                            sayDimeAndListen()
+                        } else if (wake.found) {
+                            MiaAccessibilityService.showNexoVoiceOverlay("listening")
+                        }
                     }
                 }
                 override fun onEvent(eventType: Int, params: Bundle?) = Unit
