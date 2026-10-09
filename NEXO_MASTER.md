@@ -439,3 +439,27 @@ No desinstalar RC1 antes de instalar RC2, salvo que una prueba específica de in
 - Spotify/audio focus RC12: se confirmó por comportamiento físico que el fallback Android `SpeechRecognizer` reabierto continuamente puede interrumpir la reproducción en ciclos. Mientras haya música activa y NEXO no esté dentro de una ventana de comando, el fallback no reabre el recognizer y reintenta de forma espaciada.
 - Trade-off temporal: con Spotify/media activa, el wake por voz puede no estar disponible usando el fallback Android. La solución definitiva para wake continuo coexistiendo con música sigue siendo el hotword local dedicado.
 - QA físico requerido: Spotify sin cortes cíclicos; “Oye NEXO” → solo “Dime” → orden capturada; rostro visible hasta terminar respuesta y oculto después.
+
+
+## 17. Entrega de APK y diseño visual aprobado — 09-10-2026
+
+### Regla obligatoria de entrega APK
+- Antes de cada entrega, consultar ESTE documento maestro.
+- Compilar el APK firmado en GitHub Actions, descargar el artefacto y EXTRAER el archivo .apk del ZIP.
+- Entregar al usuario el archivo **APK directo adjunto/enlace sandbox en esta conversación**, con nombre corto `NEXO-RCXX.apk`, **nunca** un ZIP ni una página de artefactos GitHub como opción principal.
+- Antes de ofrecer el enlace, confirmar en el entorno actual que `/mnt/data/NEXO-RCXX.apk` existe, no está vacío y corresponde a la versión compilada; comprobar tamaño e integridad cuando sea posible.
+- El usuario confirmó que esta modalidad de APK directo le funcionó tras errores «Library not found» y «Comenzando descarga». No cambiarla por iniciativa propia. Si falla, investigar la entrega, sin afirmar que la descarga funciona solo porque el archivo existe.
+- Instalar sobre la versión existente, sin desinstalar, para conservar configuración y firma.
+
+### Identidad visual: tamaño y animaciones
+- **Tamaño original aprobado de la carita: 132dp × 132dp**, definido en `app/src/main/res/values/dimens.xml` como `nexo_orb_size=132dp`. Mantener esta medida en panel principal y overlay flotante; **no confundir dp con píxeles**.
+- El rostro debe conservar su cuadrado coloreado y borde azul, pero **sin fondo negro opaco externo** alrededor del personaje.
+- Fuera del cuadrado deben verse **cinco barras por cada lado**, colocadas horizontalmente hacia afuera: la más cercana al cuadro es la más alta y las siguientes disminuyen progresivamente; animación de audio en estados escuchando/hablando/procesando/activado.
+- Movimiento flotante multidireccional, expresivo, sin recorrido exclusivamente diagonal; reducir tirones y consumo de CPU cuando sea posible.
+- NEXO no debe desaparecer durante escucha, habla ni ejecución; no ocultarlo por temporizador arbitrario antes de terminar la acción.
+- El usuario confirmó que RC15 se mueve más naturalmente y las barras aparecen fuera, pero reportó que parecían una sola línea y que el rostro parecía más pequeño. Correcciones de barras escalonadas y unidades dp aplicadas en código después de RC15; requieren nuevo APK y prueba física.
+
+### Bluetooth del carro — requisito pendiente
+- Activación exclusivamente al conectar el dispositivo Bluetooth seleccionado del **carro**, no cualquier dispositivo.
+- Configurar/recordar dispositivo específico, saludar una sola vez por conexión: «Bienvenido, Eliel, ¿cómo estás? ¿En qué te puedo ayudar el día de hoy? ¿Quieres que te abra Waze o Uber?».
+- Respetar restricciones Android 16 para apertura desde segundo plano; no declarar completado hasta implementación y prueba física.
