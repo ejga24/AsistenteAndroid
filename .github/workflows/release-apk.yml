@@ -11,7 +11,7 @@ on:
       - '.github/workflows/release-apk.yml'
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: nexo-release-${{ github.ref }}
@@ -156,3 +156,18 @@ jobs:
           name: NEXO-Agent-release-lint
           path: app/build/reports/lint-results-release.html
           if-no-files-found: ignore
+
+      - name: Publish directly downloadable RC16 APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          APK="app/build/outputs/apk/release/app-release.apk"
+          cp "$APK" "app/build/outputs/apk/release/NEXO-RC16.apk"
+          gh release create "nexo-rc16" \
+            "app/build/outputs/apk/release/NEXO-RC16.apk" \
+            "app/build/outputs/apk/release/app-release.apk.sha256" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "NEXO RC16 — APK directo" \
+            --notes "APK firmado. Descarga NEXO-RC16.apk directamente; instala encima de RC15 sin desinstalar." \
+            --latest=false
