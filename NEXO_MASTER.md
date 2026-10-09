@@ -463,3 +463,12 @@ No desinstalar RC1 antes de instalar RC2, salvo que una prueba específica de in
 - Activación exclusivamente al conectar el dispositivo Bluetooth seleccionado del **carro**, no cualquier dispositivo.
 - Configurar/recordar dispositivo específico, saludar una sola vez por conexión: «Bienvenido, Eliel, ¿cómo estás? ¿En qué te puedo ayudar el día de hoy? ¿Quieres que te abra Waze o Uber?».
 - Respetar restricciones Android 16 para apertura desde segundo plano; no declarar completado hasta implementación y prueba física.
+
+## 18. RC16 — sensibilidad de activación y video a pantalla completa (09-10-2026)
+- Reporte físico: hay que alzar demasiado la voz para activar «NEXO»; algunas veces no responde a «Oye NEXO».
+- Android SpeechRecognizer no ofrece control fiable de ganancia/sensibilidad física del micrófono. Se ajustaron umbrales temporales de captura (mínimo 450 ms; silencio completo 900 ms; posiblemente completo 650 ms) y se admite activación temprana **solo** para frase de wake completa detectada en resultados parciales; jamás ejecutar órdenes parciales.
+- **Limitación crítica vigente:** `AssistantWakeService.startListening()` suspende la escucha del wake cuando `AudioManager.isMusicActive` para evitar cortes repetitivos en Spotify. Por tanto, con música/video activos puede NO activarse por voz. No prometer wake permanente hasta integrar un motor hotword dedicado que coexista con audio.
+- NEXO debe ocultar su overlay cuando un video esté realmente a pantalla completa y reaparecer al salir de ese modo. RC16 incorpora una heurística basada en apps de video y ausencia de barras de sistema; requiere prueba física y podría necesitar ajustes según MagicOS/app.
+- Mantener rostro original de 132dp y cinco barras escalonadas por lado.
+- RC16: versionCode 32 / versionName 3.0-rc16. Solo considerar entregable si GitHub Actions firmado, validación de identidad y artefacto APK son exitosos.
+- Entrega obligatoria: APK directo `NEXO-RC16.apk` en el chat, extraído del ZIP, ruta verificada en el entorno actual.
