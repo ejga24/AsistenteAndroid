@@ -478,3 +478,11 @@ No desinstalar RC1 antes de instalar RC2, salvo que una prueba específica de in
 - El usuario informó repetidamente que enlaces `sandbox:/mnt/data/NEXO-RC16.apk` dan «Library not found» o se quedan en «Comenzando descarga», aunque antes algunos enlaces directos funcionaron. **No repetir el mismo enlace ni sustituirlo por un botón que apunte al mismo destino**.
 - En cada entrega: (1) compilar firmado; (2) extraer APK; (3) verificar archivo, tamaño, hash y firma; (4) adjuntar archivo directo en chat; (5) **solicitar confirmación real del usuario** de que descargó e instaló. Si falla, usar un canal alternativo accesible (por ejemplo asset APK de GitHub Release, si existe un método de publicación habilitado), sin prometerlo hasta publicarlo.
 - No confundir archivo existente, enlace renderizado y descarga efectivamente completada. La entrega RC16 está **pendiente de confirmación de descarga**, aunque la compilación terminó correctamente.
+
+
+### Método de entrega alternativo funcional — GitHub Release RC16
+- Se habilitó publicación automática del APK firmado en GitHub Releases, desde `.github/workflows/release-apk.yml` con `contents: write` y `gh release create`.
+- RC16: workflow exitoso `37969260963`, Release publicado `nexo-rc16`, asset verificado por GitHub API `NEXO-RC16.apk` de 5,762,726 bytes.
+- **Enlace HTTPS directo (sin ZIP ni biblioteca ChatGPT):** https://github.com/ejga24/AsistenteAndroid/releases/download/nexo-rc16/NEXO-RC16.apk
+- Esta modalidad evita los errores de `sandbox:/mnt/data` («Library not found»). Aún se requiere confirmación del usuario de descarga e instalación física.
+- Para próximas versiones: adaptar versión, tag y nombre del APK en el workflow; comprobar `status=success` y que el asset esté realmente publicado antes de enviar el enlace. No afirmar descarga completada hasta confirmación del usuario.
