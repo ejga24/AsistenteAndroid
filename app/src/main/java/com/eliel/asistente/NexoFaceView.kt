@@ -35,20 +35,21 @@ class NexoFaceView @JvmOverloads constructor(
         canvas.drawRoundRect(box,s*.11f,s*.11f,paint); paint.shader=null
         paint.style=Paint.Style.STROKE; paint.strokeWidth=s*.028f; paint.color=Color.rgb(45,184,255); canvas.drawRoundRect(box,s*.11f,s*.11f,paint)
         paint.strokeWidth=s*.009f; paint.color=Color.rgb(185,232,255); canvas.drawRoundRect(RectF(box.left+5,box.top+5,box.right-5,box.bottom-5),s*.09f,s*.09f,paint)
-        // Animated side equalizers: unmistakable visual listening feedback.
-        if (mode == "listening" || mode == "speaking" || mode == "processing") {
+        // Side equalizer: tallest bars nearest the face, smaller toward the edges.
+        if (mode == "listening" || mode == "speaking" || mode == "processing" || mode == "activated") {
             paint.shader = null
             paint.style = Paint.Style.STROKE
             paint.strokeCap = Paint.Cap.ROUND
-            paint.strokeWidth = s * .018f
+            paint.strokeWidth = s * .013f
             paint.color = Color.rgb(67, 215, 255)
+            val amplitude = floatArrayOf(.14f, .115f, .09f, .067f, .045f)
             for (side in 0..1) {
-                val x = if (side == 0) w * .085f else w * .915f
-                for (i in 0..3) {
-                    val wave = abs(sin((phase * 6.283185f * 2f + i * .85f + side * .4f).toDouble())).toFloat()
-                    val bar = s * (.04f + .09f * wave)
-                    val centerY = h * (.34f + i * .11f)
-                    canvas.drawLine(x, centerY - bar / 2, x, centerY + bar / 2, paint)
+                for (i in amplitude.indices) {
+                    val distance = s * (.035f + i * .028f)
+                    val x = if (side == 0) box.left - distance else box.right + distance
+                    val oscillation = .73f + .27f * abs(sin((phase * 12.56637f + i * .72f + side * .6f).toDouble())).toFloat()
+                    val bar = s * amplitude[i] * oscillation
+                    canvas.drawLine(x, h * .50f - bar / 2f, x, h * .50f + bar / 2f, paint)
                 }
             }
             paint.strokeCap = Paint.Cap.BUTT
