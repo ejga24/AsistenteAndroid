@@ -276,6 +276,13 @@ class MiaAccessibilityService : AccessibilityService() {
 
     private val handler = Handler(Looper.getMainLooper())
     private var busy = false
+    private var videoFullscreen = false
+    private var latestVoiceState = "ready"
+    private val videoPackages = setOf(
+        "com.google.android.youtube", "com.netflix.mediaclient",
+        "com.disney.disneyplus", "com.hbo.hbonow",
+        "com.hbo.max", "org.videolan.vlc", "com.amazon.avod.thirdpartyclient"
+    )
     private var voiceOverlay: View? = null
     private var voiceFace: NexoFaceView? = null
     private var voiceStatus: TextView? = null
@@ -295,6 +302,11 @@ class MiaAccessibilityService : AccessibilityService() {
     }
 
     private fun renderVoiceOverlay(state: String) {
+        latestVoiceState = state
+        if (videoFullscreen) {
+            if (voiceOverlay != null) hideVoiceOverlay(0)
+            return
+        }
         overlayHandler.removeCallbacksAndMessages(null)
         val windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
         // Ready is a resting expression, not a reason to remove NEXO.
@@ -463,6 +475,23 @@ class MiaAccessibilityService : AccessibilityService() {
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
+        if (event?.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED ||
+            event?.eventType == AccessibilityEvent.TYPE_WINDOWS_CHANGED) {
+            val pkg = rootInActiveWindow?.packageName?.toString().orEmpty()
+            val isVideoApp = pkg in videoPackages
+            // In immersive playback, system bars disappear from the accessible
+            // window list. This is a best-effort signal, not a video-content API.
+            val hasSystemBar = windows.any { window ->
+                window.type == android.view.accessibility.AccessibilityWindowInfo.TYPE_SYSTEM &&
+                    (window.root?.packageName?.toString() == "com.android.systemui")
+            }
+            val immersiveVideo = isVideoApp && !hasSystemBar
+            if (immersiveVideo != videoFullscreen) {
+                videoFullscreen = immersiveVideo
+                if (immersiveVideo) hideVoiceOverlay(0)
+                else renderVoiceOverlay(latestVoiceState)
+            }
+        }
         if (busy) return
 
         val pending = peek(this) ?: return
