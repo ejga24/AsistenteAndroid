@@ -304,11 +304,12 @@ class MiaAccessibilityService : AccessibilityService() {
             gravity = Gravity.CENTER
             setPadding(0, 0, 0, 0)
             elevation = 0f
-            minimumWidth = 132
-            minimumHeight = 112
+            val faceSize = (resources.getDimension(R.dimen.nexo_orb_size)).toInt()
+            minimumWidth = faceSize
+            minimumHeight = faceSize
 
             voiceFace = NexoFaceView(this@MiaAccessibilityService).apply {
-                layoutParams = LinearLayout.LayoutParams(132, 132)
+                layoutParams = LinearLayout.LayoutParams(faceSize, faceSize)
             }
             voiceStatus = TextView(this@MiaAccessibilityService).apply {
                 gravity = Gravity.CENTER
