@@ -472,3 +472,9 @@ No desinstalar RC1 antes de instalar RC2, salvo que una prueba específica de in
 - Mantener rostro original de 132dp y cinco barras escalonadas por lado.
 - RC16: versionCode 32 / versionName 3.0-rc16. Solo considerar entregable si GitHub Actions firmado, validación de identidad y artefacto APK son exitosos.
 - Entrega obligatoria: APK directo `NEXO-RC16.apk` en el chat, extraído del ZIP, ruta verificada en el entorno actual.
+
+### Corrección crítica de entrega — error «Library not found» (09-10-2026)
+- **NO afirmar que el APK es descargable** solo por comprobar que existe en `/mnt/data` o que GitHub Actions terminó correctamente. Eso verifica la compilación, NO el acceso del usuario al enlace.
+- El usuario informó repetidamente que enlaces `sandbox:/mnt/data/NEXO-RC16.apk` dan «Library not found» o se quedan en «Comenzando descarga», aunque antes algunos enlaces directos funcionaron. **No repetir el mismo enlace ni sustituirlo por un botón que apunte al mismo destino**.
+- En cada entrega: (1) compilar firmado; (2) extraer APK; (3) verificar archivo, tamaño, hash y firma; (4) adjuntar archivo directo en chat; (5) **solicitar confirmación real del usuario** de que descargó e instaló. Si falla, usar un canal alternativo accesible (por ejemplo asset APK de GitHub Release, si existe un método de publicación habilitado), sin prometerlo hasta publicarlo.
+- No confundir archivo existente, enlace renderizado y descarga efectivamente completada. La entrega RC16 está **pendiente de confirmación de descarga**, aunque la compilación terminó correctamente.
