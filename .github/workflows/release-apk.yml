@@ -109,8 +109,8 @@ jobs:
           BADGING="$("$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | head -n 1)"
           echo "$BADGING"
           echo "$BADGING" | grep -q "name='com.eliel.asistente'"
-          echo "$BADGING" | grep -q "versionCode='33'"
-          echo "$BADGING" | grep -q "versionName='3.0-rc17'"
+          echo "$BADGING" | grep -q "versionCode='34'"
+          echo "$BADGING" | grep -q "versionName='3.0-rc18'"
           CERT_SHA256="$("$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --print-certs "$APK" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -n 1)"
           test -n "$CERT_SHA256" || {
             echo "Missing signing certificate SHA-256 digest"
@@ -157,21 +157,21 @@ jobs:
           path: app/build/reports/lint-results-release.html
           if-no-files-found: ignore
 
-      - name: Publish directly downloadable RC17 APK
+      - name: Publish directly downloadable RC18 APK
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           APK="app/build/outputs/apk/release/app-release.apk"
-          cp "$APK" "app/build/outputs/apk/release/NEXO-RC17.apk"
-          if gh release view "nexo-rc17" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
-            gh release upload "nexo-rc17" "app/build/outputs/apk/release/NEXO-RC17.apk" "app/build/outputs/apk/release/app-release.apk.sha256" --clobber --repo "$GITHUB_REPOSITORY"
+          cp "$APK" "app/build/outputs/apk/release/NEXO-RC18.apk"
+          if gh release view "nexo-rc18" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            gh release upload "nexo-rc18" "app/build/outputs/apk/release/NEXO-RC18.apk" "app/build/outputs/apk/release/app-release.apk.sha256" --clobber --repo "$GITHUB_REPOSITORY"
           else
-            gh release create "nexo-rc17" \
-            "app/build/outputs/apk/release/NEXO-RC17.apk" \
+            gh release create "nexo-rc18" \
+            "app/build/outputs/apk/release/NEXO-RC18.apk" \
             "app/build/outputs/apk/release/app-release.apk.sha256" \
             --repo "$GITHUB_REPOSITORY" \
             --target "$GITHUB_SHA" \
-            --title "NEXO RC17 — APK directo" \
-            --notes "APK firmado. Descarga NEXO-RC17.apk directamente; instala encima de RC15 sin desinstalar." \
+            --title "NEXO RC18 — APK directo" \
+            --notes "APK firmado. Descarga NEXO-RC18.apk directamente; instala encima de RC15 sin desinstalar." \
             --latest=false
           fi
