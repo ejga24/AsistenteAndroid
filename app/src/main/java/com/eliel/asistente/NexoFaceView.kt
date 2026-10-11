@@ -71,7 +71,26 @@ class NexoFaceView @JvmOverloads constructor(
         canvas.drawRoundRect(RectF(26f, 14f + breathe, 106f, 115f + breathe), 18f, 18f, p)
 
         if (active) drawEqualizer(canvas)
-        drawFace(canvas, active)
+        val sprite = NexoGraphicSprite.bitmap
+        if (sprite != null) {
+            val frame = when (mode) {
+                "activated" -> 0
+                "listening", "speaking" -> 1
+                "processing", "thinking", "surprised" -> 2
+                "executing", "wink" -> 3
+                "success", "happy", "idle", "ready" -> 4
+                else -> 0
+            }
+            val frameWidth = sprite.width / 5
+            val source = Rect(frame * frameWidth, 0, (frame + 1) * frameWidth, sprite.height)
+            p.style = Paint.Style.FILL
+            p.shader = null
+            p.clearShadowLayer()
+            p.isFilterBitmap = true
+            canvas.drawBitmap(sprite, source, RectF(24f, 12f + breathe, 108f, 117f + breathe), p)
+        } else {
+            drawFace(canvas, active)
+        }
         canvas.restoreToCount(save)
     }
 
