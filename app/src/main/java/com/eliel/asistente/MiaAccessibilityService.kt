@@ -45,6 +45,17 @@ class MiaAccessibilityService : AccessibilityService() {
             activeInstance?.renderVoiceOverlay(state)
         }
 
+        /** Forward speech RMS to the visible character without rebuilding its overlay. */
+        fun updateNexoAudioLevel(level: Float) {
+            activeInstance?.let { service ->
+                if (Looper.myLooper() == Looper.getMainLooper()) {
+                    service.voiceFace?.setAudioLevel(level)
+                } else {
+                    service.overlayHandler.post { service.voiceFace?.setAudioLevel(level) }
+                }
+            }
+        }
+
         fun hideNexoVoiceOverlay(delayMs: Long = 700L) {
             activeInstance?.hideVoiceOverlay(delayMs)
         }
