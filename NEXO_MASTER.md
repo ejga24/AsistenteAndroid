@@ -510,3 +510,17 @@ No desinstalar RC1 antes de instalar RC2, salvo que una prueba específica de in
 - `NexoFaceView.kt` dibuja los cuadros gráficos para estados `activated/listening/processing/executing/success` tanto en dashboard como overlay, con fallback vectorial si el sprite falla. Se conserva animación de barras.
 - **Limitación de fidelidad**: imágenes recortadas de un collage, con baja resolución; pueden presentar artefactos y no equivalen a assets originales de alta resolución con fondo transparente. Requiere inspección física y posterior mejora.
 - Build firmado final pendiente en GitHub Actions; no distribuir release previo de RC17 como si incluyera estos cambios. Verificar SHA de build y asset publicado antes de entrega.
+
+
+## 16. Revisión de alcance después de RC18 — 11-10-2026 · Panamá
+
+- RC18: versionCode 34 / versionName 3.0-rc18. GitHub Actions completó compilación firmada correctamente; APK publicado en release nexo-rc18.
+- Usuario confirma instalación y mejora sustancial de fidelidad visual del personaje flotante.
+- Renderer animado nativo: transición de entrada, respiración, ojos/pupilas, parpadeo, barras de escucha, partículas al procesar. `setAudioLevel` existe, pero falta conexión a amplitud real de micrófono.
+- Dimensiones: HONOR tablet 120dp, teléfonos 112dp.
+- **Prioridad funcional renovada**: volver a la visión original de NEXO Agent OS inspirado en Muse. El éxito visual de RC18 no equivale a validación funcional integral.
+- **P0**: wake word local/offline fiable, background y pantalla bloqueada dentro de restricciones Android/MagicOS; evitar interferencia con Spotify y audio Bluetooth; escuchar → comprender → ejecutar → responder → volver a espera.
+- **P1**: QA real de skills Waze/Spotify/YouTube/WhatsApp, órdenes encadenadas y modo carro; conexión amplitud de audio a animación; mejorar naturalidad de conversación.
+- **P2**: memoria de contexto con privacidad, modos Casa/Trabajo/Kiosco, Automation Hub, integraciones externas, visión avanzada.
+- No marcar capacidades como plenamente terminadas por existencia de código sin QA físico. Mantener seguridad SAFE/CONFIRM/BLOCK y nunca automatizar envío de mensajes o acciones sensibles sin confirmación.
+- Actualizar la documentación y checklist de QA que aún mencionan RC1/RC12 antes de usarlos para aprobar un nuevo release.
