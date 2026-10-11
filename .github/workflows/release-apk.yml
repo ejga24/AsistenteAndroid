@@ -163,7 +163,10 @@ jobs:
         run: |
           APK="app/build/outputs/apk/release/app-release.apk"
           cp "$APK" "app/build/outputs/apk/release/NEXO-RC17.apk"
-          gh release create "nexo-rc17" \
+          if gh release view "nexo-rc17" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            gh release upload "nexo-rc17" "app/build/outputs/apk/release/NEXO-RC17.apk" "app/build/outputs/apk/release/app-release.apk.sha256" --clobber --repo "$GITHUB_REPOSITORY"
+          else
+            gh release create "nexo-rc17" \
             "app/build/outputs/apk/release/NEXO-RC17.apk" \
             "app/build/outputs/apk/release/app-release.apk.sha256" \
             --repo "$GITHUB_REPOSITORY" \
@@ -171,3 +174,4 @@ jobs:
             --title "NEXO RC17 — APK directo" \
             --notes "APK firmado. Descarga NEXO-RC17.apk directamente; instala encima de RC15 sin desinstalar." \
             --latest=false
+          fi
