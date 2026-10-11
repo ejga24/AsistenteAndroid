@@ -486,3 +486,12 @@ No desinstalar RC1 antes de instalar RC2, salvo que una prueba específica de in
 - **Enlace HTTPS directo (sin ZIP ni biblioteca ChatGPT):** https://github.com/ejga24/AsistenteAndroid/releases/download/nexo-rc16/NEXO-RC16.apk
 - Esta modalidad evita los errores de `sandbox:/mnt/data` («Library not found»). Aún se requiere confirmación del usuario de descarga e instalación física.
 - Para próximas versiones: adaptar versión, tag y nombre del APK en el workflow; comprobar `status=success` y que el asset esté realmente publicado antes de enviar el enlace. No afirmar descarga completada hasta confirmación del usuario.
+
+
+## 19. Referencia visual definitiva y defecto reportado RC16 — 11-10-2026
+- El usuario aportó captura del prototipo «NEXO — DISEÑO VISUAL DEL ASISTENTE» y exige **reproducir ese diseño**, no la carita esquemática actual.
+- El prototipo define seis etapas: (1) espera, oculto; (2) «Oye NEXO», aparece y saluda «¡Dime!»; (3) escucha, ojos abiertos y barras animadas; (4) procesa, mirada pensativa; (5) ejecuta, guiño y confirmación; (6) finaliza, sonrisa y se minimiza/desaparece.
+- Estilo: rostro negro azulado con borde azul neón luminoso, ojos grandes brillantes con pupilas y reflejos, cejas, boca expresiva, profundidad/sombras, barras de audio fuera de la caja; emociones neutral, feliz, escuchando, pensando, sorprendido, guiño.
+- Captura física RC16: la cara SÍ aparece dentro del dashboard, pero NO flota en otras aplicaciones. Dashboard muestra «Control de aplicaciones pendiente»; el overlay depende de `MiaAccessibilityService` activo. No dar por resuelto el overlay hasta comprobar el permiso y la aparición tras wake.
+- Código actual `NexoFaceView.kt` usa Canvas con geometría sencilla; necesita rediseño fiel del personaje, manteniendo compatibilidad con los estados y sin afectar voz ni comandos. `MiaAccessibilityService.kt` controla overlay `TYPE_ACCESSIBILITY_OVERLAY` y movimiento.
+- RC17 pendiente: implementación visual fiel + pruebas de overlay y estados en HONOR Pad X9a/MagicOS 10. No afirmar que la apariencia ya fue implementada sin compilar y verificar.
