@@ -248,10 +248,11 @@ class AssistantWakeService : Service(), TextToSpeech.OnInitListener {
 
                 override fun onBeginningOfSpeech() = Unit
                 override fun onRmsChanged(rmsdB: Float) {
-                    // Before the wake word NEXO stays visually silent. Once activated,
-                    // RMS changes keep the listening square alive while the user speaks.
+                    // Audio levels are only displayed after the wake phrase; no pre-wake overlay.
                     if (waitingForCommand) {
-                        MiaAccessibilityService.showNexoVoiceOverlay("listening")
+                        MiaAccessibilityService.updateNexoAudioLevel(
+                            ((rmsdB + 2f) / 12f).coerceIn(0f, 1f)
+                        )
                     }
                 }
                 override fun onBufferReceived(buffer: ByteArray?) = Unit
