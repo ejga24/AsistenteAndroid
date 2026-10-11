@@ -331,8 +331,10 @@ class MiaAccessibilityService : AccessibilityService() {
             }
             voiceStatus = TextView(this@MiaAccessibilityService).apply {
                 gravity = Gravity.CENTER
-                textSize = 10f
+                textSize = 13f
                 setTextColor(Color.WHITE)
+                setShadowLayer(5f, 0f, 0f, Color.BLACK)
+                setPadding(8, 4, 8, 4)
             }
             addView(voiceFace)
             addView(voiceStatus)
