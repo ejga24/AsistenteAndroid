@@ -294,6 +294,8 @@ class MiaAccessibilityService : AccessibilityService() {
     override fun onServiceConnected() {
         super.onServiceConnected()
         activeInstance = this
+        // The accessibility overlay is available only while this service is enabled.
+        // Keep the last known state; the idle state must remain hidden as in the prototype.
         serviceInfo = serviceInfo.apply {
             flags = flags or
                 AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS or
@@ -303,13 +305,17 @@ class MiaAccessibilityService : AccessibilityService() {
 
     private fun renderVoiceOverlay(state: String) {
         latestVoiceState = state
+        if (state == "idle" || state == "ready") {
+            hideVoiceOverlay(0)
+            return
+        }
         if (videoFullscreen) {
             if (voiceOverlay != null) hideVoiceOverlay(0)
             return
         }
         overlayHandler.removeCallbacksAndMessages(null)
         val windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
-        // Ready is a resting expression, not a reason to remove NEXO.
+        // The character appears only during a voice interaction.
 
         val panel = voiceOverlay ?: LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
