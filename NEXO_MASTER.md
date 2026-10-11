@@ -503,3 +503,10 @@ No desinstalar RC1 antes de instalar RC2, salvo que una prueba específica de in
 - `app/build.gradle.kts`: versionCode 33 / versionName 3.0-rc17.
 - `.github/workflows/release-apk.yml`: validación RC17 y publicación de APK firmado directo en Release `nexo-rc17` (sujeto a éxito CI).
 - **QA física pendiente**: semejanza con prototipo, aparición de overlay durante wake con servicio de accesibilidad activo, estados y funcionamiento de voz. No afirmar flotación resuelta sin prueba; en captura RC16 el servicio de control de apps estaba pendiente.
+
+
+### RC17 — recurso gráfico real integrado (11-10-2026)
+- Se extrajeron cinco expresiones del diseño generado y aprobado en la conversación y se empaquetaron como sprite WebP incrustado en `NexoGraphicSprite.kt` (cinco cuadros de 48x48px).
+- `NexoFaceView.kt` dibuja los cuadros gráficos para estados `activated/listening/processing/executing/success` tanto en dashboard como overlay, con fallback vectorial si el sprite falla. Se conserva animación de barras.
+- **Limitación de fidelidad**: imágenes recortadas de un collage, con baja resolución; pueden presentar artefactos y no equivalen a assets originales de alta resolución con fondo transparente. Requiere inspección física y posterior mejora.
+- Build firmado final pendiente en GitHub Actions; no distribuir release previo de RC17 como si incluyera estos cambios. Verificar SHA de build y asset publicado antes de entrega.
