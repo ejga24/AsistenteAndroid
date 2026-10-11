@@ -16,7 +16,7 @@ class NexoFaceView @JvmOverloads constructor(
     private var mode = "idle"
     private var phase = 0f
     private val motion = ValueAnimator.ofFloat(0f, 1f).apply {
-        duration = 3200L
+        duration = 1300L
         repeatCount = ValueAnimator.INFINITE
         interpolator = LinearInterpolator()
         addUpdateListener { phase = it.animatedValue as Float; invalidate() }
@@ -84,8 +84,8 @@ class NexoFaceView @JvmOverloads constructor(
         p.setShadowLayer(5f, 0f, 0f, Color.CYAN)
         for (side in 0..1) for (i in amps.indices) {
             val x = if (side == 0) 18f - i * 3.6f else 114f + i * 3.6f
-            val wave = 0.76f + 0.24f * abs(sin(phase * 4f * PI + i * 0.9 + side).toFloat())
-            val h = amps[i] * wave
+            val wave = 0.20f + 0.80f * abs(sin(phase * 2f * PI + i * 1.15 + side * .55).toFloat())
+            val h = amps[i] * wave * if (mode == "listening") 1.45f else 1f
             c.drawLine(x, 65f - h / 2f, x, 65f + h / 2f, p)
         }
         p.clearShadowLayer()
