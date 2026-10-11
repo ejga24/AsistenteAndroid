@@ -495,3 +495,11 @@ No desinstalar RC1 antes de instalar RC2, salvo que una prueba específica de in
 - Captura física RC16: la cara SÍ aparece dentro del dashboard, pero NO flota en otras aplicaciones. Dashboard muestra «Control de aplicaciones pendiente»; el overlay depende de `MiaAccessibilityService` activo. No dar por resuelto el overlay hasta comprobar el permiso y la aparición tras wake.
 - Código actual `NexoFaceView.kt` usa Canvas con geometría sencilla; necesita rediseño fiel del personaje, manteniendo compatibilidad con los estados y sin afectar voz ni comandos. `MiaAccessibilityService.kt` controla overlay `TYPE_ACCESSIBILITY_OVERLAY` y movimiento.
 - RC17 pendiente: implementación visual fiel + pruebas de overlay y estados en HONOR Pad X9a/MagicOS 10. No afirmar que la apariencia ya fue implementada sin compilar y verificar.
+
+
+### RC17 — implementación de rostro expresivo (11-10-2026)
+- Reescrito `NexoFaceView.kt`: degradado negro azulado, marco azul neón con halos, ojos grandes con iris/pupilas/reflejos, cejas, expresiones para `idle/ready/listening/activated/processing/executing/speaking/success/surprised/wink`, animación de parpadeo y cinco barras por lado.
+- Escala gráfica dentro del componente de 132dp aprobado, compatible con dashboard y overlay accesible.
+- `app/build.gradle.kts`: versionCode 33 / versionName 3.0-rc17.
+- `.github/workflows/release-apk.yml`: validación RC17 y publicación de APK firmado directo en Release `nexo-rc17` (sujeto a éxito CI).
+- **QA física pendiente**: semejanza con prototipo, aparición de overlay durante wake con servicio de accesibilidad activo, estados y funcionamiento de voz. No afirmar flotación resuelta sin prueba; en captura RC16 el servicio de control de apps estaba pendiente.
